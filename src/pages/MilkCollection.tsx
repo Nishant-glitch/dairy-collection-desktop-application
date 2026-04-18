@@ -3,7 +3,7 @@ import { ref, onValue, set, get, remove } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
 import { useLanguage } from '../contexts/LanguageContext';
-import { calculateRate, formatIndianCurrency } from '../utils/rateCalculator';
+import { calculateFormulaRate, formatIndianCurrency } from '../utils/rateCalculator';
 import { sendCollectionSMS } from '../services/sms';
 import { X, Edit2, Trash2 } from 'lucide-react';
 
@@ -39,14 +39,14 @@ const MilkCollection: React.FC = () => {
   const [warningMessage, setWarningMessage] = useState('');
 
   const [todayEntries, setTodayEntries] = useState<Entry[]>([]);
-  const [rateChart, setRateChart] = useState<any[]>([]);
+  const [rateFormula, setRateFormula] = useState<any>(null);
   const [dcsInfo, setDcsInfo] = useState<any>({});
   const [farmers, setFarmers] = useState<any>({});
 
   const farmerCodeRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    loadRateChart();
+    loadRateFormula();
     loadDCSInfo();
     loadFarmers();
   }, []);
@@ -58,28 +58,19 @@ const MilkCollection: React.FC = () => {
   }, [showSessionSetup, sessionDate, sessionShift]);
 
   useEffect(() => {
-    if (qty && fat && snfClr && rateChart.length > 0) {
-      const calculatedRate = calculateRate(parseFloat(fat), parseFloat(snfClr), rateChart);
+    if (qty && fat && snfClr && rateFormula) {
+      const calculatedRate = calculateFormulaRate(parseFloat(fat), parseFloat(snfClr), rateFormula);
       setRate(calculatedRate);
       setAmount(calculatedRate * parseFloat(qty));
     } else {
       setRate(0);
       setAmount(0);
     }
-  }, [qty, fat, snfClr, rateChart]);
+  }, [qty, fat, snfClr, rateFormula]);
 
-  const loadRateChart = () => {
-    const rateRef = ref(database, up('rateChart'));
-    onValue(rateRef, (snapshot) => {
-      const rateArray: any[] = [];
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        Object.values(data).forEach((entry) => {
-          rateArray.push(entry);
-        });
-      }
-      setRateChart(rateArray);
-    });
+  const loadRateFormula = async () => {
+    const snap = await get(ref(database, up('rateFormula')));
+    if (snap.exists()) setRateFormula(snap.val());
   };
 
   const loadDCSInfo = async () => {

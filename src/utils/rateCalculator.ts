@@ -24,6 +24,39 @@ export const calculateRate = (
   return matchingEntry ? matchingEntry.rate : 0;
 };
 
+export const calculateFormulaRate = (
+  fat: number,
+  snf: number,
+  formula: any
+): number => {
+  if (!formula) return 0;
+
+  let fatAmount = 0;
+  if (formula.fatTierEnabled) {
+    fatAmount = fat <= formula.fatTierUpto
+      ? fat * formula.fatRateBelow
+      : fat * formula.fatRateAbove;
+  } else {
+    fatAmount = fat * formula.fatRate;
+  }
+
+  let snfAmount = 0;
+  if (formula.snfTierEnabled) {
+    snfAmount = snf <= formula.snfTierUpto
+      ? snf * formula.snfRateBelow
+      : snf * formula.snfRateAbove;
+  } else {
+    snfAmount = snf * formula.snfRate;
+  }
+
+  let adjustment = 0;
+  if (formula.adjustmentEnabled && fat >= formula.adjFatFrom && fat <= formula.adjFatTo) {
+    adjustment = formula.adjAmount;
+  }
+
+  return Math.round((fatAmount + snfAmount + adjustment) * 100) / 100;
+};
+
 export const calculateAmount = (rate: number, quantity: number): number => {
   return rate * quantity;
 };
