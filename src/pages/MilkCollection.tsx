@@ -3,7 +3,7 @@ import { ref, onValue, set, get, remove } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
 import { useLanguage } from '../contexts/LanguageContext';
-import { calculateFormulaRate, formatIndianCurrency } from '../utils/rateCalculator';
+import { calcCowRate, calcBuffaloRate, getRateForDate, formatIndianCurrency } from '../utils/rateCalculator';
 import { sendCollectionSMS } from '../services/sms';
 import { X, Edit2, Trash2 } from 'lucide-react';
 
@@ -16,6 +16,7 @@ interface Entry {
   clr?: number;
   rate: number;
   amount: number;
+  animalType: 'cow' | 'buffalo';
   timestamp: number;
 }
 
@@ -25,6 +26,7 @@ const MilkCollection: React.FC = () => {
   const [sessionDate, setSessionDate] = useState(new Date().toISOString().split('T')[0]);
   const [sessionShift, setSessionShift] = useState<'Morning' | 'Evening'>('Morning');
   const [sessionMode, setSessionMode] = useState<'SNF' | 'CLR'>('SNF');
+  const [animalType, setAnimalType] = useState<'cow' | 'buffalo'>('cow');
   const [printEnabled, setPrintEnabled] = useState(false);
   const [smsEnabled, setSmsEnabled] = useState(false);
   
@@ -39,14 +41,14 @@ const MilkCollection: React.FC = () => {
   const [warningMessage, setWarningMessage] = useState('');
 
   const [todayEntries, setTodayEntries] = useState<Entry[]>([]);
-  const [rateFormula, setRateFormula] = useState<any>(null);
+  const [cowConfig, setCowConfig] = useState<any>(null);
+  const [buffaloConfig, setBuffaloConfig] = useState<any>(null);
   const [dcsInfo, setDcsInfo] = useState<any>({});
   const [farmers, setFarmers] = useState<any>({});
 
   const farmerCodeRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    loadRateFormula();
     loadDCSInfo();
     loadFarmers();
   }, []);
@@ -58,19 +60,28 @@ const MilkCollection: React.FC = () => {
   }, [showSessionSetup, sessionDate, sessionShift]);
 
   useEffect(() => {
-    if (qty && fat && snfClr && rateFormula) {
-      const calculatedRate = calculateFormulaRate(parseFloat(fat), parseFloat(snfClr), rateFormula);
+    if (qty && fat) {
+      let calculatedRate = 0;
+      if (animalType === 'cow' && snfClr && cowConfig) {
+        calculatedRate = calcCowRate(parseFloat(fat), parseFloat(snfClr), cowConfig);
+      } else if (animalType === 'buffalo' && buffaloConfig) {
+        calculatedRate = calcBuffaloRate(parseFloat(fat), buffaloConfig);
+      }
       setRate(calculatedRate);
       setAmount(calculatedRate * parseFloat(qty));
     } else {
       setRate(0);
       setAmount(0);
     }
-  }, [qty, fat, snfClr, rateFormula]);
+  }, [qty, fat, snfClr, animalType, cowConfig, buffaloConfig]);
 
-  const loadRateFormula = async () => {
-    const snap = await get(ref(database, up('rateFormula')));
-    if (snap.exists()) setRateFormula(snap.val());
+  const loadRateConfigForDate = async (date: string) => {
+    const uid = (await import('../firebase/config')).auth.currentUser?.uid;
+    if (!uid) return;
+    const cow = await getRateForDate(database, uid, 'cow', date);
+    const buffalo = await getRateForDate(database, uid, 'buffalo', date);
+    setCowConfig(cow);
+    setBuffaloConfig(buffalo);
   };
 
   const loadDCSInfo = async () => {
@@ -104,7 +115,8 @@ const MilkCollection: React.FC = () => {
     });
   };
 
-  const handleStartSession = () => {
+  const handleStartSession = async () => {
+    await loadRateConfigForDate(sessionDate);
     setShowSessionSetup(false);
     setTimeout(() => {
       farmerCodeRef.current?.focus();
@@ -159,12 +171,13 @@ const MilkCollection: React.FC = () => {
       fat: parseFloat(fat),
       rate,
       amount,
+      animalType,
       timestamp: Date.now(),
     };
 
-    if (sessionMode === 'SNF') {
+    if (animalType === 'cow') {
       entryData.snf = parseFloat(snfClr);
-    } else {
+    } else if (animalType === 'buffalo') {
       entryData.clr = parseFloat(snfClr);
     }
 
@@ -298,6 +311,32 @@ const MilkCollection: React.FC = () => {
             </div>
 
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Animal Type</label>
+              <div className="flex gap-4">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    value="cow"
+                    checked={animalType === 'cow'}
+                    onChange={() => setAnimalType('cow')}
+                    className="mr-2"
+                  />
+                  🐄 Cow
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    value="buffalo"
+                    checked={animalType === 'buffalo'}
+                    onChange={() => setAnimalType('buffalo')}
+                    className="mr-2"
+                  />
+                  🐃 Buffalo
+                </label>
+              </div>
+            </div>
+
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Mode</label>
               <div className="flex gap-4">
                 <label className="flex items-center">
@@ -391,6 +430,7 @@ const MilkCollection: React.FC = () => {
           <span><strong>Date:</strong> {sessionDate}</span>
           <span><strong>Shift:</strong> {sessionShift}</span>
           <span><strong>Mode:</strong> {sessionMode}</span>
+          <span><strong>Animal:</strong> {animalType === 'cow' ? '🐄 Cow' : '🐃 Buffalo'}</span>
         </div>
         <button
           onClick={handleCloseSession}
@@ -457,17 +497,19 @@ const MilkCollection: React.FC = () => {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">{sessionMode} %</label>
-              <input
-                type="number"
-                step="0.01"
-                value={snfClr}
-                onChange={(e) => setSnfClr(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none text-lg"
-                placeholder="0.00"
-              />
-            </div>
+            {animalType === 'cow' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{sessionMode} %</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={snfClr}
+                  onChange={(e) => setSnfClr(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none text-lg"
+                  placeholder="0.00"
+                />
+              </div>
+            )}
 
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
               <div className="flex justify-between mb-2">

@@ -76,3 +76,35 @@ export const formatDate = (date: Date | string): string => {
   const year = d.getFullYear();
   return `${day}-${month}-${year}`;
 };
+
+export const calcCowRate = (fat: number, snf: number, config: any): number => {
+  if (!config) return 0;
+  const rate = (fat * config.fatPerKg / 100) + (snf * config.snfPerKg / 100);
+  return Math.round(rate * 100) / 100;
+};
+
+export const calcBuffaloRate = (fat: number, config: any): number => {
+  if (!config) return 0;
+  const rate = fat * config.fatPerKg / 100;
+  return Math.round(rate * 100) / 100;
+};
+
+export const getRateForDate = async (
+  database: any,
+  uid: string,
+  animalType: 'cow' | 'buffalo',
+  collectionDate: string
+): Promise<any> => {
+  const { ref, get } = await import('firebase/database');
+  const historyRef = ref(database, `users/${uid}/rateConfig/${animalType}/history`);
+  const snap = await get(historyRef);
+  if (!snap.exists()) return null;
+
+  const history = snap.val();
+  const configs = Object.values(history) as any[];
+  
+  configs.sort((a: any, b: any) => new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime());
+  
+  const applicable = configs.find((c: any) => c.effectiveFrom <= collectionDate);
+  return applicable || configs[configs.length - 1];
+};
