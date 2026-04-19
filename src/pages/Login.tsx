@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth, db } from '../firebase/config';
 import { ref, set } from 'firebase/database';
@@ -18,6 +18,21 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    createAdminIfNotExists();
+  }, []);
+
+  const createAdminIfNotExists = async () => {
+    try {
+      await createUserWithEmailAndPassword(auth, 'admin@nishant.com', 'nishant@123');
+    } catch (e: any) {
+      // If already exists, ignore error
+      if (e.code !== 'auth/email-already-in-use') {
+        console.error(e);
+      }
+    }
+  };
+
   // Convert mobile number to email format for Firebase
   const mobileToEmail = (mobile: string) => {
     return `${mobile}@dcspro.com`;
@@ -29,15 +44,16 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setSuccess('');
     setLoading(true);
 
-    // Validate mobile number
-    if (!/^[6-9]\d{9}$/.test(mobileNumber)) {
+    // Validate mobile number or admin email
+    const isAdminLogin = mobileNumber === 'admin@nishant.com';
+    if (!isAdminLogin && !/^[6-9]\d{9}$/.test(mobileNumber)) {
       setError('कृपया वैध 10 अंकों का मोबाइल नंबर दर्ज करें\nPlease enter valid 10-digit mobile number');
       setLoading(false);
       return;
     }
 
     try {
-      const email = mobileToEmail(mobileNumber);
+      const email = isAdminLogin ? mobileNumber : mobileToEmail(mobileNumber);
       await signInWithEmailAndPassword(auth, email, password);
       if (rememberMe) {
         localStorage.setItem('rememberedMobile', mobileNumber);
@@ -106,7 +122,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         mobileNumber: mobileNumber,
         email: email,
         createdAt: new Date().toISOString(),
-        role: 'admin'
+        role: 'user'
       });
 
       setSuccess('✅ खाता सफलतापूर्वक बनाया गया!\nAccount created successfully!\n\nLogging you in...');
@@ -206,15 +222,14 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 मोबाइल नंबर / Mobile Number <span className="text-red-500">*</span>
               </label>
               <input
-                type="tel"
+                type="text"
                 value={mobileNumber}
-                onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                onChange={(e) => setMobileNumber(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-800 focus:border-transparent outline-none transition-all"
                 placeholder="10 अंकों का मोबाइल नंबर / 10-digit mobile number"
-                maxLength={10}
                 required
               />
-              <p className="text-xs text-gray-500 mt-1">Example: 9876543210</p>
+              <p className="text-xs text-gray-500 mt-1">Example: 9876543210 or admin@nishant.com</p>
             </div>
 
             {/* Password Field */}

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ref, onValue } from 'firebase/database';
+import { ref, onValue, get } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
-import { Droplet, TrendingUp, Users, Clock } from 'lucide-react';
+import { Droplet, TrendingUp, Users, Clock, Table, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatIndianCurrency } from '../utils/rateCalculator';
@@ -19,10 +19,26 @@ const Dashboard: React.FC = () => {
   });
   const [recentEntries, setRecentEntries] = useState<any[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
+  const [activeRateChart, setActiveRateChart] = useState<any>(null);
+  const [loadingRateChart, setLoadingRateChart] = useState(true);
 
   useEffect(() => {
     loadDashboardData();
+    loadActiveRateChart();
   }, []);
+
+  const loadActiveRateChart = async () => {
+    try {
+      const snap = await get(ref(database, 'globalRateConfig/current'));
+      if (snap.exists()) {
+        setActiveRateChart(snap.val());
+      }
+    } catch (error) {
+      console.error('Error loading rate chart:', error);
+    } finally {
+      setLoadingRateChart(false);
+    }
+  };
 
   const loadDashboardData = () => {
     const today = new Date().toISOString().split('T')[0];
@@ -112,7 +128,32 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-3xl font-bold text-green-900">{t('dashboard')}</h1>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <h1 className="text-3xl font-bold text-green-900">{t('dashboard')}</h1>
+        
+        {/* Rate Chart Status Card */}
+        <div className="bg-white rounded-xl shadow-md px-4 py-2 border border-gray-200 flex items-center gap-4">
+          <div className={`p-2 rounded-lg ${activeRateChart ? 'bg-green-100' : 'bg-orange-100'}`}>
+            <Table size={20} className={activeRateChart ? 'text-green-600' : 'text-orange-600'} />
+          </div>
+          <div>
+            <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Active Rate Chart</p>
+            {loadingRateChart ? (
+              <p className="text-sm text-gray-400">Loading...</p>
+            ) : activeRateChart ? (
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-bold text-gray-800">Effective: {activeRateChart.effectiveFrom}</p>
+                <CheckCircle2 size={14} className="text-green-500" />
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-bold text-orange-600">No chart uploaded</p>
+                <AlertTriangle size={14} className="text-orange-500" />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -219,7 +260,7 @@ const Dashboard: React.FC = () => {
                   <td className="px-4 py-3">{entry.farmerId}</td>
                   <td className="px-4 py-3 text-right">{parseFloat(entry.qty).toFixed(2)}</td>
                   <td className="px-4 py-3 text-right">{parseFloat(entry.fat).toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right">{parseFloat(entry.snf).toFixed(2)}</td>
+                  <td className="px-4 py-3 text-right">{parseFloat(entry.snf || entry.clr || 0).toFixed(2)}</td>
                   <td className="px-4 py-3 text-right">₹{parseFloat(entry.rate).toFixed(2)}</td>
                   <td className="px-4 py-3 text-right font-semibold">
                     {formatIndianCurrency(entry.amount)}

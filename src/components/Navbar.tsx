@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, Milk, Globe } from 'lucide-react';
+import { LogOut, Milk, Globe, User } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase/config';
+import { isAdmin } from '../utils/userDb';
 
 interface NavbarProps {
   dcsName?: string;
@@ -11,6 +12,8 @@ interface NavbarProps {
 const Navbar: React.FC<NavbarProps> = ({ dcsName = 'DCS Pro' }) => {
   const { language, setLanguage, t } = useLanguage();
   const [currentTime, setCurrentTime] = useState(new Date());
+  const user = auth.currentUser;
+  const userIsAdmin = isAdmin();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -44,7 +47,29 @@ const Navbar: React.FC<NavbarProps> = ({ dcsName = 'DCS Pro' }) => {
           </div>
 
           <div className="flex items-center space-x-6">
-            <div className="text-right">
+            {/* User Info & Admin Badge */}
+            <div className="flex items-center gap-3 border-r border-green-700 pr-6 mr-2">
+              <div className="bg-green-800 p-2 rounded-full">
+                <User size={16} />
+              </div>
+              <div className="text-left">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold truncate max-w-[150px]">
+                    {user?.displayName || 'User'}
+                  </span>
+                  {userIsAdmin && (
+                    <span className="bg-red-500 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded-full shadow-sm">
+                      Admin
+                    </span>
+                  )}
+                </div>
+                <div className="text-[10px] text-green-300 truncate max-w-[150px]">
+                  {user?.email}
+                </div>
+              </div>
+            </div>
+
+            <div className="text-right hidden md:block">
               <div className="text-sm font-semibold">
                 {currentTime.toLocaleDateString('en-IN', {
                   day: '2-digit',

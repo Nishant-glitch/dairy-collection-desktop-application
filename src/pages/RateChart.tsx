@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { ref, get, set, push } from 'firebase/database';
 import { database } from '../firebase/config';
-import { up } from '../utils/userDb';
-import { FileSpreadsheet, History, X, Table as TableIcon } from 'lucide-react';
+import { isAdmin } from '../utils/userDb';
+import { FileSpreadsheet, History, X, Table as TableIcon, ShieldCheck } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 export const getRateFromMap = (fat: number, snf: number, config: any): number => {
@@ -35,20 +35,21 @@ const RateChart: React.FC = () => {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [viewingConfig, setViewingConfig] = useState<any>(null);
   const [effectiveDate, setEffectiveDate] = useState(new Date().toISOString().split('T')[0]);
+  const userIsAdmin = isAdmin();
 
   useEffect(() => {
     loadCurrentConfig();
   }, []);
 
   const loadCurrentConfig = async () => {
-    const snap = await get(ref(database, up('rateConfig/current')));
+    const snap = await get(ref(database, 'globalRateConfig/current'));
     if (snap.exists()) {
       setCurrentConfig(snap.val());
     }
   };
 
   const loadHistory = async () => {
-    const snap = await get(ref(database, up('rateConfig/history')));
+    const snap = await get(ref(database, 'globalRateConfig/history'));
     if (snap.exists()) {
       const data = snap.val();
       const historyList = Object.values(data).sort((a: any, b: any) => 
@@ -98,14 +99,13 @@ const RateChart: React.FC = () => {
           type: 'excel'
         };
         
-        // Save current
-        await set(ref(database, up('rateConfig/current')), config);
-        // Push to history
-        await push(ref(database, up('rateConfig/history')), config);
+        // Save to GLOBAL paths
+        await set(ref(database, 'globalRateConfig/current'), config);
+        await push(ref(database, 'globalRateConfig/history'), config);
         
         setCurrentConfig(config);
         setShowImportPopup(false);
-        alert('Rate chart imported successfully!');
+        alert('✓ Rate chart published! All users will now use this chart.');
       } catch (error) {
         console.error('Error importing Excel:', error);
         alert('Error importing Excel file. Please ensure it follows the required format.');
@@ -183,25 +183,36 @@ const RateChart: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-bold text-green-900">Rate Chart Management</h1>
-          <p className="text-gray-600">Import and view milk rate configurations</p>
+          <p className="text-gray-600">
+            {userIsAdmin ? 'Import and manage global rate configurations' : 'Rate chart is managed by admin'}
+          </p>
         </div>
-        <div className="flex gap-3">
-          <button
-            onClick={() => setShowImportPopup(true)}
-            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition shadow-md"
-          >
-            <FileSpreadsheet size={20} />
-            Import from Excel
-          </button>
-          <button
-            onClick={loadHistory}
-            className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2 rounded-lg transition shadow-sm"
-          >
-            <History size={20} />
-            View Import History
-          </button>
-        </div>
+        {userIsAdmin && (
+          <div className="flex gap-3">
+            <button
+              onClick={() => setShowImportPopup(true)}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition shadow-md"
+            >
+              <FileSpreadsheet size={20} />
+              Import & Publish
+            </button>
+            <button
+              onClick={loadHistory}
+              className="flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2 rounded-lg transition shadow-sm"
+            >
+              <History size={20} />
+              View Import History
+            </button>
+          </div>
+        )}
       </div>
+
+      {!userIsAdmin && (
+        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 flex items-center gap-3">
+          <ShieldCheck className="text-blue-600" size={24} />
+          <p className="text-blue-800 font-medium">Global Rate Chart — Read Only Access</p>
+        </div>
+      )}
 
       {currentConfig ? (
         <div className="space-y-4">
@@ -217,22 +228,26 @@ const RateChart: React.FC = () => {
             <FileSpreadsheet className="text-green-600" size={32} />
           </div>
           <h3 className="text-xl font-bold text-gray-800 mb-2">No Rate Chart Found</h3>
-          <p className="text-gray-600 mb-6">Please import an Excel file to start milk collection.</p>
-          <button
-            onClick={() => setShowImportPopup(true)}
-            className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition"
-          >
-            Import Now
-          </button>
+          <p className="text-gray-600 mb-6">
+            {userIsAdmin ? 'Please import an Excel file to publish the rate chart.' : 'No rate chart uploaded yet. Contact admin.'}
+          </p>
+          {userIsAdmin && (
+            <button
+              onClick={() => setShowImportPopup(true)}
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition"
+            >
+              Import Now
+            </button>
+          )}
         </div>
       )}
 
       {/* Import Popup */}
-      {showImportPopup && (
+      {showImportPopup && userIsAdmin && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-gray-800">Import Rate Chart</h2>
+              <h2 className="text-xl font-bold text-gray-800">Import & Publish Chart</h2>
               <button onClick={() => setShowImportPopup(false)} className="text-gray-500 hover:text-gray-700">
                 <X size={24} />
               </button>
@@ -257,7 +272,7 @@ const RateChart: React.FC = () => {
                   Cancel
                 </button>
                 <label className="flex-1 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition text-center cursor-pointer shadow-md">
-                  Select Excel File
+                  Select & Publish
                   <input
                     type="file"
                     accept=".xlsx, .xls"
@@ -284,7 +299,7 @@ const RateChart: React.FC = () => {
       )}
 
       {/* History Modal */}
-      {showHistoryModal && (
+      {showHistoryModal && userIsAdmin && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full max-h-[80vh] flex flex-col">
             <div className="flex justify-between items-center mb-6">
@@ -335,7 +350,7 @@ const RateChart: React.FC = () => {
       )}
 
       {/* View Chart Modal (from History) */}
-      {viewingConfig && (
+      {viewingConfig && userIsAdmin && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4">
           <div className="bg-white rounded-xl shadow-2xl p-6 max-w-6xl w-full max-h-[90vh] flex flex-col">
             <div className="flex justify-between items-center mb-4">

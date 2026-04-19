@@ -73,13 +73,16 @@ const MilkCollection: React.FC = () => {
   }, [qty, fat, snfClr, activeRateConfig]);
 
   const getConfigForDate = async (collectionDate: string) => {
-    const snap = await get(ref(database, up('rateConfig/history')));
+    // Load from GLOBAL path (not user-specific)
+    const snap = await get(ref(database, 'globalRateConfig/history'));
     if (!snap.exists()) return null;
     const configs = Object.values(snap.val()) as any[];
     configs.sort((a, b) =>
       new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime()
     );
-    return configs.find(c => c.effectiveFrom <= collectionDate) || configs[configs.length - 1];
+    // Return config whose effectiveFrom <= collectionDate
+    return configs.find(c => c.effectiveFrom <= collectionDate)
+      || configs[configs.length - 1];
   };
 
   const loadDCSInfo = async () => {
@@ -116,7 +119,7 @@ const MilkCollection: React.FC = () => {
   const handleStartSession = async () => {
     const config = await getConfigForDate(sessionDate);
     if (!config) {
-      alert('No rate chart found for this date. Please import a rate chart first.');
+      alert('No rate chart found for this date. Please contact admin to upload a rate chart.');
       return;
     }
     setActiveRateConfig(config);
