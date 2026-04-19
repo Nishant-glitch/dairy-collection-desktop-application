@@ -6,14 +6,14 @@ const Settings: React.FC = () => {
   const { t } = useLanguage();
 
   return (
-    <div className="p-6 animate-fadeUp">
+    <div className="p-6 animate-fadeIn">
       <h1 className="page-title">{t('settings')}</h1>
-      <div className="glass-card" style={{ padding: 64, textAlign: 'center', borderStyle: 'dashed' }}>
-        <div style={{ width: 80, height: 80, background: 'rgba(245,158,11,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-          <SettingsIcon color="#f59e0b" size={40} />
+      <div className="glass-card" style={{ padding: 64, textAlign: 'center', borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.15)' }}>
+        <div style={{ width: 80, height: 80, background: 'rgba(74,222,128,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+          <SettingsIcon color="#4ade80" size={40} />
         </div>
-        <h3 style={{ color: '#f1f5f9', fontSize: 22, fontWeight: 800, marginBottom: 8 }}>System Settings</h3>
-        <p style={{ color: '#94a3b8', maxWidth: 400, margin: '0 auto' }}>
+        <h3 style={{ color: 'white', fontSize: 22, fontWeight: 800, marginBottom: 8 }}>System Settings</h3>
+        <p style={{ color: 'rgba(255,255,255,0.6)', maxWidth: 400, margin: '0 auto' }}>
           Configure SMS API, printer settings, and user preferences here. This module is coming soon.
         </p>
       </div>

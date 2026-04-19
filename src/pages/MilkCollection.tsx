@@ -294,40 +294,40 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   if (showSessionSetup) {
     return (
       <div className="modal-overlay">
-        <div className="modal-box animate-fadeUp">
-          <h2 className="modal-title">Start Collection Session</h2>
+        <div className="modal-3d animate-fadeIn" style={{ padding: 32, maxWidth: 600, width: '90%' }}>
+          <h2 className="modal-title" style={{ color: 'white', fontWeight: 800, fontSize: 22, marginBottom: 20 }}>Start Collection Session</h2>
           
           <div className="space-y-6">
             <div>
               <label className="label-text">Date</label>
-              <input type="date" value={sessionDate} onChange={(e) => setSessionDate(e.target.value)} className="input-field" />
+              <input type="date" value={sessionDate} onChange={(e) => setSessionDate(e.target.value)} className="input-3d" />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="label-text">Shift</label>
                 <div className="flex gap-2">
-                  <button onClick={() => setSessionShift('Morning')} className={sessionShift === 'Morning' ? 'btn-primary w-full' : 'btn-secondary w-full'}>Morning</button>
-                  <button onClick={() => setSessionShift('Evening')} className={sessionShift === 'Evening' ? 'btn-primary w-full' : 'btn-secondary w-full'}>Evening</button>
+                  <button onClick={() => setSessionShift('Morning')} className={sessionShift === 'Morning' ? 'btn-3d w-full' : 'btn-secondary w-full'}>Morning</button>
+                  <button onClick={() => setSessionShift('Evening')} className={sessionShift === 'Evening' ? 'btn-3d w-full' : 'btn-secondary w-full'}>Evening</button>
                 </div>
               </div>
               <div>
                 <label className="label-text">Mode</label>
                 <div className="flex gap-2">
-                  <button onClick={() => setSessionMode('SNF')} className={sessionMode === 'SNF' ? 'btn-primary w-full' : 'btn-secondary w-full'}>SNF</button>
-                  <button onClick={() => setSessionMode('CLR')} className={sessionMode === 'CLR' ? 'btn-primary w-full' : 'btn-secondary w-full'}>CLR</button>
+                  <button onClick={() => setSessionMode('SNF')} className={sessionMode === 'SNF' ? 'btn-3d w-full' : 'btn-secondary w-full'}>SNF</button>
+                  <button onClick={() => setSessionMode('CLR')} className={sessionMode === 'CLR' ? 'btn-3d w-full' : 'btn-secondary w-full'}>CLR</button>
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-4 p-4 glass-card" style={{ background: 'rgba(148,163,184,0.05)' }}>
+            <div className="flex gap-4 p-4 glass-card">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={printEnabled} onChange={(e) => setPrintEnabled(e.target.checked)} className="w-4 h-4 accent-amber-500" />
-                <span style={{ color: '#f1f5f9', fontSize: 14 }}>Print Slips</span>
+                <input type="checkbox" checked={printEnabled} onChange={(e) => setPrintEnabled(e.target.checked)} className="w-4 h-4" style={{ accentColor: '#4ade80' }} />
+                <span style={{ color: 'white', fontSize: 14 }}>Print Slips</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={smsEnabled} onChange={(e) => setSmsEnabled(e.target.checked)} className="w-4 h-4 accent-amber-500" />
-                <span style={{ color: '#f1f5f9', fontSize: 14 }}>Send SMS</span>
+                <input type="checkbox" checked={smsEnabled} onChange={(e) => setSmsEnabled(e.target.checked)} className="w-4 h-4" style={{ accentColor: '#4ade80' }} />
+                <span style={{ color: 'white', fontSize: 14 }}>Send SMS</span>
               </label>
             </div>
 
@@ -338,7 +338,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
               >
                 ✕ Cancel
               </button>
-              <button onClick={handleStartSession} className="btn-primary flex-[2]">
+              <button onClick={handleStartSession} className="btn-3d flex-[2]">
                 🚀 Start Collection
               </button>
             </div>
@@ -349,21 +349,21 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#0f172a', overflowY: 'auto' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'linear-gradient(135deg, #0a1f0f 0%, #0d2d18 100%)', overflowY: 'auto' }}>
       {/* Top Bar */}
-      <div style={{ background: 'rgba(15,23,42,0.8)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(245,158,11,0.2)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 4px 24px rgba(0,0,0,0.5)' }}>
+      <div style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 4px 24px rgba(0,0,0,0.6)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ width: 40, height: 40, background: 'linear-gradient(135deg, #f59e0b, #d97706)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(245,158,11,0.3)' }}>🥛</div>
+          <div style={{ width: 40, height: 40, background: 'linear-gradient(135deg, #4ade80, #1a5c2e)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(74,222,128,0.4)' }}>🥛</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div className="info-chip"><Calendar size={14} /> {sessionDate}</div>
-            <div className="info-chip"><Clock size={14} /> {sessionShift}</div>
-            <div className="info-chip"><Zap size={14} /> {sessionMode} Mode</div>
+            <div style={{ background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 8, padding: '4px 12px', color: '#4ade80', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><Calendar size={14} /> {sessionDate}</div>
+            <div style={{ background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 8, padding: '4px 12px', color: '#4ade80', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><Clock size={14} /> {sessionShift}</div>
+            <div style={{ background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 8, padding: '4px 12px', color: '#4ade80', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><Zap size={14} /> {sessionMode} Mode</div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 16 }}>
-            {printEnabled && <div className="success-chip"><Printer size={14} /> Print On</div>}
-            {smsEnabled && <div className="success-chip"><MessageSquare size={14} /> SMS On</div>}
+            {printEnabled && <div style={{ background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 8, padding: '4px 12px', color: '#4ade80', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><Printer size={14} /> Print On</div>}
+            {smsEnabled && <div style={{ background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 8, padding: '4px 12px', color: '#4ade80', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><MessageSquare size={14} /> SMS On</div>}
           </div>
           <button onClick={() => onNavigate('dashboard')} className="btn-secondary">
             <X size={18} /> Close Session
@@ -374,9 +374,9 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
       <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Form */}
         <div className="lg:col-span-4 space-y-6">
-          <div className="glass-card animate-fadeUp" style={{ padding: 24 }}>
-            <h3 className="modal-title" style={{ border: 'none', marginBottom: 20, padding: 0 }}>
-              <Droplet color="#f59e0b" /> {isModifying ? 'Modify Entry' : 'New Collection'}
+          <div className="glass-card animate-fadeIn" style={{ padding: 24 }}>
+            <h3 className="modal-title" style={{ border: 'none', marginBottom: 20, padding: 0, color: 'white', fontWeight: 800, fontSize: 18 }}>
+              <Droplet color="#4ade80" /> {isModifying ? 'Modify Entry' : 'New Collection'}
             </h3>
             
             <div className="space-y-4">
@@ -388,14 +388,14 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                   value={farmerCode}
                   onChange={(e) => handleFarmerCodeChange(e.target.value)}
                   onKeyDown={handleFarmerCodeKeyDown}
-                  className="input-field"
+                  className="input-3d"
                   placeholder="Enter Farmer Code"
                 />
                 
                 {farmerFound && (
                   <div className="farmer-found-box mt-3">
                     <span style={{ color: '#4ade80', fontSize: 11 }}>✓ Farmer Found</span>
-                    <div style={{ color: '#f1f5f9', fontWeight: 700, fontSize: 16 }}>{farmerName}</div>
+                    <div style={{ color: 'white', fontWeight: 700, fontSize: 16 }}>{farmerName}</div>
                   </div>
                 )}
                 
@@ -403,37 +403,37 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                   <div style={{ color: '#f87171', fontSize: 12, marginTop: 4 }}>Farmer not found</div>
                 )}
                 
-                {warningMessage && <p style={{ color: '#f59e0b', fontSize: 12, marginTop: 4, fontWeight: 600 }}>{warningMessage}</p>}
+                {warningMessage && <p style={{ color: '#f87171', fontSize: 12, marginTop: 4, fontWeight: 600 }}>{warningMessage}</p>}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="label-text">Quantity (L)</label>
-                  <input ref={qtyRef} type="number" value={qty} onChange={(e) => setQty(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && fatRef.current?.focus()} className="input-field" placeholder="0.00" />
+                  <input ref={qtyRef} type="number" value={qty} onChange={(e) => setQty(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && fatRef.current?.focus()} className="input-3d" placeholder="0.00" />
                 </div>
                 <div>
                   <label className="label-text">FAT %</label>
-                  <input ref={fatRef} type="number" value={fat} onChange={(e) => setFat(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && snfClrRef.current?.focus()} className="input-field" placeholder="0.0" />
+                  <input ref={fatRef} type="number" value={fat} onChange={(e) => setFat(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && snfClrRef.current?.focus()} className="input-3d" placeholder="0.0" />
                 </div>
               </div>
 
               <div>
                 <label className="label-text">{sessionMode} %</label>
-                <input ref={snfClrRef} type="number" value={snfClr} onChange={(e) => setSnfClr(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSaveOrUpdate()} className="input-field" placeholder="0.0" />
+                <input ref={snfClrRef} type="number" value={snfClr} onChange={(e) => setSnfClr(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSaveOrUpdate()} className="input-3d" placeholder="0.0" />
               </div>
 
               <div className="grid grid-cols-2 gap-4 mt-6">
-                <div style={{ background: 'rgba(74,222,128,0.1)', borderRadius: 16, padding: 16, border: '1px solid rgba(74,222,128,0.2)' }}>
-                  <p style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Rate / L</p>
+                <div style={{ background: 'linear-gradient(135deg, #1e3a5f, #1e40af)', borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(30,64,175,0.4)' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Rate / L</p>
                   <p style={{ color: '#4ade80', fontSize: 24, fontWeight: 800 }}>₹{rate.toFixed(2)}</p>
                 </div>
-                <div style={{ background: 'rgba(245,158,11,0.1)', borderRadius: 16, padding: 16, border: '1px solid rgba(245,158,11,0.2)' }}>
-                  <p style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Total Amount</p>
-                  <p style={{ color: '#fcd34d', fontSize: 24, fontWeight: 800 }}>₹{amount.toFixed(2)}</p>
+                <div style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)', borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(22,163,74,0.3)' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Total Amount</p>
+                  <p style={{ color: '#4ade80', fontSize: 24, fontWeight: 800 }}>₹{amount.toFixed(2)}</p>
                 </div>
               </div>
 
-              <button onClick={handleSaveOrUpdate} className="btn-primary w-full" style={{ fontSize: 18, padding: 16, marginTop: 12 }}>
+              <button onClick={handleSaveOrUpdate} className="btn-3d w-full" style={{ fontSize: 18, padding: 16, marginTop: 12, background: 'linear-gradient(135deg, #4ade80, #16a34a)', boxShadow: '0 8px 24px rgba(74,222,128,0.5)', color: '#0a1f0f', fontWeight: 800 }}>
                 {isModifying ? 'Update Entry' : 'Save Collection'}
               </button>
               
@@ -443,24 +443,24 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
             </div>
           </div>
 
-          <div className="glass-card" style={{ padding: 24, background: 'linear-gradient(135deg, #1e3a5f, #1e40af)' }}>
-            <h3 style={{ color: '#f1f5f9', fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Session Summary</h3>
+          <div className="glass-card" style={{ padding: 24, background: 'linear-gradient(135deg, #1a5c2e, #16a34a)' }}>
+            <h3 style={{ color: 'white', fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Session Summary</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p style={{ color: '#94a3b8', fontSize: 12 }}>Total Liters</p>
-                <p style={{ color: '#f1f5f9', fontSize: 20, fontWeight: 800 }}>{totalQty.toFixed(2)} L</p>
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Total Liters</p>
+                <p style={{ color: 'white', fontSize: 20, fontWeight: 800 }}>{totalQty.toFixed(2)} L</p>
               </div>
               <div>
-                <p style={{ color: '#94a3b8', fontSize: 12 }}>Total Amount</p>
-                <p style={{ color: '#f1f5f9', fontSize: 20, fontWeight: 800 }}>{formatIndianCurrency(totalAmount)}</p>
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Total Amount</p>
+                <p style={{ color: 'white', fontSize: 20, fontWeight: 800 }}>{formatIndianCurrency(totalAmount)}</p>
               </div>
               <div>
-                <p style={{ color: '#94a3b8', fontSize: 12 }}>Avg FAT</p>
-                <p style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700 }}>{avgFat.toFixed(2)} %</p>
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Avg FAT</p>
+                <p style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>{avgFat.toFixed(2)} %</p>
               </div>
               <div>
-                <p style={{ color: '#94a3b8', fontSize: 12 }}>Avg {sessionMode}</p>
-                <p style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700 }}>{avgSnfClr.toFixed(2)} %</p>
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Avg {sessionMode}</p>
+                <p style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>{avgSnfClr.toFixed(2)} %</p>
               </div>
             </div>
           </div>
@@ -468,14 +468,14 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
 
         {/* Right Table */}
         <div className="lg:col-span-8">
-          <div className="glass-card animate-fadeUp" style={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(148,163,184,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ color: '#f1f5f9', fontWeight: 800, fontSize: 20 }}>Today's Entries <span style={{ color: '#94a3b8', fontSize: 14, fontWeight: 400 }}>({todayEntries.length})</span></h3>
+          <div className="glass-card animate-fadeIn" style={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ color: 'white', fontWeight: 800, fontSize: 20 }}>Today's Entries <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, fontWeight: 400 }}>({todayEntries.length})</span></h3>
             </div>
             
             <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
               <div className="table-container">
-                <table className="w-full">
+                <table className="w-full table-3d">
                   <thead className="table-header" style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                     <tr>
                       <th className="px-4 py-3">Farmer</th>
@@ -491,14 +491,14 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                     {todayEntries.sort((a, b) => b.timestamp - a.timestamp).map((entry) => (
                       <tr key={entry.farmerCode} className="table-row">
                         <td className="px-4 py-3">
-                          <div style={{ fontWeight: 700, color: '#f1f5f9' }}>{entry.farmerCode}</div>
-                          <div style={{ fontSize: 11, color: '#94a3b8' }}>{entry.farmerName}</div>
+                          <div style={{ fontWeight: 700, color: 'white' }}>{entry.farmerCode}</div>
+                          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>{entry.farmerName}</div>
                         </td>
-                        <td className="px-4 py-3 text-right font-semibold" style={{ color: '#f1f5f9' }}>{entry.qty.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right" style={{ color: '#cbd5e1' }}>{entry.fat.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right" style={{ color: '#cbd5e1' }}>{(entry.snf || entry.clr || 0).toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right" style={{ color: '#cbd5e1' }}>₹{entry.rate.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right font-bold" style={{ color: '#fcd34d' }}>₹{entry.amount.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right font-semibold" style={{ color: 'white' }}>{entry.qty.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right" style={{ color: 'rgba(255,255,255,0.85)' }}>{entry.fat.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right" style={{ color: 'rgba(255,255,255,0.85)' }}>{(entry.snf || entry.clr || 0).toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right" style={{ color: 'rgba(255,255,255,0.85)' }}>₹{entry.rate.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right font-bold" style={{ color: '#4ade80' }}>₹{entry.amount.toFixed(2)}</td>
                         <td className="px-4 py-3">
                           <div className="flex justify-center gap-2">
                             <button onClick={() => handleModify(entry)} className="btn-info" style={{ padding: 6 }}><Edit2 size={14} /></button>
@@ -509,7 +509,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                     ))}
                     {todayEntries.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="px-4 py-12 text-center text-slate-500">No entries yet for this session</td>
+                        <td colSpan={7} className="px-4 py-12 text-center" style={{ color: 'rgba(255,255,255,0.5)' }}>No entries yet for this session</td>
                       </tr>
                     )}
                   </tbody>
@@ -521,7 +521,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
       </div>
       
       {showSavedMessage && (
-        <div style={{ position: 'fixed', bottom: 40, left: '50%', transform: 'translateX(-50%)', background: '#4ade80', color: '#0f172a', padding: '12px 24px', borderRadius: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 8px 32px rgba(74,222,128,0.4)', zIndex: 10000 }}>
+        <div style={{ position: 'fixed', bottom: 40, left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, #4ade80, #16a34a)', color: '#0a1f0f', padding: '12px 24px', borderRadius: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 8px 32px rgba(74,222,128,0.5)', zIndex: 10000 }}>
           <CheckCircle size={20} /> Entry Saved Successfully!
         </div>
       )}
