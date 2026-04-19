@@ -1,14 +1,21 @@
 import React from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { Settings as SettingsIcon } from 'lucide-react';
 
 const Settings: React.FC = () => {
   const { t } = useLanguage();
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold text-green-900 mb-6">{t('settings')}</h1>
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <p className="text-gray-600">Settings - SMS API Configuration & Other Settings</p>
+    <div className="p-6 animate-fadeIn">
+      <h1 style={{ color: 'white', fontWeight: 800, fontSize: 28, textShadow: '0 2px 8px rgba(0,0,0,0.3)', marginBottom: 24 }}>{t('settings')}</h1>
+      <div className="glass-card" style={{ padding: 64, textAlign: 'center', borderStyle: 'dashed' }}>
+        <div style={{ width: 80, height: 80, background: 'rgba(74, 222, 128, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+          <SettingsIcon color="#4ade80" size={40} />
+        </div>
+        <h3 style={{ color: 'white', fontSize: 22, fontWeight: 800, marginBottom: 8 }}>System Settings</h3>
+        <p style={{ color: 'rgba(255,255,255,0.5)', maxWidth: 400, margin: '0 auto' }}>
+          Configure SMS API, printer settings, and user preferences here. This module is coming soon.
+        </p>
       </div>
     </div>
   );

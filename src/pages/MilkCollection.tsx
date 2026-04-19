@@ -5,7 +5,7 @@ import { up } from '../utils/userDb';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatIndianCurrency } from '../utils/rateCalculator';
 import { sendCollectionSMS } from '../services/sms';
-import { X, Edit2, Trash2, CheckCircle } from 'lucide-react';
+import { X, Edit2, Trash2, CheckCircle, Droplet, Clock, Calendar, Zap, Printer, MessageSquare } from 'lucide-react';
 import { getRateFromMap } from './RateChart';
 
 interface Entry {
@@ -21,7 +21,7 @@ interface Entry {
 }
 
 const MilkCollection: React.FC = () => {
-  const { } = useLanguage();
+  const { t } = useLanguage();
   const [showSessionSetup, setShowSessionSetup] = useState(true);
   const [sessionDate, setSessionDate] = useState(new Date().toISOString().split('T')[0]);
   const [sessionShift, setSessionShift] = useState<'Morning' | 'Evening'>('Morning');
@@ -73,14 +73,12 @@ const MilkCollection: React.FC = () => {
   }, [qty, fat, snfClr, activeRateConfig]);
 
   const getConfigForDate = async (collectionDate: string) => {
-    // Load from GLOBAL path (not user-specific)
     const snap = await get(ref(database, 'globalRateConfig/history'));
     if (!snap.exists()) return null;
     const configs = Object.values(snap.val()) as any[];
     configs.sort((a, b) =>
       new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime()
     );
-    // Return config whose effectiveFrom <= collectionDate
     return configs.find(c => c.effectiveFrom <= collectionDate)
       || configs[configs.length - 1];
   };
@@ -245,101 +243,50 @@ const MilkCollection: React.FC = () => {
     ? todayEntries.reduce((sum, e) => sum + (e.snf || e.clr || 0), 0) / todayEntries.length 
     : 0;
 
+  const labelStyle: React.CSSProperties = { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600, marginBottom: 6, display: 'block' };
+  const chipStyle: React.CSSProperties = { background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 8, padding: '4px 12px', color: '#4ade80', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 };
+
   if (showSessionSetup) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full">
-          <h2 className="text-2xl font-bold text-green-900 mb-6 text-center">Start Collection Session</h2>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="modal-3d animate-fadeIn" style={{ padding: 32, maxWidth: 450, width: '90%' }}>
+          <h2 style={{ color: 'white', fontWeight: 800, fontSize: 24, marginBottom: 24, textAlign: 'center' }}>Start Collection Session</h2>
           
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
-              <input
-                type="date"
-                value={sessionDate}
-                onChange={(e) => setSessionDate(e.target.value)}
-                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
-              />
+              <label style={labelStyle}>Date</label>
+              <input type="date" value={sessionDate} onChange={(e) => setSessionDate(e.target.value)} className="input-3d w-full" />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Shift</label>
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setSessionShift('Morning')}
-                  className={`flex-1 py-2 rounded-lg font-semibold border-2 transition ${
-                    sessionShift === 'Morning' ? 'bg-green-100 border-green-600 text-green-800' : 'border-gray-200 text-gray-600'
-                  }`}
-                >
-                  Morning
-                </button>
-                <button
-                  onClick={() => setSessionShift('Evening')}
-                  className={`flex-1 py-2 rounded-lg font-semibold border-2 transition ${
-                    sessionShift === 'Evening' ? 'bg-green-100 border-green-600 text-green-800' : 'border-gray-200 text-gray-600'
-                  }`}
-                >
-                  Evening
-                </button>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label style={labelStyle}>Shift</label>
+                <div className="flex gap-2">
+                  <button onClick={() => setSessionShift('Morning')} className="btn-3d w-full" style={{ background: sessionShift === 'Morning' ? undefined : 'rgba(255,255,255,0.05)', boxShadow: sessionShift === 'Morning' ? undefined : 'none', border: sessionShift === 'Morning' ? undefined : '1px solid rgba(255,255,255,0.1)' }}>Morning</button>
+                  <button onClick={() => setSessionShift('Evening')} className="btn-3d w-full" style={{ background: sessionShift === 'Evening' ? undefined : 'rgba(255,255,255,0.05)', boxShadow: sessionShift === 'Evening' ? undefined : 'none', border: sessionShift === 'Evening' ? undefined : '1px solid rgba(255,255,255,0.1)' }}>Evening</button>
+                </div>
+              </div>
+              <div>
+                <label style={labelStyle}>Mode</label>
+                <div className="flex gap-2">
+                  <button onClick={() => setSessionMode('SNF')} className="btn-3d w-full" style={{ background: sessionMode === 'SNF' ? undefined : 'rgba(255,255,255,0.05)', boxShadow: sessionMode === 'SNF' ? undefined : 'none', border: sessionMode === 'SNF' ? undefined : '1px solid rgba(255,255,255,0.1)' }}>SNF</button>
+                  <button onClick={() => setSessionMode('CLR')} className="btn-3d w-full" style={{ background: sessionMode === 'CLR' ? undefined : 'rgba(255,255,255,0.05)', boxShadow: sessionMode === 'CLR' ? undefined : 'none', border: sessionMode === 'CLR' ? undefined : '1px solid rgba(255,255,255,0.1)' }}>CLR</button>
+                </div>
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Mode</label>
-              <div className="flex gap-4">
-                <button
-                  onClick={() => setSessionMode('SNF')}
-                  className={`flex-1 py-2 rounded-lg font-semibold border-2 transition ${
-                    sessionMode === 'SNF' ? 'bg-green-100 border-green-600 text-green-800' : 'border-gray-200 text-gray-600'
-                  }`}
-                >
-                  SNF
-                </button>
-                <button
-                  onClick={() => setSessionMode('CLR')}
-                  className={`flex-1 py-2 rounded-lg font-semibold border-2 transition ${
-                    sessionMode === 'CLR' ? 'bg-green-100 border-green-600 text-green-800' : 'border-gray-200 text-gray-600'
-                  }`}
-                >
-                  CLR
-                </button>
-              </div>
+            <div className="flex gap-4 p-4 glass-card" style={{ background: 'rgba(0,0,0,0.2)' }}>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={printEnabled} onChange={(e) => setPrintEnabled(e.target.checked)} className="w-4 h-4 accent-green-500" />
+                <span style={{ color: 'white', fontSize: 14 }}>Print Slips</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={smsEnabled} onChange={(e) => setSmsEnabled(e.target.checked)} className="w-4 h-4 accent-green-500" />
+                <span style={{ color: 'white', fontSize: 14 }}>Send SMS</span>
+              </label>
             </div>
 
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm font-medium text-gray-700">Print Receipt</span>
-              <button
-                onClick={() => setPrintEnabled(!printEnabled)}
-                className={`w-12 h-6 rounded-full transition relative ${printEnabled ? 'bg-green-600' : 'bg-gray-300'}`}
-              >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${printEnabled ? 'left-7' : 'left-1'}`} />
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm font-medium text-gray-700">Send SMS</span>
-              <button
-                onClick={() => setSmsEnabled(!smsEnabled)}
-                className={`w-12 h-6 rounded-full transition relative ${smsEnabled ? 'bg-green-600' : 'bg-gray-300'}`}
-              >
-                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${smsEnabled ? 'left-7' : 'left-1'}`} />
-              </button>
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <button
-                onClick={() => setShowSessionSetup(false)}
-                className="flex-1 bg-white border border-gray-300 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-50 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleStartSession}
-                className="flex-1 bg-green-700 text-white font-bold py-3 rounded-xl hover:bg-green-800 transition shadow-lg"
-              >
-                Start Collection
-              </button>
-            </div>
+            <button onClick={handleStartSession} className="btn-3d w-full animate-pulse-glow" style={{ padding: 16, fontSize: 18 }}>Start Session</button>
           </div>
         </div>
       </div>
@@ -347,252 +294,193 @@ const MilkCollection: React.FC = () => {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-green-900">Milk Collection</h1>
-          <p className="text-gray-600">{sessionDate} | {sessionShift} Shift | {sessionMode} Mode</p>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'linear-gradient(135deg, #0a1f0f 0%, #0d2d18 100%)', overflowY: 'auto' }}>
+      {/* Top Bar */}
+      <div style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ width: 40, height: 40, background: 'linear-gradient(135deg, #4ade80, #1a5c2e)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(74,222,128,0.3)' }}>🥛</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={chipStyle}><Calendar size={14} /> {sessionDate}</div>
+            <div style={chipStyle}><Clock size={14} /> {sessionShift}</div>
+            <div style={chipStyle}><Zap size={14} /> {sessionMode} Mode</div>
+          </div>
         </div>
-        <button
-          onClick={() => setShowSessionSetup(true)}
-          className="bg-green-100 text-green-800 px-4 py-2 rounded-lg font-semibold hover:bg-green-200 transition"
-        >
-          Change Session
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 16 }}>
+            {printEnabled && <div style={{ ...chipStyle, background: 'rgba(255,255,255,0.05)', color: 'white', borderColor: 'rgba(255,255,255,0.2)' }}><Printer size={14} /> Print On</div>}
+            {smsEnabled && <div style={{ ...chipStyle, background: 'rgba(255,255,255,0.05)', color: 'white', borderColor: 'rgba(255,255,255,0.2)' }}><MessageSquare size={14} /> SMS On</div>}
+          </div>
+          <button onClick={() => setShowSessionSetup(true)} className="btn-3d" style={{ padding: '8px 16px', background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', boxShadow: 'none' }}>
+            <X size={18} /> Close Session
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Collection Form */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white rounded-xl shadow-lg p-6 border-t-4 border-green-600 relative">
-            {showSavedMessage && (
-              <div className="absolute top-4 right-4 flex items-center gap-1 text-green-600 font-bold animate-bounce">
-                <CheckCircle size={20} />
-                <span>Saved!</span>
-              </div>
-            )}
-            <h2 className="text-xl font-bold text-gray-800 mb-6">{isModifying ? 'Modify Entry' : 'New Collection'}</h2>
+      <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Form */}
+        <div className="lg:col-span-4 space-y-6">
+          <div className="glass-card animate-fadeIn" style={{ padding: 24 }}>
+            <h3 style={{ color: 'white', fontWeight: 800, fontSize: 20, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Droplet color="#4ade80" /> {isModifying ? 'Modify Entry' : 'New Collection'}
+            </h3>
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Farmer Code</label>
-                <input
-                  ref={farmerCodeRef}
-                  type="text"
-                  value={farmerCode}
-                  onChange={(e) => setFarmerCode(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && farmerCode) {
-                      const farmer = farmers[farmerCode];
-                      if (!farmer) {
-                        alert('Farmer not found!');
-                        return;
-                      }
-                      setFarmerName(farmer.farmerName);
-                      const existing = todayEntries.find(e => e.farmerCode === farmerCode);
-                      if (existing) {
-                        setWarningMessage('Entry already exists! Modifying existing entry.');
-                        setQty(existing.qty.toString());
-                        setFat(existing.fat.toString());
-                        setSnfClr((existing.snf || existing.clr || '').toString());
-                        setIsModifying(true);
+                <label style={labelStyle}>Farmer Code</label>
+                <div className="flex gap-2">
+                  <input
+                    ref={farmerCodeRef}
+                    type="number"
+                    value={farmerCode}
+                    onChange={(e) => {
+                      setFarmerCode(e.target.value);
+                      const f = farmers[e.target.value];
+                      if (f) {
+                        setFarmerName(f.name);
+                        setWarningMessage(todayEntries.find(ent => ent.farmerCode === e.target.value) ? 'Already entered today' : '');
+                        qtyRef.current?.focus();
                       } else {
+                        setFarmerName('');
                         setWarningMessage('');
-                        setIsModifying(false);
                       }
-                      qtyRef.current?.focus();
-                    }
-                  }}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none font-bold text-lg"
-                  placeholder="Enter code & press Enter"
-                />
+                    }}
+                    className="input-3d w-24"
+                    placeholder="ID"
+                  />
+                  <input
+                    type="text"
+                    value={farmerName}
+                    readOnly
+                    className="input-3d flex-1"
+                    style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)' }}
+                    placeholder="Farmer Name"
+                  />
+                </div>
+                {warningMessage && <p style={{ color: '#ef4444', fontSize: 12, marginTop: 4, fontWeight: 600 }}>{warningMessage}</p>}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label style={labelStyle}>Quantity (L)</label>
+                  <input ref={qtyRef} type="number" value={qty} onChange={(e) => setQty(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && fatRef.current?.focus()} className="input-3d w-full" placeholder="0.00" />
+                </div>
+                <div>
+                  <label style={labelStyle}>FAT %</label>
+                  <input ref={fatRef} type="number" value={fat} onChange={(e) => setFat(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && snfClrRef.current?.focus()} className="input-3d w-full" placeholder="0.0" />
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Farmer Name</label>
-                <input
-                  type="text"
-                  value={farmerName}
-                  readOnly
-                  className="w-full px-4 py-2 bg-gray-50 border rounded-lg outline-none text-gray-600 font-medium"
-                />
-                {warningMessage && <p className="text-xs text-orange-600 mt-1 font-semibold">{warningMessage}</p>}
+                <label style={labelStyle}>{sessionMode} %</label>
+                <input ref={snfClrRef} type="number" value={snfClr} onChange={(e) => setSnfClr(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSaveOrUpdate()} className="input-3d w-full" placeholder="0.0" />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Qty (Ltr)</label>
-                  <input
-                    ref={qtyRef}
-                    type="number"
-                    step="0.1"
-                    value={qty}
-                    onChange={(e) => setQty(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        fatRef.current?.focus();
-                      }
-                    }}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none font-bold"
-                  />
+              <div className="grid grid-cols-2 gap-4 mt-6">
+                <div style={{ background: 'linear-gradient(135deg, #1e3a5f, #1e40af)', borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(30,64,175,0.4)' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Rate / L</p>
+                  <p style={{ color: 'white', fontSize: 24, fontWeight: 800 }}>₹{rate.toFixed(2)}</p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">FAT %</label>
-                  <input
-                    ref={fatRef}
-                    type="number"
-                    step="0.1"
-                    value={fat}
-                    onChange={(e) => setFat(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        snfClrRef.current?.focus();
-                      }
-                    }}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{sessionMode} %</label>
-                  <input
-                    ref={snfClrRef}
-                    type="number"
-                    step="0.1"
-                    value={snfClr}
-                    onChange={(e) => setSnfClr(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleSaveOrUpdate();
-                      }
-                    }}
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none font-bold"
-                  />
+                <div style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)', borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(22,163,74,0.3)' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Total Amount</p>
+                  <p style={{ color: 'white', fontSize: 24, fontWeight: 800 }}>₹{amount.toFixed(2)}</p>
                 </div>
               </div>
 
-              <div className="bg-green-50 p-4 rounded-xl border border-green-100 grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-green-700 font-medium uppercase">Rate / Ltr</p>
-                  <p className="text-2xl font-bold text-green-900">₹{rate.toFixed(2)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-green-700 font-medium uppercase">Total Amount</p>
-                  <p className="text-2xl font-bold text-green-900">₹{amount.toFixed(2)}</p>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                {isModifying && (
-                  <button
-                    onClick={clearForm}
-                    className="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-200 transition"
-                  >
-                    Cancel
-                  </button>
-                )}
-                <button
-                  onClick={handleSaveOrUpdate}
-                  className="flex-[2] bg-green-700 text-white font-bold py-3 rounded-xl hover:bg-green-800 transition shadow-lg flex items-center justify-center gap-2"
-                >
-                  {isModifying ? 'Update Entry' : 'Save Entry'}
-                </button>
-              </div>
+              <button onClick={handleSaveOrUpdate} className="btn-3d w-full" style={{ background: 'linear-gradient(135deg, #4ade80, #16a34a)', color: '#0a1f0f', fontWeight: 800, fontSize: 18, padding: 16, marginTop: 12 }}>
+                {isModifying ? 'Update Entry' : 'Save Collection'}
+              </button>
+              
+              {isModifying && (
+                <button onClick={clearForm} className="w-full text-white/50 hover:text-white text-sm font-semibold transition py-2">Cancel Modification</button>
+              )}
             </div>
           </div>
 
-          {/* Summary Cards */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white p-4 rounded-xl shadow-md border-l-4 border-blue-500">
-              <p className="text-xs text-gray-500 font-bold uppercase">Total Qty</p>
-              <p className="text-xl font-bold text-gray-800">{totalQty.toFixed(1)} L</p>
-            </div>
-            <div className="bg-white p-4 rounded-xl shadow-md border-l-4 border-green-500">
-              <p className="text-xs text-gray-500 font-bold uppercase">Total Amt</p>
-              <p className="text-xl font-bold text-gray-800">₹{totalAmount.toFixed(0)}</p>
-            </div>
-            <div className="bg-white p-4 rounded-xl shadow-md border-l-4 border-orange-500">
-              <p className="text-xs text-gray-500 font-bold uppercase">Avg FAT</p>
-              <p className="text-xl font-bold text-gray-800">{avgFat.toFixed(1)}%</p>
-            </div>
-            <div className="bg-white p-4 rounded-xl shadow-md border-l-4 border-purple-500">
-              <p className="text-xs text-gray-500 font-bold uppercase">Avg {sessionMode}</p>
-              <p className="text-xl font-bold text-gray-800">{avgSnfClr.toFixed(1)}%</p>
+          <div className="glass-card" style={{ padding: 24 }}>
+            <h3 style={{ color: 'white', fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Session Summary</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p style={{ color: 'white/50', fontSize: 12 }}>Total Liters</p>
+                <p style={{ color: 'white', fontSize: 20, fontWeight: 800 }}>{totalQty.toFixed(2)} L</p>
+              </div>
+              <div>
+                <p style={{ color: 'white/50', fontSize: 12 }}>Total Amount</p>
+                <p style={{ color: '#4ade80', fontSize: 20, fontWeight: 800 }}>{formatIndianCurrency(totalAmount)}</p>
+              </div>
+              <div>
+                <p style={{ color: 'white/50', fontSize: 12 }}>Avg FAT</p>
+                <p style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>{avgFat.toFixed(2)} %</p>
+              </div>
+              <div>
+                <p style={{ color: 'white/50', fontSize: 12 }}>Avg {sessionMode}</p>
+                <p style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>{avgSnfClr.toFixed(2)} %</p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Entries Table */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-            <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="font-bold text-gray-800">Today's Collections ({todayEntries.length})</h2>
-              <div className="text-sm font-medium text-gray-500">
-                Sorted by latest first
-              </div>
+        {/* Right Table */}
+        <div className="lg:col-span-8">
+          <div className="glass-card animate-fadeIn" style={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ color: 'white', fontWeight: 800, fontSize: 20 }}>Today's Entries <span style={{ color: 'white/40', fontSize: 14, fontWeight: 400 }}>({todayEntries.length})</span></h3>
             </div>
-            <div className="overflow-x-auto max-h-[600px]">
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-gray-100 sticky top-0 z-10">
-                  <tr>
-                    <th className="p-4 border-b text-sm font-bold text-gray-600">Farmer</th>
-                    <th className="p-4 border-b text-sm font-bold text-gray-600 text-center">Qty</th>
-                    <th className="p-4 border-b text-sm font-bold text-gray-600 text-center">FAT/SNF</th>
-                    <th className="p-4 border-b text-sm font-bold text-gray-600 text-center">Rate</th>
-                    <th className="p-4 border-b text-sm font-bold text-gray-600 text-right">Amount</th>
-                    <th className="p-4 border-b text-sm font-bold text-gray-600 text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {todayEntries.sort((a, b) => b.timestamp - a.timestamp).map((entry) => (
-                    <tr key={entry.farmerCode} className="hover:bg-green-50 transition">
-                      <td className="p-4">
-                        <p className="font-bold text-gray-800">{entry.farmerCode}</p>
-                        <p className="text-xs text-gray-500">{entry.farmerName}</p>
-                      </td>
-                      <td className="p-4 text-center font-semibold text-blue-700">{entry.qty.toFixed(1)}</td>
-                      <td className="p-4 text-center">
-                        <span className="text-gray-700">{entry.fat.toFixed(1)}</span>
-                        <span className="text-gray-400 mx-1">/</span>
-                        <span className="text-gray-700">{(entry.snf || entry.clr || 0).toFixed(1)}</span>
-                      </td>
-                      <td className="p-4 text-center font-medium text-gray-600">₹{entry.rate.toFixed(2)}</td>
-                      <td className="p-4 text-right font-bold text-green-700">₹{entry.amount.toFixed(2)}</td>
-                      <td className="p-4">
-                        <div className="flex justify-center gap-2">
-                          <button
-                            onClick={() => handleModify(entry)}
-                            className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition"
-                            title="Modify"
-                          >
-                            <Edit2 size={18} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(entry.farmerCode)}
-                            className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition"
-                            title="Delete"
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {todayEntries.length === 0 && (
+            
+            <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
+              <div className="table-3d">
+                <table className="w-full">
+                  <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                     <tr>
-                      <td colSpan={6} className="p-12 text-center text-gray-500 italic">
-                        No entries for this shift yet.
-                      </td>
+                      <th className="px-4 py-3">Farmer</th>
+                      <th className="px-4 py-3 text-right">Qty</th>
+                      <th className="px-4 py-3 text-right">FAT</th>
+                      <th className="px-4 py-3 text-right">{sessionMode}</th>
+                      <th className="px-4 py-3 text-right">Rate</th>
+                      <th className="px-4 py-3 text-right">Amount</th>
+                      <th className="px-4 py-3 text-center">Actions</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {todayEntries.sort((a, b) => b.timestamp - a.timestamp).map((entry) => (
+                      <tr key={entry.farmerCode}>
+                        <td className="px-4 py-3">
+                          <div style={{ fontWeight: 700, color: 'white' }}>{entry.farmerCode}</div>
+                          <div style={{ fontSize: 11, color: 'white/50' }}>{entry.farmerName}</div>
+                        </td>
+                        <td className="px-4 py-3 text-right font-semibold">{entry.qty.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right">{entry.fat.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right">{(entry.snf || entry.clr || 0).toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right">₹{entry.rate.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right font-bold" style={{ color: '#4ade80' }}>{formatIndianCurrency(entry.amount)}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex justify-center gap-2">
+                            <button onClick={() => handleModify(entry)} className="p-2 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition"><Edit2 size={16} /></button>
+                            <button onClick={() => handleDelete(entry.farmerCode)} className="p-2 rounded-lg hover:bg-red-500/20 text-red-400 hover:text-red-500 transition"><Trash2 size={16} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    {todayEntries.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className="px-4 py-20 text-center">
+                          <Droplet size={48} className="mx-auto mb-4 text-white/10" />
+                          <p style={{ color: 'white/30', fontSize: 16 }}>No entries for this session yet.</p>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
       </div>
+
+      {showSavedMessage && (
+        <div style={{ position: 'fixed', bottom: 24, right: 24, background: 'linear-gradient(135deg, #4ade80, #16a34a)', color: '#0a1f0f', fontWeight: 800, padding: '12px 24px', borderRadius: 12, boxShadow: '0 8px 32px rgba(74,222,128,0.5)', animation: 'slideIn 0.3s ease', zIndex: 99999, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <CheckCircle size={20} /> Entry Saved Successfully!
+        </div>
+      )}
     </div>
   );
 };

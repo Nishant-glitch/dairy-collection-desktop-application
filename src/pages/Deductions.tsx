@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ref, onValue, push, set, remove, get } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
-import { Plus, FileText, BarChart2, X, Edit2, Trash2 } from 'lucide-react';
+import { Plus, FileText, BarChart2, X, Edit2, Trash2, Calculator, ShoppingBag, ArrowLeft } from 'lucide-react';
 import { formatIndianCurrency } from '../utils/rateCalculator';
 
 interface GrossEntry {
@@ -186,13 +186,7 @@ const Deductions: React.FC = () => {
         const farmerEntries = allEntries[farmerId];
         Object.keys(farmerEntries).forEach((entryId) => {
           const entry = farmerEntries[entryId];
-          
-          // Filter by farmer code if provided
-          if (reportFarmerCode && farmerId !== reportFarmerCode) {
-            return;
-          }
-
-          // Filter by date range
+          if (reportFarmerCode && farmerId !== reportFarmerCode) return;
           if (fromDate && entry.date < fromDate) return;
           if (toDate && entry.date > toDate) return;
 
@@ -247,48 +241,48 @@ const Deductions: React.FC = () => {
   };
 
   const totalEntryAmount = grossEntries.reduce((sum, e) => sum + e.amount, 0);
-  const entryAmount = pcs && entryRate ? parseFloat(pcs) * parseFloat(entryRate) : 0;
+  const labelStyle: React.CSSProperties = { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600, marginBottom: 8, display: 'block' };
 
   if (activeSection === null) {
     return (
-      <div className="p-6">
-        <h1 className="text-3xl font-bold text-green-900 mb-8">Deductions</h1>
+      <div className="p-6 animate-fadeIn">
+        <h1 style={{ color: 'white', fontWeight: 800, fontSize: 28, textShadow: '0 2px 8px rgba(0,0,0,0.3)', marginBottom: 32 }}>Deductions & Gross Entries</h1>
 
-        <div className="grid grid-cols-3 gap-6">
-          {/* Card 1 */}
-          <div
-            onClick={handleNewEntryClick}
-            className="bg-gradient-to-br from-green-500 to-green-700 text-white rounded-xl shadow-lg p-8 cursor-pointer hover:shadow-2xl transform hover:scale-105 transition-all"
-          >
-            <div className="flex items-center justify-center mb-4">
-              <Plus size={64} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div onClick={handleNewEntryClick} className="stat-card-3d cursor-pointer" style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)', padding: 40 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+              <div style={{ width: 80, height: 80, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Plus size={48} color="white" />
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <h2 style={{ color: 'white', fontSize: 24, fontWeight: 800 }}>New Entry</h2>
+                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, marginTop: 4 }}>Add Farmer Gross Entry</p>
+              </div>
             </div>
-            <h2 className="text-2xl font-bold text-center">New Entry</h2>
-            <p className="text-center mt-2 opacity-90">Farmer Gross</p>
           </div>
 
-          {/* Card 2 */}
-          <div
-            onClick={handleGrossReportClick}
-            className="bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-xl shadow-lg p-8 cursor-pointer hover:shadow-2xl transform hover:scale-105 transition-all"
-          >
-            <div className="flex items-center justify-center mb-4">
-              <FileText size={64} />
+          <div onClick={handleGrossReportClick} className="stat-card-3d cursor-pointer" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2563eb)', padding: 40 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+              <div style={{ width: 80, height: 80, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <FileText size={48} color="white" />
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <h2 style={{ color: 'white', fontSize: 24, fontWeight: 800 }}>Farmer Gross</h2>
+                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, marginTop: 4 }}>Detailed Report</p>
+              </div>
             </div>
-            <h2 className="text-2xl font-bold text-center">Farmer Gross</h2>
-            <p className="text-center mt-2 opacity-90">Report</p>
           </div>
 
-          {/* Card 3 */}
-          <div
-            onClick={handleDeductionReportClick}
-            className="bg-gradient-to-br from-orange-500 to-orange-700 text-white rounded-xl shadow-lg p-8 cursor-pointer hover:shadow-2xl transform hover:scale-105 transition-all"
-          >
-            <div className="flex items-center justify-center mb-4">
-              <BarChart2 size={64} />
+          <div onClick={handleDeductionReportClick} className="stat-card-3d cursor-pointer" style={{ background: 'linear-gradient(135deg, #7c2d12, #ea580c)', padding: 40 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+              <div style={{ width: 80, height: 80, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <BarChart2 size={48} color="white" />
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <h2 style={{ color: 'white', fontSize: 24, fontWeight: 800 }}>Deduction</h2>
+                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, marginTop: 4 }}>Monthly Summary</p>
+              </div>
             </div>
-            <h2 className="text-2xl font-bold text-center">Deduction</h2>
-            <p className="text-center mt-2 opacity-90">Report</p>
           </div>
         </div>
       </div>
@@ -298,402 +292,231 @@ const Deductions: React.FC = () => {
   if (activeSection === 'newEntry') {
     if (step === 1) {
       return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full">
-            <h2 className="text-2xl font-bold text-green-900 mb-6">New Gross Entry - Step 1</h2>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Farmer Code</label>
-                <input
-                  type="text"
-                  value={selectedFarmerCode}
-                  onChange={(e) => setSelectedFarmerCode(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
-                  placeholder="Enter Farmer Code"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
-                <input
-                  type="date"
-                  value={entryDate}
-                  onChange={(e) => setEntryDate(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
-                />
-              </div>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div className="modal-3d animate-fadeIn" style={{ padding: 32, maxWidth: 450, width: '90%' }}>
+            <div className="flex justify-between items-center mb-8">
+              <h2 style={{ color: 'white', fontWeight: 800, fontSize: 22 }}>New Gross Entry - Step 1</h2>
+              <button onClick={() => setActiveSection(null)} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition"><X size={24} /></button>
             </div>
-
-            <div className="flex gap-4 mt-6">
-              <button
-                onClick={handleNextStep}
-                className="flex-1 bg-green-700 text-white px-6 py-3 rounded-lg hover:bg-green-800 font-semibold"
-              >
-                Next
-              </button>
-              <button
-                onClick={() => setActiveSection(null)}
-                className="flex-1 bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 font-semibold"
-              >
-                Cancel
-              </button>
+            <div className="space-y-6">
+              <div>
+                <label style={labelStyle}>Farmer Code</label>
+                <input type="number" value={selectedFarmerCode} onChange={(e) => setSelectedFarmerCode(e.target.value)} className="input-3d w-full" placeholder="Enter Farmer ID" />
+              </div>
+              <div>
+                <label style={labelStyle}>Entry Date</label>
+                <input type="date" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} className="input-3d w-full" />
+              </div>
+              <button onClick={handleNextStep} className="btn-3d w-full" style={{ padding: 16, fontSize: 16 }}>Next Step</button>
             </div>
           </div>
         </div>
       );
     }
 
-    if (step === 2) {
-      return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-green-900">
-                  Gross Entry — {selectedFarmerName} ({selectedFarmerCode}) — {entryDate}
-                </h2>
-                <button onClick={() => setActiveSection(null)} className="text-gray-500 hover:text-gray-700">
-                  <X size={24} />
-                </button>
-              </div>
+    return (
+      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'linear-gradient(135deg, #0a1f0f 0%, #0d2d18 100%)', overflowY: 'auto' }}>
+        <div style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <button onClick={() => setStep(1)} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition"><ArrowLeft size={20} /></button>
+            <h2 style={{ color: 'white', fontWeight: 800, fontSize: 20 }}>{selectedFarmerName} <span style={{ color: 'white/40', fontSize: 14, fontWeight: 400 }}>({selectedFarmerCode})</span></h2>
+          </div>
+          <button onClick={() => setActiveSection(null)} className="btn-3d" style={{ padding: '8px 16px', background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', boxShadow: 'none' }}><X size={18} /> Exit</button>
+        </div>
 
-              {/* Entry Form */}
-              <div className="bg-gray-50 p-4 rounded-lg mb-6">
-                <div className="grid grid-cols-5 gap-3">
+        <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-4 space-y-6">
+            <div className="glass-card animate-fadeIn" style={{ padding: 24 }}>
+              <h3 style={{ color: 'white', fontWeight: 800, fontSize: 18, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}><ShoppingBag color="#4ade80" /> {isModifyingEntry ? 'Edit Entry' : 'Add Item'}</h3>
+              <div className="space-y-4">
+                <div>
+                  <label style={labelStyle}>Item Name</label>
+                  <input ref={itemRef} type="text" value={item} onChange={(e) => setItem(e.target.value)} className="input-3d w-full" placeholder="e.g. Cattle Feed" />
+                </div>
+                <div>
+                  <label style={labelStyle}>Category</label>
+                  <select value={category} onChange={(e) => setCategory(e.target.value)} className="input-3d w-full" style={{ appearance: 'none' }}>
+                    <option value="Cattle Feed">Cattle Feed</option>
+                    <option value="Medicine">Medicine</option>
+                    <option value="Cash Advance">Cash Advance</option>
+                    <option value="Others">Others</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Item Description</label>
-                    <input
-                      ref={itemRef}
-                      type="text"
-                      value={item}
-                      onChange={(e) => setItem(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 outline-none"
-                      placeholder="Item"
-                    />
+                    <label style={labelStyle}>Pcs / Qty</label>
+                    <input type="number" value={pcs} onChange={(e) => setPcs(e.target.value)} className="input-3d w-full" placeholder="0" />
                   </div>
-
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Category</label>
-                    <select
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 outline-none"
-                    >
-                      <option value="Cattle Feed">Cattle Feed</option>
-                      <option value="Money">Money</option>
-                      <option value="Medicine">Medicine</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Pcs / Qty</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={pcs}
-                      onChange={(e) => setPcs(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 outline-none"
-                      placeholder="0"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Rate (₹)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={entryRate}
-                      onChange={(e) => setEntryRate(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-green-500 outline-none"
-                      placeholder="0.00"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Amount</label>
-                    <div className="px-3 py-2 bg-green-100 border border-green-300 rounded font-bold text-green-700">
-                      ₹{entryAmount.toFixed(2)}
-                    </div>
+                    <label style={labelStyle}>Rate</label>
+                    <input type="number" value={entryRate} onChange={(e) => setEntryRate(e.target.value)} className="input-3d w-full" placeholder="0.00" />
                   </div>
                 </div>
-
-                <div className="flex gap-3 mt-4">
-                  <button
-                    onClick={handleSaveEntry}
-                    className="bg-green-700 text-white px-6 py-2 rounded hover:bg-green-800 font-semibold"
-                  >
-                    {isModifyingEntry ? 'Update' : 'Save'}
-                  </button>
-                  <button
-                    onClick={() => setActiveSection(null)}
-                    className="bg-gray-500 text-white px-6 py-2 rounded hover:bg-gray-600 font-semibold"
-                  >
-                    Close
-                  </button>
+                <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16, marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'white/50', fontSize: 13 }}>Total Amount</span>
+                  <span style={{ color: '#4ade80', fontSize: 20, fontWeight: 800 }}>{formatIndianCurrency(parseFloat(pcs || '0') * parseFloat(entryRate || '0'))}</span>
                 </div>
+                <button onClick={handleSaveEntry} className="btn-3d w-full" style={{ padding: 16, marginTop: 12 }}>{isModifyingEntry ? 'Update Entry' : 'Add Entry'}</button>
+                {isModifyingEntry && <button onClick={clearEntryForm} className="w-full text-white/40 hover:text-white text-sm py-2">Cancel Edit</button>}
               </div>
+            </div>
 
-              {/* Entries Display */}
-              <div>
-                <h3 className="text-lg font-bold text-gray-800 mb-3">All Entries for {selectedFarmerName}</h3>
-                <div className="overflow-x-auto">
+            <div className="glass-card" style={{ padding: 24 }}>
+              <h3 style={{ color: 'white', fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Farmer Summary</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: 'white/50' }}>Total Deductions</span>
+                <span style={{ color: '#ef4444', fontSize: 20, fontWeight: 800 }}>{formatIndianCurrency(totalEntryAmount)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="lg:col-span-8">
+            <div className="glass-card animate-fadeIn" style={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                <h3 style={{ color: 'white', fontWeight: 800, fontSize: 20 }}>Entries List <span style={{ color: 'white/40', fontSize: 14, fontWeight: 400 }}>({grossEntries.length})</span></h3>
+              </div>
+              <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
+                <div className="table-3d">
                   <table className="w-full">
-                    <thead className="bg-gray-100">
+                    <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                       <tr>
-                        <th className="px-3 py-2 text-left text-sm">Date</th>
-                        <th className="px-3 py-2 text-left text-sm">Item</th>
-                        <th className="px-3 py-2 text-left text-sm">Category</th>
-                        <th className="px-3 py-2 text-right text-sm">Pcs</th>
-                        <th className="px-3 py-2 text-right text-sm">Rate</th>
-                        <th className="px-3 py-2 text-right text-sm">Amount</th>
-                        <th className="px-3 py-2 text-center text-sm">Actions</th>
+                        <th className="px-4 py-3">Date</th>
+                        <th className="px-4 py-3">Item</th>
+                        <th className="px-4 py-3">Category</th>
+                        <th className="px-4 py-3 text-right">Pcs</th>
+                        <th className="px-4 py-3 text-right">Rate</th>
+                        <th className="px-4 py-3 text-right">Amount</th>
+                        <th className="px-4 py-3 text-center">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {grossEntries.map((entry) => (
-                        <tr key={entry.id} className="border-b hover:bg-gray-50">
-                          <td className="px-3 py-2 text-sm">{entry.date}</td>
-                          <td className="px-3 py-2 text-sm">{entry.item}</td>
-                          <td className="px-3 py-2 text-sm">{entry.category}</td>
-                          <td className="px-3 py-2 text-right text-sm">{entry.pcs}</td>
-                          <td className="px-3 py-2 text-right text-sm">₹{entry.rate.toFixed(2)}</td>
-                          <td className="px-3 py-2 text-right text-sm font-semibold">₹{entry.amount.toFixed(2)}</td>
-                          <td className="px-3 py-2">
-                            <div className="flex gap-2 justify-center">
-                              <button
-                                onClick={() => handleModifyEntry(entry)}
-                                className="text-blue-600 hover:text-blue-800"
-                                title="Modify"
-                              >
-                                <Edit2 size={14} />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteEntry(entry.id)}
-                                className="text-red-600 hover:text-red-800"
-                                title="Delete"
-                              >
-                                <Trash2 size={14} />
-                              </button>
+                        <tr key={entry.id}>
+                          <td className="px-4 py-3">{entry.date}</td>
+                          <td className="px-4 py-3 font-bold">{entry.item}</td>
+                          <td className="px-4 py-3"><span className="badge-3d" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}>{entry.category}</span></td>
+                          <td className="px-4 py-3 text-right">{entry.pcs}</td>
+                          <td className="px-4 py-3 text-right">₹{entry.rate.toFixed(2)}</td>
+                          <td className="px-4 py-3 text-right font-bold" style={{ color: '#ef4444' }}>{formatIndianCurrency(entry.amount)}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex justify-center gap-2">
+                              <button onClick={() => handleModifyEntry(entry)} className="p-2 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition"><Edit2 size={16} /></button>
+                              <button onClick={() => handleDeleteEntry(entry.id)} className="p-2 rounded-lg hover:bg-red-500/20 text-red-400 hover:text-red-500 transition"><Trash2 size={16} /></button>
                             </div>
                           </td>
                         </tr>
                       ))}
                     </tbody>
-                    <tfoot className="bg-green-50 font-bold">
-                      <tr>
-                        <td colSpan={5} className="px-3 py-2 text-right">TOTAL:</td>
-                        <td className="px-3 py-2 text-right text-green-700">₹{totalEntryAmount.toFixed(2)}</td>
-                        <td></td>
-                      </tr>
-                    </tfoot>
                   </table>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      );
-    }
-  }
-
-  if (activeSection === 'grossReport') {
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
-          <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-green-900">Farmer Gross Report</h2>
-              <button onClick={() => setActiveSection(null)} className="text-gray-500 hover:text-gray-700">
-                <X size={24} />
-              </button>
-            </div>
-
-            <div className="bg-gray-50 p-4 rounded-lg mb-6">
-              <div className="grid grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Farmer Code (Optional)</label>
-                  <input
-                    type="text"
-                    value={reportFarmerCode}
-                    onChange={(e) => setReportFarmerCode(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
-                    placeholder="Leave empty for all"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">From Date</label>
-                  <input
-                    type="date"
-                    value={fromDate}
-                    onChange={(e) => setFromDate(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">To Date</label>
-                  <input
-                    type="date"
-                    value={toDate}
-                    onChange={(e) => setToDate(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
-                  />
-                </div>
-
-                <div className="flex items-end">
-                  <button
-                    onClick={handleGenerateGrossReport}
-                    className="w-full bg-green-700 text-white px-6 py-2 rounded-lg hover:bg-green-800 font-semibold"
-                  >
-                    Generate Report
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {reportData.length > 0 && (
-              <>
-                <div className="overflow-x-auto mb-4">
-                  <table className="w-full">
-                    <thead className="bg-green-50">
-                      <tr>
-                        <th className="px-3 py-2 text-left">Farmer Code</th>
-                        <th className="px-3 py-2 text-left">Farmer Name</th>
-                        <th className="px-3 py-2 text-left">Date</th>
-                        <th className="px-3 py-2 text-left">Item</th>
-                        <th className="px-3 py-2 text-left">Category</th>
-                        <th className="px-3 py-2 text-right">Pcs</th>
-                        <th className="px-3 py-2 text-right">Rate</th>
-                        <th className="px-3 py-2 text-right">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {reportData.map((entry, idx) => (
-                        <tr key={idx} className="border-b hover:bg-gray-50">
-                          <td className="px-3 py-2">{entry.farmerCode}</td>
-                          <td className="px-3 py-2">{entry.farmerName}</td>
-                          <td className="px-3 py-2">{entry.date}</td>
-                          <td className="px-3 py-2">{entry.item}</td>
-                          <td className="px-3 py-2">{entry.category}</td>
-                          <td className="px-3 py-2 text-right">{entry.pcs}</td>
-                          <td className="px-3 py-2 text-right">₹{entry.rate.toFixed(2)}</td>
-                          <td className="px-3 py-2 text-right font-semibold">₹{entry.amount.toFixed(2)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot className="bg-green-100 font-bold">
-                      <tr>
-                        <td colSpan={7} className="px-3 py-2 text-right">GRAND TOTAL:</td>
-                        <td className="px-3 py-2 text-right text-green-700">
-                          {formatIndianCurrency(reportData.reduce((sum, e) => sum + e.amount, 0))}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-
-                <button
-                  onClick={() => window.print()}
-                  className="bg-blue-700 text-white px-6 py-2 rounded-lg hover:bg-blue-800 font-semibold"
-                >
-                  Print Report
-                </button>
-              </>
-            )}
           </div>
         </div>
       </div>
     );
   }
 
-  if (activeSection === 'deductionReport') {
+  if (activeSection === 'grossReport') {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-          <div className="p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-green-900">Deduction Report</h2>
-              <button onClick={() => setActiveSection(null)} className="text-gray-500 hover:text-gray-700">
-                <X size={24} />
-              </button>
+      <div className="p-6 animate-fadeIn">
+        <div className="flex items-center gap-4 mb-8">
+          <button onClick={() => setActiveSection(null)} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition"><ArrowLeft size={24} /></button>
+          <h1 style={{ color: 'white', fontWeight: 800, fontSize: 28 }}>Farmer Gross Report</h1>
+        </div>
+        <div className="glass-card mb-8" style={{ padding: 24 }}>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+            <div>
+              <label style={labelStyle}>Farmer Code (Optional)</label>
+              <input type="number" value={reportFarmerCode} onChange={(e) => setReportFarmerCode(e.target.value)} className="input-3d w-full" placeholder="All Farmers" />
             </div>
-
-            <div className="bg-gray-50 p-4 rounded-lg mb-6">
-              <div className="flex gap-4 items-end">
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Month</label>
-                  <input
-                    type="month"
-                    value={deductionMonth}
-                    onChange={(e) => setDeductionMonth(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
-                  />
-                </div>
-
-                <button
-                  onClick={handleGenerateDeductionReport}
-                  className="bg-green-700 text-white px-6 py-2 rounded-lg hover:bg-green-800 font-semibold"
-                >
-                  Generate Report
-                </button>
-
-                <button
-                  onClick={() => setActiveSection(null)}
-                  className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 font-semibold"
-                >
-                  Back
-                </button>
-              </div>
+            <div>
+              <label style={labelStyle}>From Date</label>
+              <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="input-3d w-full" />
             </div>
-
-            {deductionReportData.length > 0 && (
-              <>
-                <div className="overflow-x-auto mb-4">
-                  <table className="w-full">
-                    <thead className="bg-orange-50">
-                      <tr>
-                        <th className="px-4 py-3 text-left">Farmer Code</th>
-                        <th className="px-4 py-3 text-left">Farmer Name</th>
-                        <th className="px-4 py-3 text-right">Total Entries</th>
-                        <th className="px-4 py-3 text-right">Total Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {deductionReportData.map((entry: any, idx) => (
-                        <tr key={idx} className="border-b hover:bg-gray-50">
-                          <td className="px-4 py-3">{entry.farmerCode}</td>
-                          <td className="px-4 py-3">{entry.farmerName}</td>
-                          <td className="px-4 py-3 text-right">{entry.totalEntries}</td>
-                          <td className="px-4 py-3 text-right font-semibold text-orange-700">
-                            {formatIndianCurrency(entry.totalAmount)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot className="bg-orange-100 font-bold">
-                      <tr>
-                        <td colSpan={3} className="px-4 py-3 text-right">GRAND TOTAL:</td>
-                        <td className="px-4 py-3 text-right text-orange-700">
-                          {formatIndianCurrency(deductionReportData.reduce((sum: number, e: any) => sum + e.totalAmount, 0))}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-
-                <button
-                  onClick={() => window.print()}
-                  className="bg-blue-700 text-white px-6 py-2 rounded-lg hover:bg-blue-800 font-semibold"
-                >
-                  Print Report
-                </button>
-              </>
-            )}
+            <div>
+              <label style={labelStyle}>To Date</label>
+              <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="input-3d w-full" />
+            </div>
+            <button onClick={handleGenerateGrossReport} className="btn-3d w-full" style={{ padding: 12 }}>Generate Report</button>
           </div>
         </div>
+        {reportData.length > 0 && (
+          <div className="glass-card" style={{ padding: 24 }}>
+            <div className="table-3d overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr>
+                    <th className="px-4 py-3">Date</th>
+                    <th className="px-4 py-3">Farmer</th>
+                    <th className="px-4 py-3">Item</th>
+                    <th className="px-4 py-3 text-right">Pcs</th>
+                    <th className="px-4 py-3 text-right">Rate</th>
+                    <th className="px-4 py-3 text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportData.map((entry, idx) => (
+                    <tr key={idx}>
+                      <td className="px-4 py-3">{entry.date}</td>
+                      <td className="px-4 py-3"><div style={{ fontWeight: 700 }}>{entry.farmerCode}</div><div style={{ fontSize: 11, opacity: 0.5 }}>{entry.farmerName}</div></td>
+                      <td className="px-4 py-3 font-bold">{entry.item}</td>
+                      <td className="px-4 py-3 text-right">{entry.pcs}</td>
+                      <td className="px-4 py-3 text-right">₹{entry.rate.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right font-bold" style={{ color: '#ef4444' }}>{formatIndianCurrency(entry.amount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (activeSection === 'deductionReport') {
+    return (
+      <div className="p-6 animate-fadeIn">
+        <div className="flex items-center gap-4 mb-8">
+          <button onClick={() => setActiveSection(null)} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition"><ArrowLeft size={24} /></button>
+          <h1 style={{ color: 'white', fontWeight: 800, fontSize: 28 }}>Monthly Deduction Summary</h1>
+        </div>
+        <div className="glass-card mb-8" style={{ padding: 24 }}>
+          <div className="flex flex-col md:flex-row gap-6 items-end">
+            <div className="flex-1">
+              <label style={labelStyle}>Select Month</label>
+              <input type="month" value={deductionMonth} onChange={(e) => setDeductionMonth(e.target.value)} className="input-3d w-full" />
+            </div>
+            <button onClick={handleGenerateDeductionReport} className="btn-3d" style={{ padding: '12px 40px' }}>Generate Summary</button>
+          </div>
+        </div>
+        {deductionReportData.length > 0 && (
+          <div className="glass-card" style={{ padding: 24 }}>
+            <div className="table-3d overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr>
+                    <th className="px-4 py-3">Farmer Code</th>
+                    <th className="px-4 py-3">Farmer Name</th>
+                    <th className="px-4 py-3 text-right">Total Entries</th>
+                    <th className="px-4 py-3 text-right">Total Deduction</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {deductionReportData.map((row, idx) => (
+                    <tr key={idx}>
+                      <td className="px-4 py-3 font-bold">{row.farmerCode}</td>
+                      <td className="px-4 py-3">{row.farmerName}</td>
+                      <td className="px-4 py-3 text-right">{row.totalEntries}</td>
+                      <td className="px-4 py-3 text-right font-bold" style={{ color: '#ef4444' }}>{formatIndianCurrency(row.totalAmount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

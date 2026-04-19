@@ -3,7 +3,7 @@ import { ref, get, set } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Save } from 'lucide-react';
+import { Save, Building2 } from 'lucide-react';
 
 const DCSMaster: React.FC = () => {
   const { t } = useLanguage();
@@ -34,85 +34,106 @@ const DCSMaster: React.FC = () => {
     alert('DCS information saved successfully!');
   };
 
+  const labelStyle: React.CSSProperties = { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600, marginBottom: 8, display: 'block' };
+
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold text-green-900 mb-6">{t('dcsMaster')}</h1>
+    <div className="p-6 animate-fadeIn">
+      <h1 style={{ color: 'white', fontWeight: 800, fontSize: 28, textShadow: '0 2px 8px rgba(0,0,0,0.3)', marginBottom: 24 }}>{t('dcsMaster')}</h1>
 
-      <div className="bg-white rounded-xl shadow-lg p-6 max-w-2xl">
-        <div className="space-y-4">
+      <div className="glass-card" style={{ padding: 32, maxWidth: 650 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
+          <div style={{ width: 48, height: 48, background: 'linear-gradient(135deg, #4ade80, #1a5c2e)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(74,222,128,0.2)' }}>
+            <Building2 color="white" size={24} />
+          </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Society Name
-            </label>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
-            />
+            <h2 style={{ color: 'white', fontSize: 20, fontWeight: 800 }}>Society Information</h2>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>Configure your dairy collection center details</p>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label style={labelStyle}>Society Name</label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="input-3d w-full"
+                placeholder="Full Name of Society"
+              />
+            </div>
+
+            <div>
+              <label style={labelStyle}>Society Code</label>
+              <input
+                type="text"
+                value={formData.code}
+                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                className="input-3d w-full"
+                placeholder="DCS001"
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Society Code
-            </label>
-            <input
-              type="text"
-              value={formData.code}
-              onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+            <label style={labelStyle}>Address</label>
             <textarea
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+              className="input-3d w-full"
               rows={3}
+              placeholder="Complete physical address"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-            <input
-              type="text"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label style={labelStyle}>Phone Number</label>
+              <input
+                type="text"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                className="input-3d w-full"
+                placeholder="Contact Number"
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">UPI ID</label>
-            <input
-              type="text"
-              value={formData.upiId}
-              onChange={(e) => setFormData({ ...formData, upiId: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
-              placeholder="example@upi"
-            />
-          </div>
+          <div style={{ padding: 20, background: 'rgba(255,255,255,0.03)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.05)' }}>
+            <h3 style={{ color: '#4ade80', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 20 }}>Payment Settings</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label style={labelStyle}>UPI ID</label>
+                <input
+                  type="text"
+                  value={formData.upiId}
+                  onChange={(e) => setFormData({ ...formData, upiId: e.target.value })}
+                  className="input-3d w-full"
+                  placeholder="example@upi"
+                />
+              </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              UPI Account Name
-            </label>
-            <input
-              type="text"
-              value={formData.upiName}
-              onChange={(e) => setFormData({ ...formData, upiName: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
-            />
+              <div>
+                <label style={labelStyle}>UPI Account Name</label>
+                <input
+                  type="text"
+                  value={formData.upiName}
+                  onChange={(e) => setFormData({ ...formData, upiName: e.target.value })}
+                  className="input-3d w-full"
+                  placeholder="Display Name for UPI"
+                />
+              </div>
+            </div>
           </div>
 
           <button
             onClick={handleSave}
-            className="w-full bg-green-800 text-white py-3 rounded-lg font-semibold hover:bg-green-900 transition flex items-center justify-center space-x-2"
+            className="btn-3d w-full"
+            style={{ padding: 16, fontSize: 16, marginTop: 12 }}
           >
-            <Save className="w-5 h-5" />
-            <span>{t('save')}</span>
+            <Save size={20} />
+            <span>{t('save')} Settings</span>
           </button>
         </div>
       </div>

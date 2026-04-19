@@ -5,7 +5,7 @@ import { up } from '../utils/userDb';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatIndianCurrency } from '../utils/rateCalculator';
 import { sendPaymentSMS } from '../services/sms';
-import { Smartphone, QrCode, Check } from 'lucide-react';
+import { Smartphone, QrCode, Check, Calculator, X } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 interface PaymentEntry {
@@ -92,7 +92,6 @@ const PaymentRegister: React.FC = () => {
       });
     }
 
-    // Load deductions from grossEntries
     const grossEntriesRef = ref(database, up('grossEntries'));
     const grossEntriesSnapshot = await get(grossEntriesRef);
     if (grossEntriesSnapshot.exists()) {
@@ -109,7 +108,6 @@ const PaymentRegister: React.FC = () => {
       });
     }
 
-    // Calculate net payable
     Object.keys(farmerPayments).forEach((farmerId) => {
       const payment = farmerPayments[farmerId];
       payment.netPayable = payment.grossAmount - payment.deductions;
@@ -165,7 +163,6 @@ const PaymentRegister: React.FC = () => {
       paidOn: Date.now(),
     });
 
-    // Send SMS
     if (payment.mobile) {
       await sendPaymentSMS(
         payment.farmerName,
@@ -184,57 +181,61 @@ const PaymentRegister: React.FC = () => {
     alert('Payment marked as paid and SMS sent!');
   };
 
-  return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold text-green-900 mb-6">{t('paymentRegister')}</h1>
+  const labelStyle: React.CSSProperties = { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600, marginBottom: 8, display: 'block' };
 
-      <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-        <div className="flex gap-4 items-end">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Select Month</label>
+  return (
+    <div className="p-6 animate-fadeIn">
+      <h1 style={{ color: 'white', fontWeight: 800, fontSize: 28, textShadow: '0 2px 8px rgba(0,0,0,0.3)', marginBottom: 24 }}>{t('paymentRegister')}</h1>
+
+      <div className="glass-card" style={{ padding: 24, marginBottom: 24 }}>
+        <div className="flex flex-col md:flex-row gap-6 items-end">
+          <div className="flex-1 w-full">
+            <label style={labelStyle}>Select Payment Month</label>
             <input
               type="month"
               value={month}
               onChange={(e) => setMonth(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+              className="input-3d w-full"
             />
           </div>
           <button
             onClick={calculatePayments}
-            className="bg-green-700 text-white px-6 py-2 rounded-lg hover:bg-green-800 font-semibold"
+            className="btn-3d w-full md:w-auto"
+            style={{ padding: '12px 32px' }}
           >
+            <Calculator size={20} />
             Calculate Payments
           </button>
         </div>
       </div>
 
       {payments.length > 0 && (
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="overflow-x-auto">
+        <div className="glass-card" style={{ padding: 24 }}>
+          <div className="table-3d overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-green-50">
+              <thead>
                 <tr>
-                  <th className="px-4 py-3 text-left">Farmer Code</th>
-                  <th className="px-4 py-3 text-left">Name</th>
+                  <th className="px-4 py-3">Farmer Code</th>
+                  <th className="px-4 py-3">Name</th>
                   <th className="px-4 py-3 text-right">Gross Amount</th>
                   <th className="px-4 py-3 text-right">Deductions</th>
                   <th className="px-4 py-3 text-right">Net Payable</th>
-                  <th className="px-4 py-3 text-right">Custom Amount</th>
+                  <th className="px-4 py-3 text-right">Pay Amount</th>
                   <th className="px-4 py-3 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {payments.map((payment) => (
-                  <tr key={payment.farmerId} className="border-b hover:bg-gray-50">
-                    <td className="px-4 py-3">{payment.farmerId}</td>
+                  <tr key={payment.farmerId}>
+                    <td className="px-4 py-3 font-bold">{payment.farmerId}</td>
                     <td className="px-4 py-3">{payment.farmerName}</td>
-                    <td className="px-4 py-3 text-right font-semibold text-green-700">
+                    <td className="px-4 py-3 text-right" style={{ color: '#4ade80', fontWeight: 600 }}>
                       {formatIndianCurrency(payment.grossAmount)}
                     </td>
-                    <td className="px-4 py-3 text-right text-red-600">
+                    <td className="px-4 py-3 text-right" style={{ color: '#ef4444' }}>
                       {formatIndianCurrency(payment.deductions)}
                     </td>
-                    <td className="px-4 py-3 text-right font-bold">
+                    <td className="px-4 py-3 text-right font-bold" style={{ color: 'white' }}>
                       {formatIndianCurrency(payment.netPayable)}
                     </td>
                     <td className="px-4 py-3">
@@ -244,59 +245,40 @@ const PaymentRegister: React.FC = () => {
                         onChange={(e) =>
                           handleCustomAmount(payment.farmerId, parseFloat(e.target.value) || 0)
                         }
-                        className="w-24 px-2 py-1 border border-gray-300 rounded text-right"
+                        className="input-3d w-28 text-right"
                         disabled={payment.isPaid}
+                        style={{ opacity: payment.isPaid ? 0.5 : 1 }}
                       />
                     </td>
                     <td className="px-4 py-3">
                       {payment.isPaid ? (
-                        <span className="text-green-600 font-semibold flex items-center justify-center gap-1">
-                          <Check size={16} /> Paid
-                        </span>
+                        <div style={{ color: '#4ade80', fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                          <div style={{ width: 20, height: 20, background: 'rgba(74,222,128,0.2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Check size={12} />
+                          </div>
+                          PAID
+                        </div>
                       ) : (
                         <div className="flex gap-2 justify-center">
-                          <button
-                            onClick={() => handlePayViaPhonePe(payment)}
-                            className="flex items-center gap-1 bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700 text-sm"
-                            title="Pay via PhonePe"
-                          >
-                            <Smartphone size={14} />
-                            PhonePe
-                          </button>
-                          <button
-                            onClick={() => handleShowQR(payment)}
-                            className="flex items-center gap-1 bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm"
-                            title="Show QR Code"
-                          >
-                            <QrCode size={14} />
-                            QR
-                          </button>
-                          <button
-                            onClick={() => markAsPaid(payment)}
-                            className="flex items-center gap-1 bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm"
-                            title="Mark as Paid"
-                          >
-                            <Check size={14} />
-                            Paid
-                          </button>
+                          <button onClick={() => handlePayViaPhonePe(payment)} className="btn-3d" style={{ padding: '6px 12px', fontSize: 12, background: 'linear-gradient(145deg, #7c3aed, #4c1d95)', boxShadow: '0 4px 12px rgba(124,58,237,0.3)' }} title="Pay via PhonePe"><Smartphone size={14} /> PhonePe</button>
+                          <button onClick={() => handleShowQR(payment)} className="btn-3d" style={{ padding: '6px 12px', fontSize: 12, background: 'linear-gradient(145deg, #2563eb, #1e3a5f)', boxShadow: '0 4px 12px rgba(37,99,235,0.3)' }} title="Show QR Code"><QrCode size={14} /> QR</button>
+                          <button onClick={() => markAsPaid(payment)} className="btn-3d" style={{ padding: '6px 12px', fontSize: 12 }} title="Mark as Paid"><Check size={14} /> Paid</button>
                         </div>
                       )}
                     </td>
                   </tr>
                 ))}
               </tbody>
-              <tfoot className="bg-green-100 font-bold">
+              <tfoot style={{ background: 'rgba(74, 222, 128, 0.05)', fontWeight: 800 }}>
                 <tr>
-                  <td colSpan={2} className="px-4 py-3">
-                    TOTAL
-                  </td>
-                  <td className="px-4 py-3 text-right text-green-700">
+                  <td colSpan={2} className="px-4 py-4" style={{ color: 'white' }}>TOTAL</td>
+                  <td className="px-4 py-4 text-right" style={{ color: '#4ade80' }}>
                     {formatIndianCurrency(payments.reduce((sum, p) => sum + p.grossAmount, 0))}
                   </td>
-                  <td className="px-4 py-3 text-right text-red-600">
+                  <td className="px-4 py-4 text-right" style={{ color: '#ef4444' }}>
                     {formatIndianCurrency(payments.reduce((sum, p) => sum + p.deductions, 0))}
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td className="px-4 py-4 text-right" style={{ color: 'white', fontSize: 18 }}>
                     {formatIndianCurrency(payments.reduce((sum, p) => sum + p.netPayable, 0))}
                   </td>
                   <td colSpan={2}></td>
@@ -309,16 +291,22 @@ const PaymentRegister: React.FC = () => {
 
       {/* QR Code Modal */}
       {showQR.show && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-8 text-center">
-            <h3 className="text-xl font-bold mb-4">Scan to Pay</h3>
-            <p className="text-gray-700 mb-4">{showQR.farmer}</p>
-            <div className="bg-white p-4 inline-block">
-              <QRCodeSVG value={showQR.data} size={256} />
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div className="modal-3d animate-fadeIn" style={{ padding: 32, textAlign: 'center', maxWidth: 400, width: '90%' }}>
+            <div className="flex justify-between items-center mb-6">
+              <h3 style={{ color: 'white', fontWeight: 800, fontSize: 20 }}>Scan to Pay</h3>
+              <button onClick={() => setShowQR({ show: false, data: '', farmer: '' })} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition">
+                <X size={24} />
+              </button>
+            </div>
+            <p style={{ color: '#4ade80', fontWeight: 700, marginBottom: 24, fontSize: 18 }}>{showQR.farmer}</p>
+            <div style={{ background: 'white', padding: 24, borderRadius: 20, display: 'inline-block', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+              <QRCodeSVG value={showQR.data} size={220} />
             </div>
             <button
               onClick={() => setShowQR({ show: false, data: '', farmer: '' })}
-              className="mt-6 bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600"
+              className="btn-3d w-full mt-10"
+              style={{ background: 'rgba(255,255,255,0.05)', boxShadow: 'none', border: '1px solid rgba(255,255,255,0.1)' }}
             >
               Close
             </button>

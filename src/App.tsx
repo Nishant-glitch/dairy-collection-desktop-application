@@ -14,6 +14,7 @@ import Deductions from './pages/Deductions';
 import PaymentRegister from './pages/PaymentRegister';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import { Milk } from 'lucide-react';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -31,8 +32,13 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-green-900 flex items-center justify-center">
-        <div className="text-white text-2xl">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0a1f0f 0%, #0d2d18 40%, #0f3d20 100%)' }}>
+        <div className="flex flex-col items-center gap-6">
+          <div className="animate-bounce" style={{ width: 80, height: 80, background: 'linear-gradient(135deg, #4ade80, #1a5c2e)', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 40px rgba(74,222,128,0.2)' }}>
+            <Milk color="white" size={40} />
+          </div>
+          <div style={{ color: 'white', fontSize: 24, fontWeight: 800, letterSpacing: '1px' }}>DCS PRO</div>
+        </div>
       </div>
     );
   }
@@ -72,11 +78,11 @@ function App() {
 
   return (
     <LanguageProvider>
-      <div className="min-h-screen bg-gray-100">
+      <div className="min-h-screen" style={{ background: 'transparent' }}>
         <Navbar />
         <div className="flex">
           <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
-          <main className="flex-1">
+          <main className="flex-1" style={{ minHeight: 'calc(100vh - 64px)' }}>
             {renderPage()}
           </main>
         </div>

@@ -33,8 +33,15 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
   ];
 
   return (
-    <aside className="bg-green-800 text-white w-64 min-h-screen p-4">
-      <nav className="space-y-2">
+    <aside style={{
+      background: 'linear-gradient(180deg, #051208 0%, #0a1f0f 100%)',
+      borderRight: '1px solid rgba(255,255,255,0.08)',
+      boxShadow: '4px 0 24px rgba(0,0,0,0.5)',
+      width: 240, minHeight: 'calc(100vh - 64px)',
+      padding: '20px 12px',
+      display: 'flex', flexDirection: 'column', gap: 4
+    }}>
+      <nav style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentPage === item.id;
@@ -43,14 +50,36 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition ${
-                isActive
-                  ? 'bg-green-700 text-white shadow-lg'
-                  : 'hover:bg-green-700 text-green-100'
-              }`}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                padding: '12px 16px', borderRadius: 12,
+                background: isActive
+                  ? 'linear-gradient(135deg, rgba(74,222,128,0.2), rgba(45,158,79,0.15))'
+                  : 'transparent',
+                border: isActive
+                  ? '1px solid rgba(74,222,128,0.3)'
+                  : '1px solid transparent',
+                boxShadow: isActive
+                  ? '0 4px 16px rgba(74,222,128,0.15), inset 0 1px 0 rgba(255,255,255,0.1)'
+                  : 'none',
+                color: isActive ? '#4ade80' : 'rgba(255,255,255,0.6)',
+                fontWeight: isActive ? 700 : 500,
+                fontSize: 14,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                textAlign: 'left',
+                width: '100%',
+              }}
             >
-              <Icon className="w-5 h-5" />
-              <span className="font-medium">{item.label}</span>
+              <Icon style={{ width: 18, height: 18 }} />
+              {item.label}
+              {isActive && (
+                <div style={{
+                  marginLeft: 'auto', width: 6, height: 6,
+                  borderRadius: '50%', background: '#4ade80',
+                  boxShadow: '0 0 8px #4ade80'
+                }} />
+              )}
             </button>
           );
         })}

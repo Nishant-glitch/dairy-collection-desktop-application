@@ -126,29 +126,35 @@ const Dashboard: React.FC = () => {
     });
   };
 
+  const statLabelStyle: React.CSSProperties = { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600, letterSpacing: '0.5px', textTransform: 'uppercase' };
+  const statValueStyle: React.CSSProperties = { fontSize: 36, fontWeight: 800, color: 'white', textShadow: '0 2px 8px rgba(0,0,0,0.4)', lineHeight: 1 };
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 animate-fadeIn">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold text-green-900">{t('dashboard')}</h1>
+        <h1 style={{ color: 'white', fontWeight: 800, fontSize: 28, textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>{t('dashboard')}</h1>
         
         {/* Rate Chart Status Card */}
-        <div className="bg-white rounded-xl shadow-md px-4 py-2 border border-gray-200 flex items-center gap-4">
-          <div className={`p-2 rounded-lg ${activeRateChart ? 'bg-green-100' : 'bg-orange-100'}`}>
-            <Table size={20} className={activeRateChart ? 'text-green-600' : 'text-orange-600'} />
+        <div className="glass-card" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{
+            padding: 8, borderRadius: 10,
+            background: activeRateChart ? 'rgba(74,222,128,0.15)' : 'rgba(234,88,12,0.15)'
+          }}>
+            <Table size={20} color={activeRateChart ? '#4ade80' : '#ea580c'} />
           </div>
           <div>
-            <p className="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Active Rate Chart</p>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Active Rate Chart</p>
             {loadingRateChart ? (
-              <p className="text-sm text-gray-400">Loading...</p>
+              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>Loading...</p>
             ) : activeRateChart ? (
-              <div className="flex items-center gap-1.5">
-                <p className="text-sm font-bold text-gray-800">Effective: {activeRateChart.effectiveFrom}</p>
-                <CheckCircle2 size={14} className="text-green-500" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <p style={{ color: 'white', fontSize: 13, fontWeight: 700 }}>Effective: {activeRateChart.effectiveFrom}</p>
+                <CheckCircle2 size={14} color="#4ade80" />
               </div>
             ) : (
-              <div className="flex items-center gap-1.5">
-                <p className="text-sm font-bold text-orange-600">No chart uploaded</p>
-                <AlertTriangle size={14} className="text-orange-500" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <p style={{ color: '#ea580c', fontSize: 13, fontWeight: 700 }}>No chart uploaded</p>
+                <AlertTriangle size={14} color="#ea580c" />
               </div>
             )}
           </div>
@@ -157,94 +163,100 @@ const Dashboard: React.FC = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl p-6 shadow-lg">
+        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2563eb)' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-blue-100 text-sm">{t('todayCollection')}</p>
-              <p className="text-3xl font-bold mt-2">{stats.todayQty.toFixed(2)}</p>
-              <p className="text-sm mt-1">{t('liters')}</p>
-              <p className="text-lg font-semibold mt-2">{formatIndianCurrency(stats.todayAmount)}</p>
+              <p style={statLabelStyle}>{t('todayCollection')}</p>
+              <p style={statValueStyle}>{stats.todayQty.toFixed(2)}</p>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 4 }}>{t('liters')}</p>
+              <p style={{ color: 'white', fontSize: 18, fontWeight: 700, marginTop: 8 }}>{formatIndianCurrency(stats.todayAmount)}</p>
             </div>
-            <Droplet className="w-12 h-12 text-blue-200" />
+            <Droplet className="w-12 h-12" style={{ color: 'rgba(255,255,255,0.2)' }} />
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl p-6 shadow-lg">
+        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-green-100 text-sm">{t('thisMonth')}</p>
-              <p className="text-3xl font-bold mt-2">{stats.monthQty.toFixed(2)}</p>
-              <p className="text-sm mt-1">{t('liters')}</p>
-              <p className="text-lg font-semibold mt-2">{formatIndianCurrency(stats.monthAmount)}</p>
+              <p style={statLabelStyle}>{t('thisMonth')}</p>
+              <p style={statValueStyle}>{stats.monthQty.toFixed(2)}</p>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 4 }}>{t('liters')}</p>
+              <p style={{ color: 'white', fontSize: 18, fontWeight: 700, marginTop: 8 }}>{formatIndianCurrency(stats.monthAmount)}</p>
             </div>
-            <TrendingUp className="w-12 h-12 text-green-200" />
+            <TrendingUp className="w-12 h-12" style={{ color: 'rgba(255,255,255,0.2)' }} />
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl p-6 shadow-lg">
+        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #4c1d95, #7c3aed)' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-purple-100 text-sm">{t('totalFarmers')}</p>
-              <p className="text-3xl font-bold mt-2">{stats.totalFarmers}</p>
-              <p className="text-sm mt-1">Registered</p>
+              <p style={statLabelStyle}>{t('totalFarmers')}</p>
+              <p style={statValueStyle}>{stats.totalFarmers}</p>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 4 }}>Registered</p>
             </div>
-            <Users className="w-12 h-12 text-purple-200" />
+            <Users className="w-12 h-12" style={{ color: 'rgba(255,255,255,0.2)' }} />
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-xl p-6 shadow-lg">
+        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #7c2d12, #ea580c)' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-orange-100 text-sm">{t('pendingPayments')}</p>
-              <p className="text-3xl font-bold mt-2">{stats.pendingPayments}</p>
-              <p className="text-sm mt-1">Farmers</p>
+              <p style={statLabelStyle}>{t('pendingPayments')}</p>
+              <p style={statValueStyle}>{stats.pendingPayments}</p>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 4 }}>Farmers</p>
             </div>
-            <Clock className="w-12 h-12 text-orange-200" />
+            <Clock className="w-12 h-12" style={{ color: 'rgba(255,255,255,0.2)' }} />
           </div>
         </div>
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Last 7 Days Collection</h2>
+        <div className="glass-card" style={{ padding: 24 }}>
+          <h2 style={{ color: 'white', fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Last 7 Days Collection</h2>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="qty" stroke="#1B5E20" strokeWidth={2} name="Liters" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
+              <XAxis dataKey="date" stroke="rgba(255,255,255,0.5)" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="rgba(255,255,255,0.5)" fontSize={12} tickLine={false} axisLine={false} />
+              <Tooltip 
+                contentStyle={{ background: '#0a1f0f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'white' }}
+                itemStyle={{ color: '#4ade80' }}
+              />
+              <Legend wrapperStyle={{ paddingTop: 20 }} />
+              <Line type="monotone" dataKey="qty" stroke="#4ade80" strokeWidth={3} dot={{ fill: '#4ade80', strokeWidth: 2, r: 4 }} activeDot={{ r: 6, strokeWidth: 0 }} name="Liters" />
             </LineChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Monthly Comparison</h2>
+        <div className="glass-card" style={{ padding: 24 }}>
+          <h2 style={{ color: 'white', fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Monthly Comparison</h2>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="qty" fill="#1B5E20" name="Liters" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
+              <XAxis dataKey="date" stroke="rgba(255,255,255,0.5)" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="rgba(255,255,255,0.5)" fontSize={12} tickLine={false} axisLine={false} />
+              <Tooltip 
+                contentStyle={{ background: '#0a1f0f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'white' }}
+                itemStyle={{ color: '#4ade80' }}
+              />
+              <Legend wrapperStyle={{ paddingTop: 20 }} />
+              <Bar dataKey="qty" fill="#4ade80" radius={[6, 6, 0, 0]} name="Liters" />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
 
       {/* Recent Entries */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-4">Recent Collections</h2>
-        <div className="overflow-x-auto">
+      <div className="glass-card" style={{ padding: 24 }}>
+        <h2 style={{ color: 'white', fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Recent Collections</h2>
+        <div className="overflow-x-auto table-3d">
           <table className="w-full">
             <thead>
-              <tr className="bg-green-50 text-green-900">
-                <th className="px-4 py-3 text-left">Date</th>
-                <th className="px-4 py-3 text-left">Shift</th>
-                <th className="px-4 py-3 text-left">Farmer ID</th>
+              <tr>
+                <th className="px-4 py-3">Date</th>
+                <th className="px-4 py-3">Shift</th>
+                <th className="px-4 py-3">Farmer ID</th>
                 <th className="px-4 py-3 text-right">Qty (L)</th>
                 <th className="px-4 py-3 text-right">FAT %</th>
                 <th className="px-4 py-3 text-right">SNF %</th>
@@ -254,7 +266,7 @@ const Dashboard: React.FC = () => {
             </thead>
             <tbody>
               {recentEntries.map((entry, index) => (
-                <tr key={index} className="border-b hover:bg-gray-50">
+                <tr key={index}>
                   <td className="px-4 py-3">{entry.date}</td>
                   <td className="px-4 py-3">{entry.shift}</td>
                   <td className="px-4 py-3">{entry.farmerId}</td>
@@ -262,7 +274,7 @@ const Dashboard: React.FC = () => {
                   <td className="px-4 py-3 text-right">{parseFloat(entry.fat).toFixed(2)}</td>
                   <td className="px-4 py-3 text-right">{parseFloat(entry.snf || entry.clr || 0).toFixed(2)}</td>
                   <td className="px-4 py-3 text-right">₹{parseFloat(entry.rate).toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right font-semibold">
+                  <td className="px-4 py-3 text-right font-semibold" style={{ color: '#4ade80' }}>
                     {formatIndianCurrency(entry.amount)}
                   </td>
                 </tr>

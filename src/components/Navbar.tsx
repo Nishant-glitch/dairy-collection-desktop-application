@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, Milk, Globe, User } from 'lucide-react';
+import { LogOut, Globe } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase/config';
@@ -33,73 +33,70 @@ const Navbar: React.FC<NavbarProps> = ({ dcsName = 'DCS Pro' }) => {
   };
 
   return (
-    <nav className="bg-green-900 text-white shadow-lg">
-      <div className="px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="bg-white p-2 rounded-lg">
-              <Milk className="w-6 h-6 text-green-900" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">{dcsName}</h1>
-              <p className="text-xs text-green-200">Dairy Collection System</p>
-            </div>
+    <nav style={{
+      background: 'linear-gradient(90deg, #051208, #0a1f0f)',
+      borderBottom: '1px solid rgba(255,255,255,0.08)',
+      boxShadow: '0 4px 24px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.05)',
+      backdropFilter: 'blur(20px)',
+      position: 'sticky', top: 0, zIndex: 100,
+      padding: '0 24px',
+      height: '64px',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+    }}>
+      {/* Logo */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{
+          width: 40, height: 40,
+          background: 'linear-gradient(135deg, #4ade80, #1a5c2e)',
+          borderRadius: 12,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 4px 16px rgba(74,222,128,0.4), inset 0 1px 0 rgba(255,255,255,0.3)',
+          fontSize: 20
+        }}>🥛</div>
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          <span style={{
+            color: 'white', fontWeight: 800, fontSize: 20,
+            letterSpacing: '-0.5px',
+            textShadow: '0 0 20px rgba(74,222,128,0.3)',
+            lineHeight: 1
+          }}>{dcsName}</span>
+          <span style={{ color: 'rgba(74,222,128,0.7)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>
+            Dairy Collection System
+          </span>
+        </div>
+      </div>
+
+      {/* Right side */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        <div className="hidden md:flex flex-col items-end mr-4">
+          <span style={{ color: 'white', fontSize: 13, fontWeight: 600 }}>
+            {currentTime.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+          </span>
+          <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>
+            {currentTime.toLocaleTimeString('en-IN')}
+          </span>
+        </div>
+
+        <button
+          onClick={toggleLanguage}
+          className="btn-3d"
+          style={{ padding: '6px 12px', fontSize: 12, background: 'rgba(255,255,255,0.1)', boxShadow: 'none', border: '1px solid rgba(255,255,255,0.1)' }}
+        >
+          <Globe size={14} />
+          {language === 'en' ? 'EN' : 'हि'}
+        </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {userIsAdmin && <span className="badge-3d">ADMIN</span>}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+            <span style={{ color: 'white', fontSize: 13, fontWeight: 700 }}>{user?.displayName || 'User'}</span>
+            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>{user?.email}</span>
           </div>
-
-          <div className="flex items-center space-x-6">
-            {/* User Info & Admin Badge */}
-            <div className="flex items-center gap-3 border-r border-green-700 pr-6 mr-2">
-              <div className="bg-green-800 p-2 rounded-full">
-                <User size={16} />
-              </div>
-              <div className="text-left">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold truncate max-w-[150px]">
-                    {user?.displayName || 'User'}
-                  </span>
-                  {userIsAdmin && (
-                    <span className="bg-red-500 text-white text-[10px] uppercase font-bold px-2 py-0.5 rounded-full shadow-sm">
-                      Admin
-                    </span>
-                  )}
-                </div>
-                <div className="text-[10px] text-green-300 truncate max-w-[150px]">
-                  {user?.email}
-                </div>
-              </div>
-            </div>
-
-            <div className="text-right hidden md:block">
-              <div className="text-sm font-semibold">
-                {currentTime.toLocaleDateString('en-IN', {
-                  day: '2-digit',
-                  month: 'short',
-                  year: 'numeric',
-                })}
-              </div>
-              <div className="text-xs text-green-200">
-                {currentTime.toLocaleTimeString('en-IN')}
-              </div>
-            </div>
-
-            <button
-              onClick={toggleLanguage}
-              className="flex items-center space-x-2 bg-green-800 hover:bg-green-700 px-4 py-2 rounded-lg transition"
-            >
-              <Globe className="w-4 h-4" />
-              <span className="text-sm font-semibold">
-                {language === 'en' ? 'EN' : 'हि'}
-              </span>
-            </button>
-
-            <button
-              onClick={handleLogout}
-              className="flex items-center space-x-2 bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg transition"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="text-sm">{t('logout')}</span>
-            </button>
-          </div>
+          <button className="btn-3d" style={{ padding: '8px 16px', fontSize: 13, background: 'linear-gradient(145deg, #ef4444, #b91c1c)' }}
+            onClick={handleLogout}>
+            <LogOut size={14} />
+            {t('logout')}
+          </button>
         </div>
       </div>
     </nav>
