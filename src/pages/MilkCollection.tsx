@@ -3,9 +3,10 @@ import { ref, onValue, set, get, remove } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
 import { useLanguage } from '../contexts/LanguageContext';
-import { calcCowRate, calcBuffaloRate, calcMixedRate, getRateForDate, formatIndianCurrency } from '../utils/rateCalculator';
+import { formatIndianCurrency } from '../utils/rateCalculator';
 import { sendCollectionSMS } from '../services/sms';
-import { X, Edit2, Trash2 } from 'lucide-react';
+import { X, Edit2, Trash2, CheckCircle } from 'lucide-react';
+import { getRateFromMap } from './RateChart';
 
 interface Entry {
   farmerCode: string;
@@ -16,7 +17,6 @@ interface Entry {
   clr?: number;
   rate: number;
   amount: number;
-  animalType: 'cow' | 'buffalo';
   timestamp: number;
 }
 
@@ -26,7 +26,6 @@ const MilkCollection: React.FC = () => {
   const [sessionDate, setSessionDate] = useState(new Date().toISOString().split('T')[0]);
   const [sessionShift, setSessionShift] = useState<'Morning' | 'Evening'>('Morning');
   const [sessionMode, setSessionMode] = useState<'SNF' | 'CLR'>('SNF');
-  const [animalType, setAnimalType] = useState<'cow' | 'buffalo' | 'mix'>('cow');
   const [printEnabled, setPrintEnabled] = useState(false);
   const [smsEnabled, setSmsEnabled] = useState(false);
   
@@ -39,15 +38,17 @@ const MilkCollection: React.FC = () => {
   const [amount, setAmount] = useState(0);
   const [isModifying, setIsModifying] = useState(false);
   const [warningMessage, setWarningMessage] = useState('');
+  const [showSavedMessage, setShowSavedMessage] = useState(false);
 
   const [todayEntries, setTodayEntries] = useState<Entry[]>([]);
-  const [cowConfig, setCowConfig] = useState<any>(null);
-  const [buffaloConfig, setBuffaloConfig] = useState<any>(null);
-  const [mixedConfig, setMixedConfig] = useState<any>(null);
+  const [activeRateConfig, setActiveRateConfig] = useState<any>(null);
   const [dcsInfo, setDcsInfo] = useState<any>({});
   const [farmers, setFarmers] = useState<any>({});
 
   const farmerCodeRef = useRef<HTMLInputElement>(null);
+  const qtyRef = useRef<HTMLInputElement>(null);
+  const fatRef = useRef<HTMLInputElement>(null);
+  const snfClrRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadDCSInfo();
@@ -61,32 +62,24 @@ const MilkCollection: React.FC = () => {
   }, [showSessionSetup, sessionDate, sessionShift]);
 
   useEffect(() => {
-    if (qty && fat) {
-      let calculatedRate = 0;
-      if (animalType === 'cow' && snfClr && cowConfig) {
-        calculatedRate = calcCowRate(parseFloat(fat), parseFloat(snfClr), cowConfig);
-      } else if (animalType === 'buffalo' && snfClr && buffaloConfig) {
-        calculatedRate = calcBuffaloRate(parseFloat(fat), parseFloat(snfClr), buffaloConfig);
-      } else if (animalType === 'mix' && snfClr && mixedConfig?.cowConfig && mixedConfig?.buffaloConfig) {
-        calculatedRate = calcMixedRate(parseFloat(fat), parseFloat(snfClr), mixedConfig.cowConfig, mixedConfig.buffaloConfig);
-      }
+    if (qty && fat && snfClr && activeRateConfig) {
+      const calculatedRate = getRateFromMap(parseFloat(fat), parseFloat(snfClr), activeRateConfig);
       setRate(calculatedRate);
       setAmount(calculatedRate * parseFloat(qty));
     } else {
       setRate(0);
       setAmount(0);
     }
-  }, [qty, fat, snfClr, animalType, cowConfig, buffaloConfig, mixedConfig]);
+  }, [qty, fat, snfClr, activeRateConfig]);
 
-  const loadRateConfigForDate = async (date: string) => {
-    const uid = (await import('../firebase/config')).auth.currentUser?.uid;
-    if (!uid) return;
-    const cow = await getRateForDate(database, uid, 'cow', date);
-    const buffalo = await getRateForDate(database, uid, 'buffalo', date);
-    const mixed = await getRateForDate(database, uid, 'mix', date);
-    setCowConfig(cow);
-    setBuffaloConfig(buffalo);
-    setMixedConfig(mixed);
+  const getConfigForDate = async (collectionDate: string) => {
+    const snap = await get(ref(database, up('rateConfig/history')));
+    if (!snap.exists()) return null;
+    const configs = Object.values(snap.val()) as any[];
+    configs.sort((a, b) =>
+      new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime()
+    );
+    return configs.find(c => c.effectiveFrom <= collectionDate) || configs[configs.length - 1];
   };
 
   const loadDCSInfo = async () => {
@@ -121,47 +114,16 @@ const MilkCollection: React.FC = () => {
   };
 
   const handleStartSession = async () => {
-    await loadRateConfigForDate(sessionDate);
+    const config = await getConfigForDate(sessionDate);
+    if (!config) {
+      alert('No rate chart found for this date. Please import a rate chart first.');
+      return;
+    }
+    setActiveRateConfig(config);
     setShowSessionSetup(false);
     setTimeout(() => {
       farmerCodeRef.current?.focus();
     }, 100);
-  };
-
-  const handleCloseSession = () => {
-    setShowSessionSetup(true);
-    clearForm();
-  };
-
-  const handleFarmerCodeEnter = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && farmerCode) {
-      const farmer = farmers[farmerCode];
-      if (!farmer) {
-        alert('Farmer not found!');
-        return;
-      }
-
-      // Check if entry already exists
-      const existingEntry = todayEntries.find((entry) => entry.farmerCode === farmerCode);
-      
-      if (existingEntry) {
-        setWarningMessage(`Entry already exists for ${farmer.farmerName}. Use Modify or Delete from table.`);
-        setFarmerName(farmer.farmerName);
-        setQty(existingEntry.qty.toString());
-        setFat(existingEntry.fat.toString());
-        if (sessionMode === 'SNF') {
-          setSnfClr(existingEntry.snf?.toString() || '');
-        } else {
-          setSnfClr(existingEntry.clr?.toString() || '');
-        }
-        setIsModifying(true);
-      } else {
-        setWarningMessage('');
-        setFarmerName(farmer.farmerName);
-        setIsModifying(false);
-        document.getElementById('qty-input')?.focus();
-      }
-    }
   };
 
   const handleSaveOrUpdate = async () => {
@@ -176,27 +138,23 @@ const MilkCollection: React.FC = () => {
       fat: parseFloat(fat),
       rate,
       amount,
-      animalType,
       timestamp: Date.now(),
     };
 
-    if (animalType === 'cow' || animalType === 'mix') {
+    if (sessionMode === 'SNF') {
       entryData.snf = parseFloat(snfClr);
-    } else if (animalType === 'buffalo') {
+    } else {
       entryData.clr = parseFloat(snfClr);
     }
 
     const entryRef = ref(database, up(`milkCollection/${sessionDate}/${sessionShift}/${farmerCode}`));
     await set(entryRef, entryData);
 
-    // Print if enabled
     if (printEnabled) {
       printSlip();
     }
 
-    // Send SMS if enabled
     if (smsEnabled && farmers[farmerCode]?.mobileNo) {
-      const snfValue = sessionMode === 'SNF' ? parseFloat(snfClr) : parseFloat(snfClr);
       await sendCollectionSMS(
         farmerName,
         farmerCode,
@@ -205,7 +163,7 @@ const MilkCollection: React.FC = () => {
         sessionShift,
         parseFloat(qty),
         parseFloat(fat),
-        snfValue,
+        parseFloat(snfClr),
         rate,
         amount,
         dcsInfo.name || 'DCS'
@@ -213,6 +171,8 @@ const MilkCollection: React.FC = () => {
     }
 
     clearForm();
+    setShowSavedMessage(true);
+    setTimeout(() => setShowSavedMessage(false), 1500);
     farmerCodeRef.current?.focus();
   };
 
@@ -262,14 +222,10 @@ const MilkCollection: React.FC = () => {
     setFarmerName(entry.farmerName);
     setQty(entry.qty.toString());
     setFat(entry.fat.toString());
-    if (sessionMode === 'SNF') {
-      setSnfClr(entry.snf?.toString() || '');
-    } else {
-      setSnfClr(entry.clr?.toString() || '');
-    }
+    setSnfClr((entry.snf || entry.clr || '').toString());
     setIsModifying(true);
     setWarningMessage('');
-    farmerCodeRef.current?.focus();
+    qtyRef.current?.focus();
   };
 
   const handleDelete = async (code: string) => {
@@ -299,326 +255,337 @@ const MilkCollection: React.FC = () => {
                 type="date"
                 value={sessionDate}
                 onChange={(e) => setSessionDate(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
+                className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Shift</label>
-              <select
-                value={sessionShift}
-                onChange={(e) => setSessionShift(e.target.value as 'Morning' | 'Evening')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none"
-              >
-                <option value="Morning">Morning</option>
-                <option value="Evening">Evening</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Animal Type</label>
               <div className="flex gap-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    value="cow"
-                    checked={animalType === 'cow'}
-                    onChange={() => setAnimalType('cow')}
-                    className="mr-2"
-                  />
-                  🐄 Cow
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    value="buffalo"
-                    checked={animalType === 'buffalo'}
-                    onChange={() => setAnimalType('buffalo')}
-                    className="mr-2"
-                  />
-                  🐃 Buffalo
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    value="mix"
-                    checked={animalType === 'mix'}
-                    onChange={() => setAnimalType('mix')}
-                    className="mr-2"
-                  />
-                  🔀 Mix
-                </label>
+                <button
+                  onClick={() => setSessionShift('Morning')}
+                  className={`flex-1 py-2 rounded-lg font-semibold border-2 transition ${
+                    sessionShift === 'Morning' ? 'bg-green-100 border-green-600 text-green-800' : 'border-gray-200 text-gray-600'
+                  }`}
+                >
+                  Morning
+                </button>
+                <button
+                  onClick={() => setSessionShift('Evening')}
+                  className={`flex-1 py-2 rounded-lg font-semibold border-2 transition ${
+                    sessionShift === 'Evening' ? 'bg-green-100 border-green-600 text-green-800' : 'border-gray-200 text-gray-600'
+                  }`}
+                >
+                  Evening
+                </button>
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Mode</label>
               <div className="flex gap-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    value="SNF"
-                    checked={sessionMode === 'SNF'}
-                    onChange={() => setSessionMode('SNF')}
-                    className="mr-2"
-                  />
+                <button
+                  onClick={() => setSessionMode('SNF')}
+                  className={`flex-1 py-2 rounded-lg font-semibold border-2 transition ${
+                    sessionMode === 'SNF' ? 'bg-green-100 border-green-600 text-green-800' : 'border-gray-200 text-gray-600'
+                  }`}
+                >
                   SNF
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    value="CLR"
-                    checked={sessionMode === 'CLR'}
-                    onChange={() => setSessionMode('CLR')}
-                    className="mr-2"
-                  />
+                </button>
+                <button
+                  onClick={() => setSessionMode('CLR')}
+                  className={`flex-1 py-2 rounded-lg font-semibold border-2 transition ${
+                    sessionMode === 'CLR' ? 'bg-green-100 border-green-600 text-green-800' : 'border-gray-200 text-gray-600'
+                  }`}
+                >
                   CLR
-                </label>
+                </button>
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Print Receipt</label>
-              <div className="flex gap-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    checked={printEnabled}
-                    onChange={() => setPrintEnabled(true)}
-                    className="mr-2"
-                  />
-                  Yes
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    checked={!printEnabled}
-                    onChange={() => setPrintEnabled(false)}
-                    className="mr-2"
-                  />
-                  No
-                </label>
-              </div>
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <span className="text-sm font-medium text-gray-700">Print Receipt</span>
+              <button
+                onClick={() => setPrintEnabled(!printEnabled)}
+                className={`w-12 h-6 rounded-full transition relative ${printEnabled ? 'bg-green-600' : 'bg-gray-300'}`}
+              >
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${printEnabled ? 'left-7' : 'left-1'}`} />
+              </button>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Send SMS</label>
-              <div className="flex gap-4">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    checked={smsEnabled}
-                    onChange={() => setSmsEnabled(true)}
-                    className="mr-2"
-                  />
-                  Yes
-                </label>
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    checked={!smsEnabled}
-                    onChange={() => setSmsEnabled(false)}
-                    className="mr-2"
-                  />
-                  No
-                </label>
-              </div>
+            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <span className="text-sm font-medium text-gray-700">Send SMS</span>
+              <button
+                onClick={() => setSmsEnabled(!smsEnabled)}
+                className={`w-12 h-6 rounded-full transition relative ${smsEnabled ? 'bg-green-600' : 'bg-gray-300'}`}
+              >
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${smsEnabled ? 'left-7' : 'left-1'}`} />
+              </button>
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <button
+                onClick={() => setShowSessionSetup(false)}
+                className="flex-1 bg-white border border-gray-300 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleStartSession}
+                className="flex-1 bg-green-700 text-white font-bold py-3 rounded-xl hover:bg-green-800 transition shadow-lg"
+              >
+                Start Collection
+              </button>
             </div>
           </div>
-
-          <button
-            onClick={handleStartSession}
-            className="w-full mt-6 bg-green-700 text-white px-6 py-3 rounded-lg hover:bg-green-800 font-bold text-lg"
-          >
-            Start Collection
-          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 bg-white z-50 overflow-hidden">
-      {/* Top Bar */}
-      <div className="bg-green-800 text-white px-6 py-4 flex justify-between items-center">
-        <div className="flex gap-8 text-lg">
-          <span><strong>Date:</strong> {sessionDate}</span>
-          <span><strong>Shift:</strong> {sessionShift}</span>
-          <span><strong>Mode:</strong> {sessionMode}</span>
-          <span><strong>Animal:</strong> {animalType === 'cow' ? '🐄 Cow' : animalType === 'buffalo' ? '🐃 Buffalo' : '🔀 Mix'}</span>
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-green-900">Milk Collection</h1>
+          <p className="text-gray-600">{sessionDate} | {sessionShift} Shift | {sessionMode} Mode</p>
         </div>
         <button
-          onClick={handleCloseSession}
-          className="flex items-center gap-2 bg-red-600 px-4 py-2 rounded hover:bg-red-700"
+          onClick={() => setShowSessionSetup(true)}
+          className="bg-green-100 text-green-800 px-4 py-2 rounded-lg font-semibold hover:bg-green-200 transition"
         >
-          <X size={20} />
-          Close Session
+          Change Session
         </button>
       </div>
 
-      <div className="flex h-[calc(100vh-72px)]">
-        {/* LEFT PANEL - Entry Form */}
-        <div className="w-1/3 border-r p-6 overflow-y-auto">
-          <h2 className="text-2xl font-bold text-green-900 mb-6">Entry Form</h2>
-
-          {warningMessage && (
-            <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded mb-4">
-              {warningMessage}
-            </div>
-          )}
-
-          {farmerName && !warningMessage && (
-            <div className="bg-green-100 border border-green-400 text-green-800 px-4 py-3 rounded mb-4 font-semibold">
-              {farmerName}
-            </div>
-          )}
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Farmer Code</label>
-              <input
-                ref={farmerCodeRef}
-                type="text"
-                value={farmerCode}
-                onChange={(e) => setFarmerCode(e.target.value)}
-                onKeyDown={handleFarmerCodeEnter}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none text-lg"
-                placeholder="Enter code and press ENTER"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Quantity (Liters)</label>
-              <input
-                id="qty-input"
-                type="number"
-                step="0.01"
-                value={qty}
-                onChange={(e) => setQty(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none text-lg"
-                placeholder="0.00"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">FAT %</label>
-              <input
-                type="number"
-                step="0.01"
-                value={fat}
-                onChange={(e) => setFat(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none text-lg"
-                placeholder="0.00"
-              />
-            </div>
-
-            {(animalType === 'cow' || animalType === 'mix') && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">{sessionMode} %</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={snfClr}
-                  onChange={(e) => setSnfClr(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 outline-none text-lg"
-                  placeholder="0.00"
-                />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Collection Form */}
+        <div className="lg:col-span-1 space-y-6">
+          <div className="bg-white rounded-xl shadow-lg p-6 border-t-4 border-green-600 relative">
+            {showSavedMessage && (
+              <div className="absolute top-4 right-4 flex items-center gap-1 text-green-600 font-bold animate-bounce">
+                <CheckCircle size={20} />
+                <span>Saved!</span>
               </div>
             )}
-
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <div className="flex justify-between mb-2">
-                <span className="font-medium">Rate (₹/Liter):</span>
-                <span className="text-xl font-bold text-blue-700">₹{rate.toFixed(2)}</span>
+            <h2 className="text-xl font-bold text-gray-800 mb-6">{isModifying ? 'Modify Entry' : 'New Collection'}</h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Farmer Code</label>
+                <input
+                  ref={farmerCodeRef}
+                  type="text"
+                  value={farmerCode}
+                  onChange={(e) => setFarmerCode(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && farmerCode) {
+                      const farmer = farmers[farmerCode];
+                      if (!farmer) {
+                        alert('Farmer not found!');
+                        return;
+                      }
+                      setFarmerName(farmer.farmerName);
+                      const existing = todayEntries.find(e => e.farmerCode === farmerCode);
+                      if (existing) {
+                        setWarningMessage('Entry already exists! Modifying existing entry.');
+                        setQty(existing.qty.toString());
+                        setFat(existing.fat.toString());
+                        setSnfClr((existing.snf || existing.clr || '').toString());
+                        setIsModifying(true);
+                      } else {
+                        setWarningMessage('');
+                        setIsModifying(false);
+                      }
+                      qtyRef.current?.focus();
+                    }
+                  }}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none font-bold text-lg"
+                  placeholder="Enter code & press Enter"
+                />
               </div>
-              <div className="flex justify-between">
-                <span className="font-medium">Amount:</span>
-                <span className="text-2xl font-bold text-green-700">{formatIndianCurrency(amount)}</span>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Farmer Name</label>
+                <input
+                  type="text"
+                  value={farmerName}
+                  readOnly
+                  className="w-full px-4 py-2 bg-gray-50 border rounded-lg outline-none text-gray-600 font-medium"
+                />
+                {warningMessage && <p className="text-xs text-orange-600 mt-1 font-semibold">{warningMessage}</p>}
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Qty (Ltr)</label>
+                  <input
+                    ref={qtyRef}
+                    type="number"
+                    step="0.1"
+                    value={qty}
+                    onChange={(e) => setQty(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        fatRef.current?.focus();
+                      }
+                    }}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">FAT %</label>
+                  <input
+                    ref={fatRef}
+                    type="number"
+                    step="0.1"
+                    value={fat}
+                    onChange={(e) => setFat(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        snfClrRef.current?.focus();
+                      }
+                    }}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{sessionMode} %</label>
+                  <input
+                    ref={snfClrRef}
+                    type="number"
+                    step="0.1"
+                    value={snfClr}
+                    onChange={(e) => setSnfClr(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSaveOrUpdate();
+                      }
+                    }}
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-green-500 outline-none font-bold"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-green-50 p-4 rounded-xl border border-green-100 grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-green-700 font-medium uppercase">Rate / Ltr</p>
+                  <p className="text-2xl font-bold text-green-900">₹{rate.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-green-700 font-medium uppercase">Total Amount</p>
+                  <p className="text-2xl font-bold text-green-900">₹{amount.toFixed(2)}</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                {isModifying && (
+                  <button
+                    onClick={clearForm}
+                    className="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-200 transition"
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button
+                  onClick={handleSaveOrUpdate}
+                  className="flex-[2] bg-green-700 text-white font-bold py-3 rounded-xl hover:bg-green-800 transition shadow-lg flex items-center justify-center gap-2"
+                >
+                  {isModifying ? 'Update Entry' : 'Save Entry'}
+                </button>
               </div>
             </div>
+          </div>
 
-            <button
-              onClick={handleSaveOrUpdate}
-              disabled={!farmerCode || !qty || !fat || !snfClr}
-              className="w-full bg-green-700 text-white px-6 py-4 rounded-lg hover:bg-green-800 font-bold text-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              {isModifying ? 'Update Entry' : 'Save Entry'}
-            </button>
+          {/* Summary Cards */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-white p-4 rounded-xl shadow-md border-l-4 border-blue-500">
+              <p className="text-xs text-gray-500 font-bold uppercase">Total Qty</p>
+              <p className="text-xl font-bold text-gray-800">{totalQty.toFixed(1)} L</p>
+            </div>
+            <div className="bg-white p-4 rounded-xl shadow-md border-l-4 border-green-500">
+              <p className="text-xs text-gray-500 font-bold uppercase">Total Amt</p>
+              <p className="text-xl font-bold text-gray-800">₹{totalAmount.toFixed(0)}</p>
+            </div>
+            <div className="bg-white p-4 rounded-xl shadow-md border-l-4 border-orange-500">
+              <p className="text-xs text-gray-500 font-bold uppercase">Avg FAT</p>
+              <p className="text-xl font-bold text-gray-800">{avgFat.toFixed(1)}%</p>
+            </div>
+            <div className="bg-white p-4 rounded-xl shadow-md border-l-4 border-purple-500">
+              <p className="text-xs text-gray-500 font-bold uppercase">Avg {sessionMode}</p>
+              <p className="text-xl font-bold text-gray-800">{avgSnfClr.toFixed(1)}%</p>
+            </div>
           </div>
         </div>
 
-        {/* RIGHT PANEL - Entries Table */}
-        <div className="flex-1 p-6 overflow-y-auto">
-          <h2 className="text-2xl font-bold text-green-900 mb-6">Today's Entries</h2>
-
-          <div className="overflow-x-auto mb-6">
-            <table className="w-full">
-              <thead className="bg-green-50 sticky top-0">
-                <tr>
-                  <th className="px-3 py-2 text-left">Code</th>
-                  <th className="px-3 py-2 text-left">Name</th>
-                  <th className="px-3 py-2 text-right">Qty (L)</th>
-                  <th className="px-3 py-2 text-right">FAT%</th>
-                  <th className="px-3 py-2 text-right">{sessionMode}%</th>
-                  <th className="px-3 py-2 text-right">Rate</th>
-                  <th className="px-3 py-2 text-right">Amount</th>
-                  <th className="px-3 py-2 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {todayEntries.map((entry) => (
-                  <tr key={entry.farmerCode} className="border-b hover:bg-gray-50">
-                    <td className="px-3 py-2">{entry.farmerCode}</td>
-                    <td className="px-3 py-2">{entry.farmerName}</td>
-                    <td className="px-3 py-2 text-right">{entry.qty.toFixed(2)}</td>
-                    <td className="px-3 py-2 text-right">{entry.fat.toFixed(2)}</td>
-                    <td className="px-3 py-2 text-right">{(entry.snf || entry.clr || 0).toFixed(2)}</td>
-                    <td className="px-3 py-2 text-right">₹{entry.rate.toFixed(2)}</td>
-                    <td className="px-3 py-2 text-right font-semibold">₹{entry.amount.toFixed(2)}</td>
-                    <td className="px-3 py-2">
-                      <div className="flex gap-2 justify-center">
-                        <button
-                          onClick={() => handleModify(entry)}
-                          className="text-blue-600 hover:text-blue-800"
-                          title="Modify"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(entry.farmerCode)}
-                          className="text-red-600 hover:text-red-800"
-                          title="Delete"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
+        {/* Entries Table */}
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+            <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="font-bold text-gray-800">Today's Collections ({todayEntries.length})</h2>
+              <div className="text-sm font-medium text-gray-500">
+                Sorted by latest first
+              </div>
+            </div>
+            <div className="overflow-x-auto max-h-[600px]">
+              <table className="w-full text-left border-collapse">
+                <thead className="bg-gray-100 sticky top-0 z-10">
+                  <tr>
+                    <th className="p-4 border-b text-sm font-bold text-gray-600">Farmer</th>
+                    <th className="p-4 border-b text-sm font-bold text-gray-600 text-center">Qty</th>
+                    <th className="p-4 border-b text-sm font-bold text-gray-600 text-center">FAT/SNF</th>
+                    <th className="p-4 border-b text-sm font-bold text-gray-600 text-center">Rate</th>
+                    <th className="p-4 border-b text-sm font-bold text-gray-600 text-right">Amount</th>
+                    <th className="p-4 border-b text-sm font-bold text-gray-600 text-center">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Summary Card */}
-          <div className="bg-green-100 border-2 border-green-600 rounded-lg p-6">
-            <h3 className="text-xl font-bold text-green-900 mb-4">Shift Summary</h3>
-            <div className="grid grid-cols-4 gap-4">
-              <div>
-                <div className="text-sm text-gray-600">Total Qty</div>
-                <div className="text-2xl font-bold text-green-700">{totalQty.toFixed(2)} L</div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">Total Amount</div>
-                <div className="text-2xl font-bold text-green-700">{formatIndianCurrency(totalAmount)}</div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">Avg FAT</div>
-                <div className="text-2xl font-bold text-green-700">{avgFat.toFixed(2)}%</div>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">Avg {sessionMode}</div>
-                <div className="text-2xl font-bold text-green-700">{avgSnfClr.toFixed(2)}%</div>
-              </div>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {todayEntries.sort((a, b) => b.timestamp - a.timestamp).map((entry) => (
+                    <tr key={entry.farmerCode} className="hover:bg-green-50 transition">
+                      <td className="p-4">
+                        <p className="font-bold text-gray-800">{entry.farmerCode}</p>
+                        <p className="text-xs text-gray-500">{entry.farmerName}</p>
+                      </td>
+                      <td className="p-4 text-center font-semibold text-blue-700">{entry.qty.toFixed(1)}</td>
+                      <td className="p-4 text-center">
+                        <span className="text-gray-700">{entry.fat.toFixed(1)}</span>
+                        <span className="text-gray-400 mx-1">/</span>
+                        <span className="text-gray-700">{(entry.snf || entry.clr || 0).toFixed(1)}</span>
+                      </td>
+                      <td className="p-4 text-center font-medium text-gray-600">₹{entry.rate.toFixed(2)}</td>
+                      <td className="p-4 text-right font-bold text-green-700">₹{entry.amount.toFixed(2)}</td>
+                      <td className="p-4">
+                        <div className="flex justify-center gap-2">
+                          <button
+                            onClick={() => handleModify(entry)}
+                            className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition"
+                            title="Modify"
+                          >
+                            <Edit2 size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(entry.farmerCode)}
+                            className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition"
+                            title="Delete"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {todayEntries.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="p-12 text-center text-gray-500 italic">
+                        No entries for this shift yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
