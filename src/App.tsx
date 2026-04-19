@@ -32,12 +32,12 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0a1f0f 0%, #0d2d18 40%, #0f3d20 100%)' }}>
+      <div className="min-h-screen flex items-center justify-center bg-[#0f172a]">
         <div className="flex flex-col items-center gap-6">
-          <div className="animate-bounce" style={{ width: 80, height: 80, background: 'linear-gradient(135deg, #4ade80, #1a5c2e)', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 40px rgba(74,222,128,0.2)' }}>
-            <Milk color="white" size={40} />
+          <div className="animate-bounce" style={{ width: 80, height: 80, background: 'linear-gradient(135deg, #f59e0b, #d97706)', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 40px rgba(245,158,11,0.2)' }}>
+            <Milk color="#0f172a" size={40} />
           </div>
-          <div style={{ color: 'white', fontSize: 24, fontWeight: 800, letterSpacing: '1px' }}>DCS PRO</div>
+          <div style={{ color: '#f1f5f9', fontSize: 24, fontWeight: 800, letterSpacing: '1px' }}>DCS PRO</div>
         </div>
       </div>
     );
@@ -62,7 +62,7 @@ function App() {
       case 'rate-chart':
         return <RateChart />;
       case 'milk-collection':
-        return <MilkCollection />;
+        return <MilkCollection onNavigate={setCurrentPage} />;
       case 'deductions':
         return <Deductions />;
       case 'payment-register':
@@ -78,11 +78,11 @@ function App() {
 
   return (
     <LanguageProvider>
-      <div className="min-h-screen" style={{ background: 'transparent' }}>
+      <div className="min-h-screen flex flex-col">
         <Navbar />
-        <div className="flex">
+        <div className="flex flex-1">
           <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
-          <main className="flex-1" style={{ minHeight: 'calc(100vh - 64px)' }}>
+          <main className="flex-1 overflow-x-hidden">
             {renderPage()}
           </main>
         </div>

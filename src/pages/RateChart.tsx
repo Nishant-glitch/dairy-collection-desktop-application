@@ -113,8 +113,8 @@ const RateChart: React.FC = () => {
 
   const getCellColor = (rate: number) => {
     if (rate === 0) return 'transparent';
-    if (rate < 35) return 'rgba(239, 68, 68, 0.1)';
-    if (rate < 45) return 'rgba(234, 179, 8, 0.1)';
+    if (rate < 35) return 'rgba(248, 113, 113, 0.1)';
+    if (rate < 45) return 'rgba(245, 158, 11, 0.1)';
     return 'rgba(74, 222, 128, 0.1)';
   };
 
@@ -123,45 +123,45 @@ const RateChart: React.FC = () => {
     
     return (
       <div className="glass-card overflow-hidden">
-        <div style={{ padding: 20, background: 'rgba(74, 222, 128, 0.05)', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ padding: 20, background: 'rgba(148,163,184,0.05)', borderBottom: '1px solid rgba(148,163,184,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h3 style={{ color: 'white', fontWeight: 800, fontSize: 18 }}>
+            <h3 style={{ color: '#f1f5f9', fontWeight: 800, fontSize: 18 }}>
               Rate Chart — Effective from {config.effectiveFrom}
             </h3>
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 4 }}>
+            <p style={{ color: '#94a3b8', fontSize: 11, marginTop: 4 }}>
               Imported on: {new Date(config.importedAt).toLocaleString()}
             </p>
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>
-              <span style={{ width: 12, height: 12, background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 3 }}></span> Low
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#94a3b8' }}>
+              <span style={{ width: 12, height: 12, background: 'rgba(248, 113, 113, 0.2)', border: '1px solid rgba(248, 113, 113, 0.3)', borderRadius: 3 }}></span> Low
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>
-              <span style={{ width: 12, height: 12, background: 'rgba(234, 179, 8, 0.2)', border: '1px solid rgba(234, 179, 8, 0.3)', borderRadius: 3 }}></span> Mid
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#94a3b8' }}>
+              <span style={{ width: 12, height: 12, background: 'rgba(245, 158, 11, 0.2)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: 3 }}></span> Mid
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: '#94a3b8' }}>
               <span style={{ width: 12, height: 12, background: 'rgba(74, 222, 128, 0.2)', border: '1px solid rgba(74, 222, 128, 0.3)', borderRadius: 3 }}></span> High
             </div>
           </div>
         </div>
         <div style={{ overflow: 'auto', maxHeight: 600 }}>
           <table className="w-full text-sm border-collapse">
-            <thead style={{ position: 'sticky', top: 0, zIndex: 20, background: '#0a1f0f' }}>
-              <tr>
-                <th style={{ padding: 12, border: '1px solid rgba(255,255,255,0.1)', background: 'linear-gradient(135deg, #1a5c2e, #2d9e4f)', color: 'white', position: 'sticky', left: 0, zIndex: 30, minWidth: 80 }}>FAT \ SNF</th>
+            <thead style={{ position: 'sticky', top: 0, zIndex: 20, background: '#0f172a' }}>
+              <tr className="table-header">
+                <th style={{ padding: 12, border: '1px solid rgba(148,163,184,0.1)', color: '#fcd34d', position: 'sticky', left: 0, zIndex: 30, minWidth: 80 }}>FAT \ SNF</th>
                 {config.snfValues.map((snf: number) => (
-                  <th key={snf} style={{ padding: 12, border: '1px solid rgba(255,255,255,0.1)', color: 'white', textAlign: 'center', minWidth: 60 }}>{snf.toFixed(1)}</th>
+                  <th key={snf} style={{ padding: 12, border: '1px solid rgba(148,163,184,0.1)', color: '#fcd34d', textAlign: 'center', minWidth: 60 }}>{snf.toFixed(1)}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {config.fatValues.map((fat: number) => (
-                <tr key={fat}>
-                  <th style={{ padding: 12, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'white', position: 'sticky', left: 0, zIndex: 10, textAlign: 'center' }}>{fat.toFixed(1)}</th>
+                <tr key={fat} className="table-row">
+                  <th style={{ padding: 12, border: '1px solid rgba(148,163,184,0.1)', background: 'rgba(15,23,42,0.8)', color: '#f1f5f9', position: 'sticky', left: 0, zIndex: 10, textAlign: 'center' }}>{fat.toFixed(1)}</th>
                   {config.snfValues.map((snf: number) => {
                     const rate = config.rateMap[fat]?.[snf] || 0;
                     return (
-                      <td key={`${fat}-${snf}`} style={{ padding: 12, border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center', color: 'rgba(255,255,255,0.8)', background: getCellColor(rate) }}>
+                      <td key={`${fat}-${snf}`} style={{ padding: 12, border: '1px solid rgba(148,163,184,0.1)', textAlign: 'center', color: '#cbd5e1', background: getCellColor(rate) }}>
                         {rate > 0 ? rate.toFixed(2) : '-'}
                       </td>
                     );
@@ -176,11 +176,11 @@ const RateChart: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto animate-fadeIn">
+    <div className="p-6 max-w-7xl mx-auto animate-fadeUp">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
         <div>
-          <h1 style={{ color: 'white', fontWeight: 800, fontSize: 28, textShadow: '0 2px 8px rgba(0,0,0,0.3)' }}>Rate Chart Management</h1>
-          <p style={{ color: 'rgba(255,255,255,0.5)', marginTop: 4 }}>
+          <h1 className="page-title">Rate Chart Management</h1>
+          <p style={{ color: '#94a3b8', marginTop: 4 }}>
             {userIsAdmin ? 'Import and manage global rate configurations' : 'Rate chart is managed by admin'}
           </p>
         </div>
@@ -188,16 +188,14 @@ const RateChart: React.FC = () => {
           <div className="flex gap-3">
             <button
               onClick={() => setShowImportPopup(true)}
-              className="btn-3d"
-              style={{ padding: '10px 20px' }}
+              className="btn-primary"
             >
               <FileSpreadsheet size={20} />
               Import & Publish
             </button>
             <button
               onClick={loadHistory}
-              className="btn-3d"
-              style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.05)', boxShadow: 'none', border: '1px solid rgba(255,255,255,0.1)' }}
+              className="btn-secondary"
             >
               <History size={20} />
               History
@@ -207,15 +205,15 @@ const RateChart: React.FC = () => {
       </div>
 
       {!userIsAdmin && (
-        <div className="glass-card" style={{ background: 'rgba(37, 99, 235, 0.1)', borderColor: 'rgba(37, 99, 235, 0.3)', padding: 16, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <ShieldCheck color="#3b82f6" size={24} />
-          <p style={{ color: '#93c5fd', fontWeight: 600 }}>Global Rate Chart — Read Only Access</p>
+        <div className="glass-card" style={{ background: 'rgba(56,189,248,0.1)', borderColor: 'rgba(56,189,248,0.3)', padding: 16, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
+          <ShieldCheck color="#38bdf8" size={24} />
+          <p style={{ color: '#38bdf8', fontWeight: 600 }}>Global Rate Chart — Read Only Access</p>
         </div>
       )}
 
       {currentConfig ? (
         <div className="space-y-4">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#4ade80', fontWeight: 800, fontSize: 14, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#f59e0b', fontWeight: 800, fontSize: 14, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 12 }}>
             <TableIcon size={18} />
             Current Active Rate Chart
           </div>
@@ -223,55 +221,58 @@ const RateChart: React.FC = () => {
         </div>
       ) : (
         <div className="glass-card" style={{ padding: 64, textAlign: 'center', borderStyle: 'dashed' }}>
-          <div style={{ width: 80, height: 80, background: 'rgba(74, 222, 128, 0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-            <FileSpreadsheet color="#4ade80" size={40} />
+          <div style={{ width: 80, height: 80, background: 'rgba(245,158,11,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+            <FileSpreadsheet color="#f59e0b" size={40} />
           </div>
-          <h3 style={{ color: 'white', fontSize: 22, fontWeight: 800, marginBottom: 8 }}>No Rate Chart Found</h3>
-          <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: 32, maxWidth: 400, margin: '0 auto 32px' }}>
+          <h3 style={{ color: '#f1f5f9', fontSize: 22, fontWeight: 800, marginBottom: 8 }}>No Rate Chart Found</h3>
+          <p style={{ color: '#94a3b8', marginBottom: 32, maxWidth: 400, margin: '0 auto 32px' }}>
             {userIsAdmin ? 'Please import an Excel file to publish the rate chart for all users.' : 'No rate chart uploaded yet. Please contact your administrator.'}
           </p>
           {userIsAdmin && (
-            <button onClick={() => setShowImportPopup(true)} className="btn-3d" style={{ padding: '12px 32px', fontSize: 16 }}>Import Now</button>
+            <button onClick={() => setShowImportPopup(true)} className="btn-primary" style={{ padding: '12px 32px', fontSize: 16 }}>Import Now</button>
           )}
         </div>
       )}
 
       {/* Import Popup */}
       {showImportPopup && userIsAdmin && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div className="modal-3d animate-fadeIn" style={{ padding: 32, maxWidth: 450, width: '90%' }}>
-            <div className="flex justify-between items-center mb-8">
-              <h2 style={{ color: 'white', fontWeight: 800, fontSize: 22 }}>Import & Publish Chart</h2>
-              <button onClick={() => setShowImportPopup(false)} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition">
+        <div className="modal-overlay">
+          <div className="modal-box animate-fadeUp" style={{ maxWidth: 450 }}>
+            <div className="flex justify-between items-center mb-8 border-b border-slate-700 pb-4">
+              <h2 className="text-xl font-bold text-white">Import & Publish Chart</h2>
+              <button onClick={() => setShowImportPopup(false)} className="text-slate-400 hover:text-white transition">
                 <X size={24} />
               </button>
             </div>
             
             <div className="space-y-6">
               <div>
-                <label style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600, marginBottom: 8, display: 'block' }}>Effective From Date</label>
-                <input
-                  type="date"
-                  value={effectiveDate}
-                  onChange={(e) => setEffectiveDate(e.target.value)}
-                  className="input-3d w-full"
-                />
+                <label className="label-text">Effective From Date</label>
+                <input type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} className="input-field" />
               </div>
-              
-              <div className="pt-4 flex gap-4">
-                <button onClick={() => setShowImportPopup(false)} className="btn-3d flex-1" style={{ background: 'rgba(255,255,255,0.05)', boxShadow: 'none', border: '1px solid rgba(255,255,255,0.1)' }}>Cancel</button>
-                <label className="btn-3d flex-1 cursor-pointer">
-                  Select & Publish
-                  <input
-                    type="file"
-                    accept=".xlsx, .xls"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleExcelImport(file, effectiveDate);
-                    }}
-                  />
-                </label>
+
+              <div className="p-8 border-2 border-dashed border-slate-700 rounded-2xl text-center hover:border-amber-500/50 transition-colors cursor-pointer relative">
+                <input
+                  type="file"
+                  accept=".xlsx, .xls"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleExcelImport(file, effectiveDate);
+                  }}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                />
+                <FileSpreadsheet className="mx-auto mb-4 text-amber-500" size={48} />
+                <p className="text-white font-bold">Click to Upload Excel</p>
+                <p className="text-slate-400 text-xs mt-2">Supports .xlsx and .xls formats</p>
+              </div>
+
+              <div className="p-4 glass-card" style={{ background: 'rgba(245,158,11,0.05)' }}>
+                <h4 className="text-amber-500 text-xs font-bold uppercase mb-2">Required Format</h4>
+                <p className="text-slate-400 text-xs leading-relaxed">
+                  First row: SNF values (starting from 2nd column)<br/>
+                  First column: FAT values (starting from 2nd row)<br/>
+                  Cells: Rate per liter
+                </p>
               </div>
             </div>
           </div>
@@ -280,66 +281,51 @@ const RateChart: React.FC = () => {
 
       {/* History Modal */}
       {showHistoryModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div className="modal-3d animate-fadeIn" style={{ padding: 32, maxWidth: 800, width: '90%', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div className="flex justify-between items-center mb-8">
-              <h2 style={{ color: 'white', fontWeight: 800, fontSize: 22 }}>Import History</h2>
-              <button onClick={() => setShowHistoryModal(false)} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition">
+        <div className="modal-overlay">
+          <div className="modal-box animate-fadeUp" style={{ maxWidth: 600 }}>
+            <div className="flex justify-between items-center mb-8 border-b border-slate-700 pb-4">
+              <h2 className="text-xl font-bold text-white">Rate Chart History</h2>
+              <button onClick={() => setShowHistoryModal(false)} className="text-slate-400 hover:text-white transition">
                 <X size={24} />
               </button>
             </div>
 
-            <div className="table-3d overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr>
-                    <th className="px-4 py-3">Effective Date</th>
-                    <th className="px-4 py-3">Imported On</th>
-                    <th className="px-4 py-3 text-center">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {history.map((config, idx) => (
-                    <tr key={idx}>
-                      <td className="px-4 py-3 font-bold">{config.effectiveFrom}</td>
-                      <td className="px-4 py-3">{new Date(config.importedAt).toLocaleString()}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex justify-center">
-                          <button
-                            onClick={() => {
-                              setViewingConfig(config);
-                              setShowHistoryModal(false);
-                            }}
-                            className="btn-3d"
-                            style={{ padding: '6px 12px', fontSize: 12 }}
-                          >
-                            View Chart
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+              {history.map((config, idx) => (
+                <div 
+                  key={idx} 
+                  className="glass-card p-4 flex items-center justify-between hover:border-amber-500/30 transition-colors cursor-pointer"
+                  onClick={() => {
+                    setViewingConfig(config);
+                    setShowHistoryModal(false);
+                  }}
+                >
+                  <div>
+                    <p className="text-white font-bold">Effective: {config.effectiveFrom}</p>
+                    <p className="text-slate-400 text-xs">Imported: {new Date(config.importedAt).toLocaleDateString()}</p>
+                  </div>
+                  <button className="btn-info">View Chart</button>
+                </div>
+              ))}
             </div>
-            
-            <button onClick={() => setShowHistoryModal(false)} className="btn-3d w-full mt-8" style={{ background: 'rgba(255,255,255,0.05)', boxShadow: 'none', border: '1px solid rgba(255,255,255,0.1)' }}>Close</button>
           </div>
         </div>
       )}
 
-      {/* Viewing Config Modal */}
+      {/* View History Config Modal */}
       {viewingConfig && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div className="modal-3d animate-fadeIn" style={{ padding: 32, maxWidth: 1000, width: '95%', maxHeight: '95vh', overflowY: 'auto' }}>
-            <div className="flex justify-between items-center mb-6">
-              <h2 style={{ color: 'white', fontWeight: 800, fontSize: 22 }}>Historical Rate Chart</h2>
-              <button onClick={() => setViewingConfig(null)} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition">
+        <div className="modal-overlay">
+          <div className="modal-box animate-fadeUp" style={{ maxWidth: '90%', width: 1000 }}>
+            <div className="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
+              <h2 className="text-xl font-bold text-white">Historical Rate Chart</h2>
+              <button onClick={() => setViewingConfig(null)} className="text-slate-400 hover:text-white transition">
                 <X size={24} />
               </button>
             </div>
             <RateTable config={viewingConfig} />
-            <button onClick={() => setViewingConfig(null)} className="btn-3d w-full mt-8" style={{ background: 'rgba(255,255,255,0.05)', boxShadow: 'none', border: '1px solid rgba(255,255,255,0.1)' }}>Close View</button>
+            <div className="mt-6 flex justify-end">
+              <button onClick={() => setViewingConfig(null)} className="btn-secondary">Close View</button>
+            </div>
           </div>
         </div>
       )}

@@ -20,7 +20,11 @@ interface Entry {
   timestamp: number;
 }
 
-const MilkCollection: React.FC = () => {
+interface MilkCollectionProps {
+  onNavigate: (page: string) => void;
+}
+
+const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   const { t } = useLanguage();
   const [showSessionSetup, setShowSessionSetup] = useState(true);
   const [sessionDate, setSessionDate] = useState(new Date().toISOString().split('T')[0]);
@@ -31,6 +35,7 @@ const MilkCollection: React.FC = () => {
   
   const [farmerCode, setFarmerCode] = useState('');
   const [farmerName, setFarmerName] = useState('');
+  const [farmerFound, setFarmerFound] = useState(false);
   const [qty, setQty] = useState('');
   const [fat, setFat] = useState('');
   const [snfClr, setSnfClr] = useState('');
@@ -49,6 +54,7 @@ const MilkCollection: React.FC = () => {
   const qtyRef = useRef<HTMLInputElement>(null);
   const fatRef = useRef<HTMLInputElement>(null);
   const snfClrRef = useRef<HTMLInputElement>(null);
+  const fetchTimerRef = useRef<any>(null);
 
   useEffect(() => {
     loadDCSInfo();
@@ -133,6 +139,12 @@ const MilkCollection: React.FC = () => {
       return;
     }
 
+    if (!farmerFound) {
+      alert('Farmer not found! Please enter a valid farmer code.');
+      farmerCodeRef.current?.focus();
+      return;
+    }
+
     const entryData: any = {
       farmerName,
       qty: parseFloat(qty),
@@ -209,6 +221,7 @@ const MilkCollection: React.FC = () => {
   const clearForm = () => {
     setFarmerCode('');
     setFarmerName('');
+    setFarmerFound(false);
     setQty('');
     setFat('');
     setSnfClr('');
@@ -221,6 +234,7 @@ const MilkCollection: React.FC = () => {
   const handleModify = (entry: Entry) => {
     setFarmerCode(entry.farmerCode);
     setFarmerName(entry.farmerName);
+    setFarmerFound(true);
     setQty(entry.qty.toString());
     setFat(entry.fat.toString());
     setSnfClr((entry.snf || entry.clr || '').toString());
@@ -236,6 +250,40 @@ const MilkCollection: React.FC = () => {
     }
   };
 
+  const handleFarmerCodeChange = (code: string) => {
+    setFarmerCode(code);
+    if (code.length >= 1) {
+      if (fetchTimerRef.current) clearTimeout(fetchTimerRef.current);
+      fetchTimerRef.current = setTimeout(async () => {
+        const snap = await get(ref(database, up(`farmers/${code}`)));
+        if (snap.exists()) {
+          setFarmerName(snap.val().farmerName || snap.val().name);
+          setFarmerFound(true);
+          setWarningMessage(todayEntries.find(ent => ent.farmerCode === code) ? 'Already entered today' : '');
+        } else {
+          setFarmerName('');
+          setFarmerFound(false);
+          setWarningMessage('');
+        }
+      }, 300);
+    } else {
+      setFarmerName('');
+      setFarmerFound(false);
+      setWarningMessage('');
+    }
+  };
+
+  const handleFarmerCodeKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      if (farmerFound) {
+        qtyRef.current?.focus();
+      } else if (farmerCode.length > 0) {
+        alert('Farmer not found!');
+        farmerCodeRef.current?.focus();
+      }
+    }
+  };
+
   const totalQty = todayEntries.reduce((sum, e) => sum + e.qty, 0);
   const totalAmount = todayEntries.reduce((sum, e) => sum + e.amount, 0);
   const avgFat = todayEntries.length > 0 ? todayEntries.reduce((sum, e) => sum + e.fat, 0) / todayEntries.length : 0;
@@ -243,68 +291,54 @@ const MilkCollection: React.FC = () => {
     ? todayEntries.reduce((sum, e) => sum + (e.snf || e.clr || 0), 0) / todayEntries.length 
     : 0;
 
-  const labelStyle: React.CSSProperties = { color: '#6B4C4C', fontSize: 13, fontWeight: 600, marginBottom: 6, display: 'block' };
-  const chipStyle: React.CSSProperties = { background: 'rgba(255,183,197,0.2)', border: '1px solid rgba(255,183,197,0.5)', color: '#c44d6e', borderRadius: 8, padding: '4px 12px', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 };
-
   if (showSessionSetup) {
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="modal-3d animate-fadeIn" style={{ padding: 32, maxWidth: 450, width: '90%' }}>
-          <h2 style={{ color: '#2D1B1B', fontWeight: 800, fontSize: 24, marginBottom: 24, textAlign: 'center' }}>Start Collection Session</h2>
+      <div className="modal-overlay">
+        <div className="modal-box animate-fadeUp">
+          <h2 className="modal-title">Start Collection Session</h2>
           
           <div className="space-y-6">
             <div>
-              <label style={{ color: '#6B4C4C', fontSize: 13, fontWeight: 600, marginBottom: 6, display: 'block' }}>Date</label>
-              <input type="date" value={sessionDate} onChange={(e) => setSessionDate(e.target.value)} className="input-3d w-full" />
+              <label className="label-text">Date</label>
+              <input type="date" value={sessionDate} onChange={(e) => setSessionDate(e.target.value)} className="input-field" />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label style={{ color: '#6B4C4C', fontSize: 13, fontWeight: 600, marginBottom: 6, display: 'block' }}>Shift</label>
+                <label className="label-text">Shift</label>
                 <div className="flex gap-2">
-                  <button onClick={() => setSessionShift('Morning')} className="btn-3d w-full" style={{ background: sessionShift === 'Morning' ? undefined : 'rgba(242,199,199,0.2)', boxShadow: sessionShift === 'Morning' ? undefined : 'none', border: sessionShift === 'Morning' ? undefined : '1px solid rgba(242,199,199,0.4)' }}>Morning</button>
-                  <button onClick={() => setSessionShift('Evening')} className="btn-3d w-full" style={{ background: sessionShift === 'Evening' ? undefined : 'rgba(242,199,199,0.2)', boxShadow: sessionShift === 'Evening' ? undefined : 'none', border: sessionShift === 'Evening' ? undefined : '1px solid rgba(242,199,199,0.4)' }}>Evening</button>
+                  <button onClick={() => setSessionShift('Morning')} className={sessionShift === 'Morning' ? 'btn-primary w-full' : 'btn-secondary w-full'}>Morning</button>
+                  <button onClick={() => setSessionShift('Evening')} className={sessionShift === 'Evening' ? 'btn-primary w-full' : 'btn-secondary w-full'}>Evening</button>
                 </div>
               </div>
               <div>
-                <label style={{ color: '#6B4C4C', fontSize: 13, fontWeight: 600, marginBottom: 6, display: 'block' }}>Mode</label>
+                <label className="label-text">Mode</label>
                 <div className="flex gap-2">
-                  <button onClick={() => setSessionMode('SNF')} className="btn-3d w-full" style={{ background: sessionMode === 'SNF' ? undefined : 'rgba(242,199,199,0.2)', boxShadow: sessionMode === 'SNF' ? undefined : 'none', border: sessionMode === 'SNF' ? undefined : '1px solid rgba(242,199,199,0.4)' }}>SNF</button>
-                  <button onClick={() => setSessionMode('CLR')} className="btn-3d w-full" style={{ background: sessionMode === 'CLR' ? undefined : 'rgba(242,199,199,0.2)', boxShadow: sessionMode === 'CLR' ? undefined : 'none', border: sessionMode === 'CLR' ? undefined : '1px solid rgba(242,199,199,0.4)' }}>CLR</button>
+                  <button onClick={() => setSessionMode('SNF')} className={sessionMode === 'SNF' ? 'btn-primary w-full' : 'btn-secondary w-full'}>SNF</button>
+                  <button onClick={() => setSessionMode('CLR')} className={sessionMode === 'CLR' ? 'btn-primary w-full' : 'btn-secondary w-full'}>CLR</button>
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-4 p-4 glass-card" style={{ background: 'rgba(242,199,199,0.15)' }}>
+            <div className="flex gap-4 p-4 glass-card" style={{ background: 'rgba(148,163,184,0.05)' }}>
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={printEnabled} onChange={(e) => setPrintEnabled(e.target.checked)} className="w-4 h-4 accent-pink-500" />
-                <span style={{ color: '#2D1B1B', fontSize: 14 }}>Print Slips</span>
+                <input type="checkbox" checked={printEnabled} onChange={(e) => setPrintEnabled(e.target.checked)} className="w-4 h-4 accent-amber-500" />
+                <span style={{ color: '#f1f5f9', fontSize: 14 }}>Print Slips</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={smsEnabled} onChange={(e) => setSmsEnabled(e.target.checked)} className="w-4 h-4 accent-pink-500" />
-                <span style={{ color: '#2D1B1B', fontSize: 14 }}>Send SMS</span>
+                <input type="checkbox" checked={smsEnabled} onChange={(e) => setSmsEnabled(e.target.checked)} className="w-4 h-4 accent-amber-500" />
+                <span style={{ color: '#f1f5f9', fontSize: 14 }}>Send SMS</span>
               </label>
             </div>
 
             <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
               <button
-                onClick={() => setShowSessionSetup(false)}
-                style={{
-                  flex: 1,
-                  padding: '12px',
-                  borderRadius: 12,
-                  background: 'rgba(242,199,199,0.3)',
-                  border: '1px solid rgba(242,199,199,0.6)',
-                  color: '#6B4C4C',
-                  fontWeight: 600,
-                  fontSize: 15,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                }}
+                onClick={() => onNavigate('dashboard')}
+                className="btn-secondary flex-1"
               >
                 ✕ Cancel
               </button>
-              <button onClick={handleStartSession} className="btn-3d animate-pulse-glow" style={{ flex: 2, padding: '12px', fontSize: 15 }}>
+              <button onClick={handleStartSession} className="btn-primary flex-[2]">
                 🚀 Start Collection
               </button>
             </div>
@@ -315,23 +349,23 @@ const MilkCollection: React.FC = () => {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'linear-gradient(135deg, #fff0f3 0%, #fde8e8 50%, #e8f5ea 100%)', overflowY: 'auto' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: '#0f172a', overflowY: 'auto' }}>
       {/* Top Bar */}
-      <div style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(242,199,199,0.4)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 4px 16px rgba(255,183,197,0.2)' }}>
+      <div style={{ background: 'rgba(15,23,42,0.8)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(245,158,11,0.2)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 4px 24px rgba(0,0,0,0.5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ width: 40, height: 40, background: 'linear-gradient(135deg, #FFB7C5, #F2C7C7)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(255,183,197,0.3)' }}>🥛</div>
+          <div style={{ width: 40, height: 40, background: 'linear-gradient(135deg, #f59e0b, #d97706)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(245,158,11,0.3)' }}>🥛</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ background: 'rgba(255,183,197,0.2)', border: '1px solid rgba(255,183,197,0.5)', color: '#c44d6e', borderRadius: 8, padding: '4px 12px', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><Calendar size={14} /> {sessionDate}</div>
-            <div style={{ background: 'rgba(255,183,197,0.2)', border: '1px solid rgba(255,183,197,0.5)', color: '#c44d6e', borderRadius: 8, padding: '4px 12px', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><Clock size={14} /> {sessionShift}</div>
-            <div style={{ background: 'rgba(255,183,197,0.2)', border: '1px solid rgba(255,183,197,0.5)', color: '#c44d6e', borderRadius: 8, padding: '4px 12px', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><Zap size={14} /> {sessionMode} Mode</div>
+            <div className="info-chip"><Calendar size={14} /> {sessionDate}</div>
+            <div className="info-chip"><Clock size={14} /> {sessionShift}</div>
+            <div className="info-chip"><Zap size={14} /> {sessionMode} Mode</div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 16 }}>
-            {printEnabled && <div style={{ background: 'rgba(255,183,197,0.2)', border: '1px solid rgba(255,183,197,0.5)', color: '#c44d6e', borderRadius: 8, padding: '4px 12px', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><Printer size={14} /> Print On</div>}
-            {smsEnabled && <div style={{ background: 'rgba(255,183,197,0.2)', border: '1px solid rgba(255,183,197,0.5)', color: '#c44d6e', borderRadius: 8, padding: '4px 12px', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><MessageSquare size={14} /> SMS On</div>}
+            {printEnabled && <div className="success-chip"><Printer size={14} /> Print On</div>}
+            {smsEnabled && <div className="success-chip"><MessageSquare size={14} /> SMS On</div>}
           </div>
-          <button onClick={() => setShowSessionSetup(true)} className="btn-3d" style={{ padding: '8px 16px', background: 'rgba(242,199,199,0.3)', color: '#6B4C4C', border: '1px solid rgba(242,199,199,0.6)', boxShadow: 'none' }}>
+          <button onClick={() => onNavigate('dashboard')} className="btn-secondary">
             <X size={18} /> Close Session
           </button>
         </div>
@@ -340,101 +374,93 @@ const MilkCollection: React.FC = () => {
       <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Form */}
         <div className="lg:col-span-4 space-y-6">
-          <div className="glass-card animate-fadeIn" style={{ padding: 24 }}>
-            <h3 style={{ color: '#2D1B1B', fontWeight: 800, fontSize: 20, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Droplet color="#FFB7C5" /> {isModifying ? 'Modify Entry' : 'New Collection'}
+          <div className="glass-card animate-fadeUp" style={{ padding: 24 }}>
+            <h3 className="modal-title" style={{ border: 'none', marginBottom: 20, padding: 0 }}>
+              <Droplet color="#f59e0b" /> {isModifying ? 'Modify Entry' : 'New Collection'}
             </h3>
             
             <div className="space-y-4">
               <div>
-                <label style={labelStyle}>Farmer Code</label>
-                <div className="flex gap-2">
-                  <input
-                    ref={farmerCodeRef}
-                    type="number"
-                    value={farmerCode}
-                    onChange={(e) => {
-                      setFarmerCode(e.target.value);
-                      const f = farmers[e.target.value];
-                      if (f) {
-                        setFarmerName(f.name);
-                        setWarningMessage(todayEntries.find(ent => ent.farmerCode === e.target.value) ? 'Already entered today' : '');
-                        qtyRef.current?.focus();
-                      } else {
-                        setFarmerName('');
-                        setWarningMessage('');
-                      }
-                    }}
-                    className="input-3d w-24"
-                    placeholder="ID"
-                  />
-                  <input
-                    type="text"
-                    value={farmerName}
-                    readOnly
-                    className="input-3d flex-1"
-                    style={{ background: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.5)' }}
-                    placeholder="Farmer Name"
-                  />
-                </div>
-                {warningMessage && <p style={{ color: '#ef4444', fontSize: 12, marginTop: 4, fontWeight: 600 }}>{warningMessage}</p>}
+                <label className="label-text">Farmer Code</label>
+                <input
+                  ref={farmerCodeRef}
+                  type="number"
+                  value={farmerCode}
+                  onChange={(e) => handleFarmerCodeChange(e.target.value)}
+                  onKeyDown={handleFarmerCodeKeyDown}
+                  className="input-field"
+                  placeholder="Enter Farmer Code"
+                />
+                
+                {farmerFound && (
+                  <div className="farmer-found-box mt-3">
+                    <span style={{ color: '#4ade80', fontSize: 11 }}>✓ Farmer Found</span>
+                    <div style={{ color: '#f1f5f9', fontWeight: 700, fontSize: 16 }}>{farmerName}</div>
+                  </div>
+                )}
+                
+                {farmerCode.length > 0 && !farmerFound && (
+                  <div style={{ color: '#f87171', fontSize: 12, marginTop: 4 }}>Farmer not found</div>
+                )}
+                
+                {warningMessage && <p style={{ color: '#f59e0b', fontSize: 12, marginTop: 4, fontWeight: 600 }}>{warningMessage}</p>}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label style={labelStyle}>Quantity (L)</label>
-                  <input ref={qtyRef} type="number" value={qty} onChange={(e) => setQty(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && fatRef.current?.focus()} className="input-3d w-full" placeholder="0.00" />
+                  <label className="label-text">Quantity (L)</label>
+                  <input ref={qtyRef} type="number" value={qty} onChange={(e) => setQty(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && fatRef.current?.focus()} className="input-field" placeholder="0.00" />
                 </div>
                 <div>
-                  <label style={labelStyle}>FAT %</label>
-                  <input ref={fatRef} type="number" value={fat} onChange={(e) => setFat(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && snfClrRef.current?.focus()} className="input-3d w-full" placeholder="0.0" />
+                  <label className="label-text">FAT %</label>
+                  <input ref={fatRef} type="number" value={fat} onChange={(e) => setFat(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && snfClrRef.current?.focus()} className="input-field" placeholder="0.0" />
                 </div>
               </div>
 
               <div>
-                <label style={labelStyle}>{sessionMode} %</label>
-                <input ref={snfClrRef} type="number" value={snfClr} onChange={(e) => setSnfClr(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSaveOrUpdate()} className="input-3d w-full" placeholder="0.0" />
+                <label className="label-text">{sessionMode} %</label>
+                <input ref={snfClrRef} type="number" value={snfClr} onChange={(e) => setSnfClr(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSaveOrUpdate()} className="input-field" placeholder="0.0" />
               </div>
 
               <div className="grid grid-cols-2 gap-4 mt-6">
-                <div style={{ background: 'linear-gradient(135deg, #D5F3D8, #b8e8be)', borderRadius: 16, padding: 16, border: '1px solid rgba(213,243,216,0.8)', boxShadow: '0 8px 24px rgba(213,243,216,0.4)' }}>
-                  <p style={{ color: '#6B4C4C', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Rate / L</p>
-                  <p style={{ color: '#2D1B1B', fontSize: 24, fontWeight: 800 }}>₹{rate.toFixed(2)}</p>
+                <div style={{ background: 'rgba(74,222,128,0.1)', borderRadius: 16, padding: 16, border: '1px solid rgba(74,222,128,0.2)' }}>
+                  <p style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Rate / L</p>
+                  <p style={{ color: '#4ade80', fontSize: 24, fontWeight: 800 }}>₹{rate.toFixed(2)}</p>
                 </div>
-                <div style={{ background: 'linear-gradient(135deg, #FFB7C5, #f090a8)', borderRadius: 16, padding: 16, border: '1px solid rgba(255,183,197,0.8)', boxShadow: '0 8px 24px rgba(255,183,197,0.4)' }}>
-                  <p style={{ color: '#6B4C4C', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Total Amount</p>
-                  <p style={{ color: '#2D1B1B', fontSize: 24, fontWeight: 800 }}>₹{amount.toFixed(2)}</p>
+                <div style={{ background: 'rgba(245,158,11,0.1)', borderRadius: 16, padding: 16, border: '1px solid rgba(245,158,11,0.2)' }}>
+                  <p style={{ color: '#94a3b8', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Total Amount</p>
+                  <p style={{ color: '#fcd34d', fontSize: 24, fontWeight: 800 }}>₹{amount.toFixed(2)}</p>
                 </div>
               </div>
 
-              <button onClick={handleSaveOrUpdate} className="btn-3d w-full" style={{ background: 'linear-gradient(135deg, #FFB7C5, #f090a8)', color: '#2D1B1B', fontWeight: 800, fontSize: 18, padding: 16, marginTop: 12, boxShadow: '0 8px 24px rgba(255,183,197,0.5)' }}>
+              <button onClick={handleSaveOrUpdate} className="btn-primary w-full" style={{ fontSize: 18, padding: 16, marginTop: 12 }}>
                 {isModifying ? 'Update Entry' : 'Save Collection'}
               </button>
               
               {isModifying && (
-                <button onClick={clearForm} className="w-full text-white/50 hover:text-white text-sm font-semibold transition py-2">Cancel Modification</button>
+                <button onClick={clearForm} className="w-full text-slate-400 hover:text-white text-sm font-semibold transition py-2">Cancel Modification</button>
               )}
             </div>
           </div>
 
-          <div className="glass-card" style={{ padding: 24, background: 'linear-gradient(135deg, #FFB7C5, #f090a8)' }}>
-            <h3 style={{ color: '#2D1B1B', fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Session Summary</h3>
+          <div className="glass-card" style={{ padding: 24, background: 'linear-gradient(135deg, #1e3a5f, #1e40af)' }}>
+            <h3 style={{ color: '#f1f5f9', fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Session Summary</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p style={{ color: '#6B4C4C', fontSize: 12 }}>Total Liters</p>
-                <p style={{ color: '#2D1B1B', fontSize: 20, fontWeight: 800 }}>{totalQty.toFixed(2)} L</p>
+                <p style={{ color: '#94a3b8', fontSize: 12 }}>Total Liters</p>
+                <p style={{ color: '#f1f5f9', fontSize: 20, fontWeight: 800 }}>{totalQty.toFixed(2)} L</p>
               </div>
               <div>
-                <p style={{ color: '#6B4C4C', fontSize: 12 }}>Total Amount</p>
-                <p style={{ color: '#2D1B1B', fontSize: 20, fontWeight: 800 }}>{formatIndianCurrency(totalAmount)}</p>
+                <p style={{ color: '#94a3b8', fontSize: 12 }}>Total Amount</p>
+                <p style={{ color: '#f1f5f9', fontSize: 20, fontWeight: 800 }}>{formatIndianCurrency(totalAmount)}</p>
               </div>
               <div>
-                <p style={{ color: '#6B4C4C', fontSize: 12 }}>Avg FAT</p>
-                <p style={{ color: '#2D1B1B', fontSize: 16, fontWeight: 700 }}>{avgFat.toFixed(2)} %</p>
+                <p style={{ color: '#94a3b8', fontSize: 12 }}>Avg FAT</p>
+                <p style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700 }}>{avgFat.toFixed(2)} %</p>
               </div>
               <div>
-                <p style={{ color: '#6B4C4C', fontSize: 12 }}>Avg {sessionMode}</p>
-                <p style={{ color: '#2D1B1B', fontSize: 16, fontWeight: 700 }}>{avgSnfClr.toFixed(2)} %</p>
+                <p style={{ color: '#94a3b8', fontSize: 12 }}>Avg {sessionMode}</p>
+                <p style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700 }}>{avgSnfClr.toFixed(2)} %</p>
               </div>
             </div>
           </div>
@@ -442,15 +468,15 @@ const MilkCollection: React.FC = () => {
 
         {/* Right Table */}
         <div className="lg:col-span-8">
-          <div className="glass-card animate-fadeIn" style={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(242,199,199,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ color: '#2D1B1B', fontWeight: 800, fontSize: 20 }}>Today's Entries <span style={{ color: '#6B4C4C', fontSize: 14, fontWeight: 400 }}>({todayEntries.length})</span></h3>
+          <div className="glass-card animate-fadeUp" style={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(148,163,184,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ color: '#f1f5f9', fontWeight: 800, fontSize: 20 }}>Today's Entries <span style={{ color: '#94a3b8', fontSize: 14, fontWeight: 400 }}>({todayEntries.length})</span></h3>
             </div>
             
             <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
-              <div className="table-3d">
+              <div className="table-container">
                 <table className="w-full">
-                  <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+                  <thead className="table-header" style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                     <tr>
                       <th className="px-4 py-3">Farmer</th>
                       <th className="px-4 py-3 text-right">Qty</th>
@@ -463,30 +489,27 @@ const MilkCollection: React.FC = () => {
                   </thead>
                   <tbody>
                     {todayEntries.sort((a, b) => b.timestamp - a.timestamp).map((entry) => (
-                      <tr key={entry.farmerCode}>
+                      <tr key={entry.farmerCode} className="table-row">
                         <td className="px-4 py-3">
-                          <div style={{ fontWeight: 700, color: '#2D1B1B' }}>{entry.farmerCode}</div>
-                          <div style={{ fontSize: 11, color: '#6B4C4C' }}>{entry.farmerName}</div>
+                          <div style={{ fontWeight: 700, color: '#f1f5f9' }}>{entry.farmerCode}</div>
+                          <div style={{ fontSize: 11, color: '#94a3b8' }}>{entry.farmerName}</div>
                         </td>
-                        <td className="px-4 py-3 text-right font-semibold" style={{ color: '#2D1B1B' }}>{entry.qty.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right" style={{ color: '#2D1B1B' }}>{entry.fat.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right" style={{ color: '#2D1B1B' }}>{(entry.snf || entry.clr || 0).toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right" style={{ color: '#2D1B1B' }}>₹{entry.rate.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right font-bold" style={{ color: '#FFB7C5' }}>{formatIndianCurrency(entry.amount)}</td>
+                        <td className="px-4 py-3 text-right font-semibold" style={{ color: '#f1f5f9' }}>{entry.qty.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right" style={{ color: '#cbd5e1' }}>{entry.fat.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right" style={{ color: '#cbd5e1' }}>{(entry.snf || entry.clr || 0).toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right" style={{ color: '#cbd5e1' }}>₹{entry.rate.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right font-bold" style={{ color: '#fcd34d' }}>₹{entry.amount.toFixed(2)}</td>
                         <td className="px-4 py-3">
                           <div className="flex justify-center gap-2">
-                            <button onClick={() => handleModify(entry)} className="p-2 rounded-lg hover:bg-pink-100 text-pink-600 hover:text-pink-700 transition"><Edit2 size={16} /></button>
-                            <button onClick={() => handleDelete(entry.farmerCode)} className="p-2 rounded-lg hover:bg-red-100 text-red-600 hover:text-red-700 transition"><Trash2 size={16} /></button>
+                            <button onClick={() => handleModify(entry)} className="btn-info" style={{ padding: 6 }}><Edit2 size={14} /></button>
+                            <button onClick={() => handleDelete(entry.farmerCode)} className="btn-danger" style={{ padding: 6 }}><Trash2 size={14} /></button>
                           </div>
                         </td>
                       </tr>
                     ))}
                     {todayEntries.length === 0 && (
                       <tr>
-                        <td colSpan={7} className="px-4 py-20 text-center">
-                          <Droplet size={48} className="mx-auto mb-4" style={{ color: 'rgba(242,199,199,0.2)' }} />
-                          <p style={{ color: '#6B4C4C', fontSize: 16 }}>No entries for this session yet.</p>
-                        </td>
+                        <td colSpan={7} className="px-4 py-12 text-center text-slate-500">No entries yet for this session</td>
                       </tr>
                     )}
                   </tbody>
@@ -496,9 +519,9 @@ const MilkCollection: React.FC = () => {
           </div>
         </div>
       </div>
-
+      
       {showSavedMessage && (
-        <div style={{ position: 'fixed', bottom: 24, right: 24, background: 'linear-gradient(135deg, #D5F3D8, #a8ddb0)', color: '#2D1B1B', fontWeight: 800, padding: '12px 24px', borderRadius: 12, boxShadow: '0 8px 32px rgba(213,243,216,0.5)', animation: 'slideIn 0.3s ease', zIndex: 99999, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ position: 'fixed', bottom: 40, left: '50%', transform: 'translateX(-50%)', background: '#4ade80', color: '#0f172a', padding: '12px 24px', borderRadius: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 8px 32px rgba(74,222,128,0.4)', zIndex: 10000 }}>
           <CheckCircle size={20} /> Entry Saved Successfully!
         </div>
       )}

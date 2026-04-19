@@ -34,9 +34,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
 
   return (
     <aside style={{
-      background: 'linear-gradient(180deg, #fff0f3 0%, #fde8e8 100%)',
-      borderRight: '1px solid rgba(242,199,199,0.5)',
-      boxShadow: '4px 0 24px rgba(255,183,197,0.15)',
+      background: 'linear-gradient(180deg, #0a0f1e, #0f172a)',
+      borderRight: '1px solid rgba(245,158,11,0.1)',
+      boxShadow: '4px 0 20px rgba(0,0,0,0.4)',
       width: 240, minHeight: 'calc(100vh - 64px)',
       padding: '20px 12px',
       display: 'flex', flexDirection: 'column', gap: 4
@@ -54,15 +54,15 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
                 display: 'flex', alignItems: 'center', gap: 12,
                 padding: '12px 16px', borderRadius: 12,
                 background: isActive
-                  ? 'linear-gradient(135deg, rgba(255,183,197,0.4), rgba(242,199,199,0.3))'
+                  ? 'rgba(245,158,11,0.12)'
                   : 'transparent',
                 border: isActive
-                  ? '1px solid rgba(255,183,197,0.6)'
+                  ? '1px solid rgba(245,158,11,0.25)'
                   : '1px solid transparent',
                 boxShadow: isActive
-                  ? '0 4px 16px rgba(255,183,197,0.25), inset 0 1px 0 rgba(255,255,255,0.8)'
+                  ? '0 4px 16px rgba(245,158,11,0.1)'
                   : 'none',
-                color: isActive ? '#c44d6e' : '#6B4C4C',
+                color: isActive ? '#fcd34d' : '#64748b',
                 fontWeight: isActive ? 700 : 500,
                 fontSize: 14,
                 cursor: 'pointer',
@@ -70,14 +70,20 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
                 textAlign: 'left',
                 width: '100%',
               }}
+              onMouseEnter={(e) => {
+                if (!isActive) e.currentTarget.style.color = '#94a3b8';
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) e.currentTarget.style.color = '#64748b';
+              }}
             >
-              <Icon style={{ width: 18, height: 18 }} />
+              <Icon style={{ width: 18, height: 18, color: isActive ? '#f59e0b' : 'inherit' }} />
               {item.label}
               {isActive && (
                 <div style={{
                   marginLeft: 'auto', width: 6, height: 6,
-                  borderRadius: '50%', background: '#FFB7C5',
-                  boxShadow: '0 0 8px rgba(255,183,197,0.8)'
+                  borderRadius: '50%', background: '#f59e0b',
+                  boxShadow: '0 0 8px #f59e0b'
                 }} />
               )}
             </button>
