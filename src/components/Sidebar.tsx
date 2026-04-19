@@ -34,9 +34,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
 
   return (
     <aside style={{
-      background: 'linear-gradient(180deg, #051208 0%, #0a1f0f 100%)',
-      borderRight: '1px solid rgba(255,255,255,0.08)',
-      boxShadow: '4px 0 24px rgba(0,0,0,0.5)',
+      background: 'linear-gradient(180deg, #fff0f3 0%, #fde8e8 100%)',
+      borderRight: '1px solid rgba(242,199,199,0.5)',
+      boxShadow: '4px 0 24px rgba(255,183,197,0.15)',
       width: 240, minHeight: 'calc(100vh - 64px)',
       padding: '20px 12px',
       display: 'flex', flexDirection: 'column', gap: 4
@@ -54,15 +54,15 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
                 display: 'flex', alignItems: 'center', gap: 12,
                 padding: '12px 16px', borderRadius: 12,
                 background: isActive
-                  ? 'linear-gradient(135deg, rgba(74,222,128,0.2), rgba(45,158,79,0.15))'
+                  ? 'linear-gradient(135deg, rgba(255,183,197,0.4), rgba(242,199,199,0.3))'
                   : 'transparent',
                 border: isActive
-                  ? '1px solid rgba(74,222,128,0.3)'
+                  ? '1px solid rgba(255,183,197,0.6)'
                   : '1px solid transparent',
                 boxShadow: isActive
-                  ? '0 4px 16px rgba(74,222,128,0.15), inset 0 1px 0 rgba(255,255,255,0.1)'
+                  ? '0 4px 16px rgba(255,183,197,0.25), inset 0 1px 0 rgba(255,255,255,0.8)'
                   : 'none',
-                color: isActive ? '#4ade80' : 'rgba(255,255,255,0.6)',
+                color: isActive ? '#c44d6e' : '#6B4C4C',
                 fontWeight: isActive ? 700 : 500,
                 fontSize: 14,
                 cursor: 'pointer',
@@ -76,8 +76,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
               {isActive && (
                 <div style={{
                   marginLeft: 'auto', width: 6, height: 6,
-                  borderRadius: '50%', background: '#4ade80',
-                  boxShadow: '0 0 8px #4ade80'
+                  borderRadius: '50%', background: '#FFB7C5',
+                  boxShadow: '0 0 8px rgba(255,183,197,0.8)'
                 }} />
               )}
             </button>

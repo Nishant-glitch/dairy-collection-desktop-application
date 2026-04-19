@@ -6,39 +6,39 @@
 }
 
 body {
-  background: linear-gradient(135deg, #0a1f0f 0%, #0d2d18 40%, #0f3d20 100%);
+  background: linear-gradient(135deg, #fde8e8 0%, #fdf0f5 40%, #e8f5ea 100%);
   min-height: 100vh;
   margin: 0;
   padding: 0;
-  color: white;
+  color: #2D1B1B;
 }
 
 /* 3D Glass Card */
 .glass-card {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.75);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(242, 199, 199, 0.6);
   border-radius: 20px;
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    0 2px 8px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+    0 8px 32px rgba(255, 183, 197, 0.25),
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    inset 0 -1px 0 rgba(242, 199, 199, 0.2);
 }
 
-/* 3D Button */
+/* 3D Button — Hot Pink */
 .btn-3d {
-  background: linear-gradient(145deg, #2d9e4f, #1a5c2e);
+  background: linear-gradient(145deg, #FFB7C5, #f090a8);
   border: none;
   border-radius: 12px;
   box-shadow:
-    0 6px 20px rgba(45, 158, 79, 0.4),
-    0 2px 4px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  color: white;
+    0 6px 20px rgba(255, 183, 197, 0.5),
+    0 2px 4px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  color: #2D1B1B;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
   transform: translateY(0);
   transition: all 0.2s ease;
   cursor: pointer;
@@ -51,43 +51,63 @@ body {
 .btn-3d:hover {
   transform: translateY(-3px);
   box-shadow:
-    0 12px 28px rgba(45, 158, 79, 0.5),
-    0 4px 8px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    0 12px 28px rgba(255, 183, 197, 0.6),
+    0 4px 8px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .btn-3d:active {
   transform: translateY(1px);
   box-shadow:
-    0 2px 8px rgba(45, 158, 79, 0.3),
-    inset 0 2px 4px rgba(0, 0, 0, 0.2);
+    0 2px 8px rgba(255, 183, 197, 0.3),
+    inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* 3D Button — Mint Green (secondary) */
+.btn-3d-mint {
+  background: linear-gradient(145deg, #D5F3D8, #a8e0ae);
+  border: none;
+  border-radius: 12px;
+  box-shadow:
+    0 6px 20px rgba(213, 243, 216, 0.6),
+    0 2px 4px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  color: #2D1B1B;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-3d-mint:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(213, 243, 216, 0.7);
 }
 
 /* 3D Input */
 .input-3d {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1.5px solid rgba(242, 199, 199, 0.8);
   border-radius: 10px;
-  color: white;
+  color: #2D1B1B;
   padding: 10px 14px;
   box-shadow:
-    inset 0 2px 8px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(0, 0, 0, 0.2),
-    0 1px 0 rgba(255, 255, 255, 0.1);
+    inset 0 2px 6px rgba(242, 199, 199, 0.2),
+    0 1px 0 rgba(255, 255, 255, 0.8);
   transition: all 0.2s;
+  font-size: 14px;
 }
 
 .input-3d:focus {
   outline: none;
-  border-color: #4ade80;
+  border-color: #FFB7C5;
   box-shadow:
-    inset 0 2px 8px rgba(0, 0, 0, 0.4),
-    0 0 0 3px rgba(74, 222, 128, 0.25),
-    0 0 20px rgba(74, 222, 128, 0.15);
+    inset 0 2px 6px rgba(242, 199, 199, 0.2),
+    0 0 0 3px rgba(255, 183, 197, 0.3),
+    0 0 20px rgba(255, 183, 197, 0.15);
 }
 
 .input-3d::placeholder {
-  color: rgba(255, 255, 255, 0.35);
+  color: #b49a9a;
 }
 
 /* 3D Stat Card */
@@ -97,9 +117,9 @@ body {
   position: relative;
   overflow: hidden;
   box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.5),
-    0 4px 16px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    0 20px 60px rgba(255, 183, 197, 0.3),
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
   transform: perspective(1000px) rotateX(2deg);
   transition: all 0.3s ease;
 }
@@ -107,9 +127,9 @@ body {
 .stat-card-3d:hover {
   transform: perspective(1000px) rotateX(0deg) translateY(-6px) scale(1.02);
   box-shadow:
-    0 30px 80px rgba(0, 0, 0, 0.6),
-    0 8px 24px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    0 30px 80px rgba(255, 183, 197, 0.4),
+    0 8px 24px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .stat-card-3d::before {
@@ -119,7 +139,7 @@ body {
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
 }
 
 .stat-card-3d::after {
@@ -129,56 +149,60 @@ body {
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 60%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 60%);
   pointer-events: none;
 }
 
 /* Table 3D */
 .table-3d {
-  background: rgba(0, 0, 0, 0.25);
+  background: rgba(255, 255, 255, 0.8);
   border-radius: 16px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(242, 199, 199, 0.5);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    0 8px 32px rgba(255, 183, 197, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .table-3d thead {
-  background: linear-gradient(135deg, #1a5c2e, #2d9e4f);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(135deg, #F2C7C7, #FFB7C5);
+  box-shadow: 0 4px 12px rgba(255, 183, 197, 0.3);
 }
 
 .table-3d thead th {
-  color: white;
+  color: #2D1B1B;
   font-weight: 700;
   padding: 14px 16px;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
+  font-size: 13px;
   text-align: left;
 }
 
 .table-3d tbody tr {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(242, 199, 199, 0.3);
   transition: all 0.2s;
-  color: rgba(255, 255, 255, 0.85);
+  color: #2D1B1B;
 }
 
 .table-3d tbody tr:hover {
-  background: rgba(74, 222, 128, 0.08);
-  transform: scale(1.005);
+  background: rgba(213, 243, 216, 0.3);
+}
+
+.table-3d tbody td {
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #3d2a2a;
 }
 
 /* Modal 3D */
 .modal-3d {
-  background: linear-gradient(145deg, #0d2d18, #0a1f0f);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: linear-gradient(145deg, #fff5f7, #ffffff);
+  border: 1px solid rgba(242, 199, 199, 0.6);
   border-radius: 24px;
   box-shadow:
-    0 40px 120px rgba(0, 0, 0, 0.8),
-    0 8px 32px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.3);
+    0 40px 120px rgba(255, 183, 197, 0.4),
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 /* Scrollbar */
@@ -188,32 +212,32 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(242, 199, 199, 0.2);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(#2d9e4f, #1a5c2e);
+  background: linear-gradient(#FFB7C5, #F2C7C7);
   border-radius: 3px;
 }
 
 /* Glow effects */
-.glow-green {
-  box-shadow: 0 0 20px rgba(74, 222, 128, 0.3), 0 0 60px rgba(74, 222, 128, 0.1);
+.glow-pink {
+  box-shadow: 0 0 20px rgba(255, 183, 197, 0.3), 0 0 60px rgba(255, 183, 197, 0.1);
 }
 
 .text-glow {
-  text-shadow: 0 0 20px rgba(74, 222, 128, 0.5);
+  text-shadow: 0 0 20px rgba(255, 183, 197, 0.5);
 }
 
 /* Badge */
 .badge-3d {
-  background: linear-gradient(135deg, #4ade80, #2d9e4f);
+  background: linear-gradient(135deg, #FFB7C5, #f090a8);
   border-radius: 20px;
   padding: 2px 10px;
   font-size: 11px;
   font-weight: 700;
-  color: #0a1f0f;
-  box-shadow: 0 2px 8px rgba(74, 222, 128, 0.4);
+  color: #2D1B1B;
+  box-shadow: 0 2px 8px rgba(255, 183, 197, 0.5);
   display: inline-block;
 }
 
@@ -242,10 +266,10 @@ body {
 
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(74, 222, 128, 0.3);
+    box-shadow: 0 0 20px rgba(255, 183, 197, 0.3);
   }
   50% {
-    box-shadow: 0 0 40px rgba(74, 222, 128, 0.6);
+    box-shadow: 0 0 40px rgba(255, 183, 197, 0.6);
   }
 }
 
@@ -261,7 +285,7 @@ body {
 @media print {
   body {
     background: white;
-    color: black;
+    color: #2D1B1B;
   }
   .no-print {
     display: none !important;

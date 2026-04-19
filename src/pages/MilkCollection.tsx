@@ -243,50 +243,71 @@ const MilkCollection: React.FC = () => {
     ? todayEntries.reduce((sum, e) => sum + (e.snf || e.clr || 0), 0) / todayEntries.length 
     : 0;
 
-  const labelStyle: React.CSSProperties = { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600, marginBottom: 6, display: 'block' };
-  const chipStyle: React.CSSProperties = { background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 8, padding: '4px 12px', color: '#4ade80', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 };
+  const labelStyle: React.CSSProperties = { color: '#6B4C4C', fontSize: 13, fontWeight: 600, marginBottom: 6, display: 'block' };
+  const chipStyle: React.CSSProperties = { background: 'rgba(255,183,197,0.2)', border: '1px solid rgba(255,183,197,0.5)', color: '#c44d6e', borderRadius: 8, padding: '4px 12px', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 };
 
   if (showSessionSetup) {
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="modal-3d animate-fadeIn" style={{ padding: 32, maxWidth: 450, width: '90%' }}>
-          <h2 style={{ color: 'white', fontWeight: 800, fontSize: 24, marginBottom: 24, textAlign: 'center' }}>Start Collection Session</h2>
+          <h2 style={{ color: '#2D1B1B', fontWeight: 800, fontSize: 24, marginBottom: 24, textAlign: 'center' }}>Start Collection Session</h2>
           
           <div className="space-y-6">
             <div>
-              <label style={labelStyle}>Date</label>
+              <label style={{ color: '#6B4C4C', fontSize: 13, fontWeight: 600, marginBottom: 6, display: 'block' }}>Date</label>
               <input type="date" value={sessionDate} onChange={(e) => setSessionDate(e.target.value)} className="input-3d w-full" />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label style={labelStyle}>Shift</label>
+                <label style={{ color: '#6B4C4C', fontSize: 13, fontWeight: 600, marginBottom: 6, display: 'block' }}>Shift</label>
                 <div className="flex gap-2">
-                  <button onClick={() => setSessionShift('Morning')} className="btn-3d w-full" style={{ background: sessionShift === 'Morning' ? undefined : 'rgba(255,255,255,0.05)', boxShadow: sessionShift === 'Morning' ? undefined : 'none', border: sessionShift === 'Morning' ? undefined : '1px solid rgba(255,255,255,0.1)' }}>Morning</button>
-                  <button onClick={() => setSessionShift('Evening')} className="btn-3d w-full" style={{ background: sessionShift === 'Evening' ? undefined : 'rgba(255,255,255,0.05)', boxShadow: sessionShift === 'Evening' ? undefined : 'none', border: sessionShift === 'Evening' ? undefined : '1px solid rgba(255,255,255,0.1)' }}>Evening</button>
+                  <button onClick={() => setSessionShift('Morning')} className="btn-3d w-full" style={{ background: sessionShift === 'Morning' ? undefined : 'rgba(242,199,199,0.2)', boxShadow: sessionShift === 'Morning' ? undefined : 'none', border: sessionShift === 'Morning' ? undefined : '1px solid rgba(242,199,199,0.4)' }}>Morning</button>
+                  <button onClick={() => setSessionShift('Evening')} className="btn-3d w-full" style={{ background: sessionShift === 'Evening' ? undefined : 'rgba(242,199,199,0.2)', boxShadow: sessionShift === 'Evening' ? undefined : 'none', border: sessionShift === 'Evening' ? undefined : '1px solid rgba(242,199,199,0.4)' }}>Evening</button>
                 </div>
               </div>
               <div>
-                <label style={labelStyle}>Mode</label>
+                <label style={{ color: '#6B4C4C', fontSize: 13, fontWeight: 600, marginBottom: 6, display: 'block' }}>Mode</label>
                 <div className="flex gap-2">
-                  <button onClick={() => setSessionMode('SNF')} className="btn-3d w-full" style={{ background: sessionMode === 'SNF' ? undefined : 'rgba(255,255,255,0.05)', boxShadow: sessionMode === 'SNF' ? undefined : 'none', border: sessionMode === 'SNF' ? undefined : '1px solid rgba(255,255,255,0.1)' }}>SNF</button>
-                  <button onClick={() => setSessionMode('CLR')} className="btn-3d w-full" style={{ background: sessionMode === 'CLR' ? undefined : 'rgba(255,255,255,0.05)', boxShadow: sessionMode === 'CLR' ? undefined : 'none', border: sessionMode === 'CLR' ? undefined : '1px solid rgba(255,255,255,0.1)' }}>CLR</button>
+                  <button onClick={() => setSessionMode('SNF')} className="btn-3d w-full" style={{ background: sessionMode === 'SNF' ? undefined : 'rgba(242,199,199,0.2)', boxShadow: sessionMode === 'SNF' ? undefined : 'none', border: sessionMode === 'SNF' ? undefined : '1px solid rgba(242,199,199,0.4)' }}>SNF</button>
+                  <button onClick={() => setSessionMode('CLR')} className="btn-3d w-full" style={{ background: sessionMode === 'CLR' ? undefined : 'rgba(242,199,199,0.2)', boxShadow: sessionMode === 'CLR' ? undefined : 'none', border: sessionMode === 'CLR' ? undefined : '1px solid rgba(242,199,199,0.4)' }}>CLR</button>
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-4 p-4 glass-card" style={{ background: 'rgba(0,0,0,0.2)' }}>
+            <div className="flex gap-4 p-4 glass-card" style={{ background: 'rgba(242,199,199,0.15)' }}>
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={printEnabled} onChange={(e) => setPrintEnabled(e.target.checked)} className="w-4 h-4 accent-green-500" />
-                <span style={{ color: 'white', fontSize: 14 }}>Print Slips</span>
+                <input type="checkbox" checked={printEnabled} onChange={(e) => setPrintEnabled(e.target.checked)} className="w-4 h-4 accent-pink-500" />
+                <span style={{ color: '#2D1B1B', fontSize: 14 }}>Print Slips</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={smsEnabled} onChange={(e) => setSmsEnabled(e.target.checked)} className="w-4 h-4 accent-green-500" />
-                <span style={{ color: 'white', fontSize: 14 }}>Send SMS</span>
+                <input type="checkbox" checked={smsEnabled} onChange={(e) => setSmsEnabled(e.target.checked)} className="w-4 h-4 accent-pink-500" />
+                <span style={{ color: '#2D1B1B', fontSize: 14 }}>Send SMS</span>
               </label>
             </div>
 
-            <button onClick={handleStartSession} className="btn-3d w-full animate-pulse-glow" style={{ padding: 16, fontSize: 18 }}>Start Session</button>
+            <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+              <button
+                onClick={() => setShowSessionSetup(false)}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  borderRadius: 12,
+                  background: 'rgba(242,199,199,0.3)',
+                  border: '1px solid rgba(242,199,199,0.6)',
+                  color: '#6B4C4C',
+                  fontWeight: 600,
+                  fontSize: 15,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                }}
+              >
+                ✕ Cancel
+              </button>
+              <button onClick={handleStartSession} className="btn-3d animate-pulse-glow" style={{ flex: 2, padding: '12px', fontSize: 15 }}>
+                🚀 Start Collection
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -294,23 +315,23 @@ const MilkCollection: React.FC = () => {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'linear-gradient(135deg, #0a1f0f 0%, #0d2d18 100%)', overflowY: 'auto' }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'linear-gradient(135deg, #fff0f3 0%, #fde8e8 50%, #e8f5ea 100%)', overflowY: 'auto' }}>
       {/* Top Bar */}
-      <div style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
+      <div style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(242,199,199,0.4)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 4px 16px rgba(255,183,197,0.2)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ width: 40, height: 40, background: 'linear-gradient(135deg, #4ade80, #1a5c2e)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(74,222,128,0.3)' }}>🥛</div>
+          <div style={{ width: 40, height: 40, background: 'linear-gradient(135deg, #FFB7C5, #F2C7C7)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(255,183,197,0.3)' }}>🥛</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={chipStyle}><Calendar size={14} /> {sessionDate}</div>
-            <div style={chipStyle}><Clock size={14} /> {sessionShift}</div>
-            <div style={chipStyle}><Zap size={14} /> {sessionMode} Mode</div>
+            <div style={{ background: 'rgba(255,183,197,0.2)', border: '1px solid rgba(255,183,197,0.5)', color: '#c44d6e', borderRadius: 8, padding: '4px 12px', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><Calendar size={14} /> {sessionDate}</div>
+            <div style={{ background: 'rgba(255,183,197,0.2)', border: '1px solid rgba(255,183,197,0.5)', color: '#c44d6e', borderRadius: 8, padding: '4px 12px', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><Clock size={14} /> {sessionShift}</div>
+            <div style={{ background: 'rgba(255,183,197,0.2)', border: '1px solid rgba(255,183,197,0.5)', color: '#c44d6e', borderRadius: 8, padding: '4px 12px', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><Zap size={14} /> {sessionMode} Mode</div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 16 }}>
-            {printEnabled && <div style={{ ...chipStyle, background: 'rgba(255,255,255,0.05)', color: 'white', borderColor: 'rgba(255,255,255,0.2)' }}><Printer size={14} /> Print On</div>}
-            {smsEnabled && <div style={{ ...chipStyle, background: 'rgba(255,255,255,0.05)', color: 'white', borderColor: 'rgba(255,255,255,0.2)' }}><MessageSquare size={14} /> SMS On</div>}
+            {printEnabled && <div style={{ background: 'rgba(255,183,197,0.2)', border: '1px solid rgba(255,183,197,0.5)', color: '#c44d6e', borderRadius: 8, padding: '4px 12px', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><Printer size={14} /> Print On</div>}
+            {smsEnabled && <div style={{ background: 'rgba(255,183,197,0.2)', border: '1px solid rgba(255,183,197,0.5)', color: '#c44d6e', borderRadius: 8, padding: '4px 12px', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><MessageSquare size={14} /> SMS On</div>}
           </div>
-          <button onClick={() => setShowSessionSetup(true)} className="btn-3d" style={{ padding: '8px 16px', background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', boxShadow: 'none' }}>
+          <button onClick={() => setShowSessionSetup(true)} className="btn-3d" style={{ padding: '8px 16px', background: 'rgba(242,199,199,0.3)', color: '#6B4C4C', border: '1px solid rgba(242,199,199,0.6)', boxShadow: 'none' }}>
             <X size={18} /> Close Session
           </button>
         </div>
@@ -320,8 +341,8 @@ const MilkCollection: React.FC = () => {
         {/* Left Form */}
         <div className="lg:col-span-4 space-y-6">
           <div className="glass-card animate-fadeIn" style={{ padding: 24 }}>
-            <h3 style={{ color: 'white', fontWeight: 800, fontSize: 20, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Droplet color="#4ade80" /> {isModifying ? 'Modify Entry' : 'New Collection'}
+            <h3 style={{ color: '#2D1B1B', fontWeight: 800, fontSize: 20, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Droplet color="#FFB7C5" /> {isModifying ? 'Modify Entry' : 'New Collection'}
             </h3>
             
             <div className="space-y-4">
@@ -376,17 +397,17 @@ const MilkCollection: React.FC = () => {
               </div>
 
               <div className="grid grid-cols-2 gap-4 mt-6">
-                <div style={{ background: 'linear-gradient(135deg, #1e3a5f, #1e40af)', borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(30,64,175,0.4)' }}>
-                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Rate / L</p>
-                  <p style={{ color: 'white', fontSize: 24, fontWeight: 800 }}>₹{rate.toFixed(2)}</p>
+                <div style={{ background: 'linear-gradient(135deg, #D5F3D8, #b8e8be)', borderRadius: 16, padding: 16, border: '1px solid rgba(213,243,216,0.8)', boxShadow: '0 8px 24px rgba(213,243,216,0.4)' }}>
+                  <p style={{ color: '#6B4C4C', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Rate / L</p>
+                  <p style={{ color: '#2D1B1B', fontSize: 24, fontWeight: 800 }}>₹{rate.toFixed(2)}</p>
                 </div>
-                <div style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)', borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(22,163,74,0.3)' }}>
-                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Total Amount</p>
-                  <p style={{ color: 'white', fontSize: 24, fontWeight: 800 }}>₹{amount.toFixed(2)}</p>
+                <div style={{ background: 'linear-gradient(135deg, #FFB7C5, #f090a8)', borderRadius: 16, padding: 16, border: '1px solid rgba(255,183,197,0.8)', boxShadow: '0 8px 24px rgba(255,183,197,0.4)' }}>
+                  <p style={{ color: '#6B4C4C', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Total Amount</p>
+                  <p style={{ color: '#2D1B1B', fontSize: 24, fontWeight: 800 }}>₹{amount.toFixed(2)}</p>
                 </div>
               </div>
 
-              <button onClick={handleSaveOrUpdate} className="btn-3d w-full" style={{ background: 'linear-gradient(135deg, #4ade80, #16a34a)', color: '#0a1f0f', fontWeight: 800, fontSize: 18, padding: 16, marginTop: 12 }}>
+              <button onClick={handleSaveOrUpdate} className="btn-3d w-full" style={{ background: 'linear-gradient(135deg, #FFB7C5, #f090a8)', color: '#2D1B1B', fontWeight: 800, fontSize: 18, padding: 16, marginTop: 12, boxShadow: '0 8px 24px rgba(255,183,197,0.5)' }}>
                 {isModifying ? 'Update Entry' : 'Save Collection'}
               </button>
               
@@ -396,24 +417,24 @@ const MilkCollection: React.FC = () => {
             </div>
           </div>
 
-          <div className="glass-card" style={{ padding: 24 }}>
-            <h3 style={{ color: 'white', fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Session Summary</h3>
+          <div className="glass-card" style={{ padding: 24, background: 'linear-gradient(135deg, #FFB7C5, #f090a8)' }}>
+            <h3 style={{ color: '#2D1B1B', fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Session Summary</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p style={{ color: 'white/50', fontSize: 12 }}>Total Liters</p>
-                <p style={{ color: 'white', fontSize: 20, fontWeight: 800 }}>{totalQty.toFixed(2)} L</p>
+                <p style={{ color: '#6B4C4C', fontSize: 12 }}>Total Liters</p>
+                <p style={{ color: '#2D1B1B', fontSize: 20, fontWeight: 800 }}>{totalQty.toFixed(2)} L</p>
               </div>
               <div>
-                <p style={{ color: 'white/50', fontSize: 12 }}>Total Amount</p>
-                <p style={{ color: '#4ade80', fontSize: 20, fontWeight: 800 }}>{formatIndianCurrency(totalAmount)}</p>
+                <p style={{ color: '#6B4C4C', fontSize: 12 }}>Total Amount</p>
+                <p style={{ color: '#2D1B1B', fontSize: 20, fontWeight: 800 }}>{formatIndianCurrency(totalAmount)}</p>
               </div>
               <div>
-                <p style={{ color: 'white/50', fontSize: 12 }}>Avg FAT</p>
-                <p style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>{avgFat.toFixed(2)} %</p>
+                <p style={{ color: '#6B4C4C', fontSize: 12 }}>Avg FAT</p>
+                <p style={{ color: '#2D1B1B', fontSize: 16, fontWeight: 700 }}>{avgFat.toFixed(2)} %</p>
               </div>
               <div>
-                <p style={{ color: 'white/50', fontSize: 12 }}>Avg {sessionMode}</p>
-                <p style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>{avgSnfClr.toFixed(2)} %</p>
+                <p style={{ color: '#6B4C4C', fontSize: 12 }}>Avg {sessionMode}</p>
+                <p style={{ color: '#2D1B1B', fontSize: 16, fontWeight: 700 }}>{avgSnfClr.toFixed(2)} %</p>
               </div>
             </div>
           </div>
@@ -422,8 +443,8 @@ const MilkCollection: React.FC = () => {
         {/* Right Table */}
         <div className="lg:col-span-8">
           <div className="glass-card animate-fadeIn" style={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ color: 'white', fontWeight: 800, fontSize: 20 }}>Today's Entries <span style={{ color: 'white/40', fontSize: 14, fontWeight: 400 }}>({todayEntries.length})</span></h3>
+            <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(242,199,199,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ color: '#2D1B1B', fontWeight: 800, fontSize: 20 }}>Today's Entries <span style={{ color: '#6B4C4C', fontSize: 14, fontWeight: 400 }}>({todayEntries.length})</span></h3>
             </div>
             
             <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
@@ -444,18 +465,18 @@ const MilkCollection: React.FC = () => {
                     {todayEntries.sort((a, b) => b.timestamp - a.timestamp).map((entry) => (
                       <tr key={entry.farmerCode}>
                         <td className="px-4 py-3">
-                          <div style={{ fontWeight: 700, color: 'white' }}>{entry.farmerCode}</div>
-                          <div style={{ fontSize: 11, color: 'white/50' }}>{entry.farmerName}</div>
+                          <div style={{ fontWeight: 700, color: '#2D1B1B' }}>{entry.farmerCode}</div>
+                          <div style={{ fontSize: 11, color: '#6B4C4C' }}>{entry.farmerName}</div>
                         </td>
-                        <td className="px-4 py-3 text-right font-semibold">{entry.qty.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right">{entry.fat.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right">{(entry.snf || entry.clr || 0).toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right">₹{entry.rate.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right font-bold" style={{ color: '#4ade80' }}>{formatIndianCurrency(entry.amount)}</td>
+                        <td className="px-4 py-3 text-right font-semibold" style={{ color: '#2D1B1B' }}>{entry.qty.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right" style={{ color: '#2D1B1B' }}>{entry.fat.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right" style={{ color: '#2D1B1B' }}>{(entry.snf || entry.clr || 0).toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right" style={{ color: '#2D1B1B' }}>₹{entry.rate.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right font-bold" style={{ color: '#FFB7C5' }}>{formatIndianCurrency(entry.amount)}</td>
                         <td className="px-4 py-3">
                           <div className="flex justify-center gap-2">
-                            <button onClick={() => handleModify(entry)} className="p-2 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition"><Edit2 size={16} /></button>
-                            <button onClick={() => handleDelete(entry.farmerCode)} className="p-2 rounded-lg hover:bg-red-500/20 text-red-400 hover:text-red-500 transition"><Trash2 size={16} /></button>
+                            <button onClick={() => handleModify(entry)} className="p-2 rounded-lg hover:bg-pink-100 text-pink-600 hover:text-pink-700 transition"><Edit2 size={16} /></button>
+                            <button onClick={() => handleDelete(entry.farmerCode)} className="p-2 rounded-lg hover:bg-red-100 text-red-600 hover:text-red-700 transition"><Trash2 size={16} /></button>
                           </div>
                         </td>
                       </tr>
@@ -463,8 +484,8 @@ const MilkCollection: React.FC = () => {
                     {todayEntries.length === 0 && (
                       <tr>
                         <td colSpan={7} className="px-4 py-20 text-center">
-                          <Droplet size={48} className="mx-auto mb-4 text-white/10" />
-                          <p style={{ color: 'white/30', fontSize: 16 }}>No entries for this session yet.</p>
+                          <Droplet size={48} className="mx-auto mb-4" style={{ color: 'rgba(242,199,199,0.2)' }} />
+                          <p style={{ color: '#6B4C4C', fontSize: 16 }}>No entries for this session yet.</p>
                         </td>
                       </tr>
                     )}
@@ -477,7 +498,7 @@ const MilkCollection: React.FC = () => {
       </div>
 
       {showSavedMessage && (
-        <div style={{ position: 'fixed', bottom: 24, right: 24, background: 'linear-gradient(135deg, #4ade80, #16a34a)', color: '#0a1f0f', fontWeight: 800, padding: '12px 24px', borderRadius: 12, boxShadow: '0 8px 32px rgba(74,222,128,0.5)', animation: 'slideIn 0.3s ease', zIndex: 99999, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ position: 'fixed', bottom: 24, right: 24, background: 'linear-gradient(135deg, #D5F3D8, #a8ddb0)', color: '#2D1B1B', fontWeight: 800, padding: '12px 24px', borderRadius: 12, boxShadow: '0 8px 32px rgba(213,243,216,0.5)', animation: 'slideIn 0.3s ease', zIndex: 99999, display: 'flex', alignItems: 'center', gap: 10 }}>
           <CheckCircle size={20} /> Entry Saved Successfully!
         </div>
       )}

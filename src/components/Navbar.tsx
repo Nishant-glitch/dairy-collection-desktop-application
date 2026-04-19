@@ -34,9 +34,9 @@ const Navbar: React.FC<NavbarProps> = ({ dcsName = 'DCS Pro' }) => {
 
   return (
     <nav style={{
-      background: 'linear-gradient(90deg, #051208, #0a1f0f)',
-      borderBottom: '1px solid rgba(255,255,255,0.08)',
-      boxShadow: '0 4px 24px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.05)',
+      background: 'linear-gradient(90deg, #fff0f3, #fde8e8)',
+      borderBottom: '1px solid rgba(242,199,199,0.5)',
+      boxShadow: '0 4px 24px rgba(255,183,197,0.25), 0 1px 0 rgba(255,255,255,0.8)',
       backdropFilter: 'blur(20px)',
       position: 'sticky', top: 0, zIndex: 100,
       padding: '0 24px',
@@ -47,20 +47,19 @@ const Navbar: React.FC<NavbarProps> = ({ dcsName = 'DCS Pro' }) => {
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <div style={{
           width: 40, height: 40,
-          background: 'linear-gradient(135deg, #4ade80, #1a5c2e)',
+          background: 'linear-gradient(135deg, #FFB7C5, #F2C7C7)',
           borderRadius: 12,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 4px 16px rgba(74,222,128,0.4), inset 0 1px 0 rgba(255,255,255,0.3)',
+          boxShadow: '0 4px 16px rgba(255,183,197,0.5), inset 0 1px 0 rgba(255,255,255,0.6)',
           fontSize: 20
         }}>🥛</div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <span style={{
-            color: 'white', fontWeight: 800, fontSize: 20,
+            color: '#2D1B1B', fontWeight: 800, fontSize: 20,
             letterSpacing: '-0.5px',
-            textShadow: '0 0 20px rgba(74,222,128,0.3)',
             lineHeight: 1
           }}>{dcsName}</span>
-          <span style={{ color: 'rgba(74,222,128,0.7)', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>
+          <span style={{ color: '#c44d6e', fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px' }}>
             Dairy Collection System
           </span>
         </div>
@@ -69,10 +68,10 @@ const Navbar: React.FC<NavbarProps> = ({ dcsName = 'DCS Pro' }) => {
       {/* Right side */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
         <div className="hidden md:flex flex-col items-end mr-4">
-          <span style={{ color: 'white', fontSize: 13, fontWeight: 600 }}>
+          <span style={{ color: '#2D1B1B', fontSize: 13, fontWeight: 600 }}>
             {currentTime.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
           </span>
-          <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>
+          <span style={{ color: '#6B4C4C', fontSize: 11 }}>
             {currentTime.toLocaleTimeString('en-IN')}
           </span>
         </div>
@@ -80,7 +79,7 @@ const Navbar: React.FC<NavbarProps> = ({ dcsName = 'DCS Pro' }) => {
         <button
           onClick={toggleLanguage}
           className="btn-3d"
-          style={{ padding: '6px 12px', fontSize: 12, background: 'rgba(255,255,255,0.1)', boxShadow: 'none', border: '1px solid rgba(255,255,255,0.1)' }}
+          style={{ padding: '6px 12px', fontSize: 12, background: 'rgba(242,199,199,0.3)', boxShadow: 'none', border: '1px solid rgba(242,199,199,0.6)' }}
         >
           <Globe size={14} />
           {language === 'en' ? 'EN' : 'हि'}
@@ -89,10 +88,10 @@ const Navbar: React.FC<NavbarProps> = ({ dcsName = 'DCS Pro' }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           {userIsAdmin && <span className="badge-3d">ADMIN</span>}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-            <span style={{ color: 'white', fontSize: 13, fontWeight: 700 }}>{user?.displayName || 'User'}</span>
-            <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>{user?.email}</span>
+            <span style={{ color: '#2D1B1B', fontSize: 13, fontWeight: 700 }}>{user?.displayName || 'User'}</span>
+            <span style={{ color: '#6B4C4C', fontSize: 11 }}>{user?.email}</span>
           </div>
-          <button className="btn-3d" style={{ padding: '8px 16px', fontSize: 13, background: 'linear-gradient(145deg, #ef4444, #b91c1c)' }}
+          <button className="btn-3d" style={{ padding: '8px 16px', fontSize: 13, background: 'linear-gradient(145deg, #FFB7C5, #f090a8)' }}
             onClick={handleLogout}>
             <LogOut size={14} />
             {t('logout')}
