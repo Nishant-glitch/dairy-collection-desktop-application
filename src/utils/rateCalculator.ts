@@ -79,20 +79,34 @@ export const formatDate = (date: Date | string): string => {
 
 export const calcCowRate = (fat: number, snf: number, config: any): number => {
   if (!config) return 0;
-  const rate = (fat * config.fatPerKg / 100) + (snf * config.snfPerKg / 100);
+  const cappedSnf = Math.min(snf, config.snfTo ?? 8.5);
+  const cappedFat = Math.min(fat, config.fatTo ?? 5.9);
+  const rate = (cappedFat * config.fatPerKg / 100) + (cappedSnf * config.snfPerKg / 100);
   return Math.round(rate * 100) / 100;
 };
 
-export const calcBuffaloRate = (fat: number, config: any): number => {
+export const calcBuffaloRate = (fat: number, snf: number, config: any): number => {
   if (!config) return 0;
-  const rate = fat * config.fatPerKg / 100;
+  const cappedFat = Math.min(fat, config.fatTo ?? 12.0);
+  const cappedSnf = Math.min(snf, config.snfTo ?? 10.0);
+  const rate = (cappedFat * config.fatPerKg / 100) + (cappedSnf * config.snfPerKg / 100);
   return Math.round(rate * 100) / 100;
+};
+
+export const calcMixedRate = (fat: number, snf: number, cowConfig: any, buffaloConfig: any): number => {
+  if (!cowConfig || !buffaloConfig) return 0;
+  
+  if (fat <= (cowConfig.fatTo ?? 5.9) && snf <= (cowConfig.snfTo ?? 8.5)) {
+    return calcCowRate(fat, snf, cowConfig);
+  } else {
+    return calcBuffaloRate(fat, snf, buffaloConfig);
+  }
 };
 
 export const getRateForDate = async (
   database: any,
   uid: string,
-  animalType: 'cow' | 'buffalo',
+  animalType: 'cow' | 'buffalo' | 'mix',
   collectionDate: string
 ): Promise<any> => {
   const { ref, get } = await import('firebase/database');
@@ -100,11 +114,8 @@ export const getRateForDate = async (
   const snap = await get(historyRef);
   if (!snap.exists()) return null;
 
-  const history = snap.val();
-  const configs = Object.values(history) as any[];
-  
+  const configs = Object.values(snap.val()) as any[];
   configs.sort((a: any, b: any) => new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime());
   
-  const applicable = configs.find((c: any) => c.effectiveFrom <= collectionDate);
-  return applicable || configs[configs.length - 1];
+  return configs.find((c: any) => c.effectiveFrom <= collectionDate) || configs[configs.length - 1];
 };

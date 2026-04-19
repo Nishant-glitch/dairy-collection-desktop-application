@@ -3,7 +3,7 @@ import { ref, onValue, set, get, remove } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
 import { useLanguage } from '../contexts/LanguageContext';
-import { calcCowRate, calcBuffaloRate, getRateForDate, formatIndianCurrency } from '../utils/rateCalculator';
+import { calcCowRate, calcBuffaloRate, calcMixedRate, getRateForDate, formatIndianCurrency } from '../utils/rateCalculator';
 import { sendCollectionSMS } from '../services/sms';
 import { X, Edit2, Trash2 } from 'lucide-react';
 
@@ -26,7 +26,7 @@ const MilkCollection: React.FC = () => {
   const [sessionDate, setSessionDate] = useState(new Date().toISOString().split('T')[0]);
   const [sessionShift, setSessionShift] = useState<'Morning' | 'Evening'>('Morning');
   const [sessionMode, setSessionMode] = useState<'SNF' | 'CLR'>('SNF');
-  const [animalType, setAnimalType] = useState<'cow' | 'buffalo'>('cow');
+  const [animalType, setAnimalType] = useState<'cow' | 'buffalo' | 'mix'>('cow');
   const [printEnabled, setPrintEnabled] = useState(false);
   const [smsEnabled, setSmsEnabled] = useState(false);
   
@@ -43,6 +43,7 @@ const MilkCollection: React.FC = () => {
   const [todayEntries, setTodayEntries] = useState<Entry[]>([]);
   const [cowConfig, setCowConfig] = useState<any>(null);
   const [buffaloConfig, setBuffaloConfig] = useState<any>(null);
+  const [mixedConfig, setMixedConfig] = useState<any>(null);
   const [dcsInfo, setDcsInfo] = useState<any>({});
   const [farmers, setFarmers] = useState<any>({});
 
@@ -64,8 +65,10 @@ const MilkCollection: React.FC = () => {
       let calculatedRate = 0;
       if (animalType === 'cow' && snfClr && cowConfig) {
         calculatedRate = calcCowRate(parseFloat(fat), parseFloat(snfClr), cowConfig);
-      } else if (animalType === 'buffalo' && buffaloConfig) {
-        calculatedRate = calcBuffaloRate(parseFloat(fat), buffaloConfig);
+      } else if (animalType === 'buffalo' && snfClr && buffaloConfig) {
+        calculatedRate = calcBuffaloRate(parseFloat(fat), parseFloat(snfClr), buffaloConfig);
+      } else if (animalType === 'mix' && snfClr && mixedConfig?.cowConfig && mixedConfig?.buffaloConfig) {
+        calculatedRate = calcMixedRate(parseFloat(fat), parseFloat(snfClr), mixedConfig.cowConfig, mixedConfig.buffaloConfig);
       }
       setRate(calculatedRate);
       setAmount(calculatedRate * parseFloat(qty));
@@ -73,15 +76,17 @@ const MilkCollection: React.FC = () => {
       setRate(0);
       setAmount(0);
     }
-  }, [qty, fat, snfClr, animalType, cowConfig, buffaloConfig]);
+  }, [qty, fat, snfClr, animalType, cowConfig, buffaloConfig, mixedConfig]);
 
   const loadRateConfigForDate = async (date: string) => {
     const uid = (await import('../firebase/config')).auth.currentUser?.uid;
     if (!uid) return;
     const cow = await getRateForDate(database, uid, 'cow', date);
     const buffalo = await getRateForDate(database, uid, 'buffalo', date);
+    const mixed = await getRateForDate(database, uid, 'mix', date);
     setCowConfig(cow);
     setBuffaloConfig(buffalo);
+    setMixedConfig(mixed);
   };
 
   const loadDCSInfo = async () => {
@@ -175,7 +180,7 @@ const MilkCollection: React.FC = () => {
       timestamp: Date.now(),
     };
 
-    if (animalType === 'cow') {
+    if (animalType === 'cow' || animalType === 'mix') {
       entryData.snf = parseFloat(snfClr);
     } else if (animalType === 'buffalo') {
       entryData.clr = parseFloat(snfClr);
@@ -333,6 +338,16 @@ const MilkCollection: React.FC = () => {
                   />
                   🐃 Buffalo
                 </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    value="mix"
+                    checked={animalType === 'mix'}
+                    onChange={() => setAnimalType('mix')}
+                    className="mr-2"
+                  />
+                  🔀 Mix
+                </label>
               </div>
             </div>
 
@@ -430,7 +445,7 @@ const MilkCollection: React.FC = () => {
           <span><strong>Date:</strong> {sessionDate}</span>
           <span><strong>Shift:</strong> {sessionShift}</span>
           <span><strong>Mode:</strong> {sessionMode}</span>
-          <span><strong>Animal:</strong> {animalType === 'cow' ? '🐄 Cow' : '🐃 Buffalo'}</span>
+          <span><strong>Animal:</strong> {animalType === 'cow' ? '🐄 Cow' : animalType === 'buffalo' ? '🐃 Buffalo' : '🔀 Mix'}</span>
         </div>
         <button
           onClick={handleCloseSession}
@@ -497,7 +512,7 @@ const MilkCollection: React.FC = () => {
               />
             </div>
 
-            {animalType === 'cow' && (
+            {(animalType === 'cow' || animalType === 'mix') && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">{sessionMode} %</label>
                 <input
