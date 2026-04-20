@@ -294,54 +294,46 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   if (showSessionSetup) {
     return (
       <div className="modal-overlay">
-        <div className="modal-3d animate-fadeIn" style={{ padding: '24px 28px', maxWidth: '420px', width: '90%' }}>
-          <h2 className="modal-title" style={{ color: 'white', fontWeight: 800, fontSize: 18, marginBottom: 16 }}>Start Collection Session</h2>
+        <div className="modal-3d animate-fadeIn" style={{ padding: '28px', maxWidth: '420px', width: '90%' }}>
+          <h2 className="modal-title" style={{ color: 'white', fontWeight: 800, fontSize: 18, marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Start Collection Session</h2>
           
           <div className="space-y-4">
-            <div>
-              <label className="label-text">Date</label>
-              <input type="date" value={sessionDate} onChange={(e) => setSessionDate(e.target.value)} className="input-3d" style={{ padding: '8px 12px' }} />
+            <div style={{ marginBottom: '16px' }}>
+              <label className="label-text" style={{ marginBottom: '6px' }}>Date</label>
+              <input type="date" value={sessionDate} onChange={(e) => setSessionDate(e.target.value)} className="input-3d" style={{ padding: '10px 14px', fontSize: '14px' }} />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4" style={{ marginBottom: '16px' }}>
               <div>
-                <label className="label-text">Shift</label>
-                <div className="flex gap-2">
-                  <button onClick={() => setSessionShift('Morning')} className={sessionShift === 'Morning' ? 'btn-3d w-full' : 'btn-secondary w-full'} style={{ height: '36px', fontSize: '13px' }}>Morning</button>
-                  <button onClick={() => setSessionShift('Evening')} className={sessionShift === 'Evening' ? 'btn-3d w-full' : 'btn-secondary w-full'} style={{ height: '36px', fontSize: '13px' }}>Evening</button>
+                <label className="label-text" style={{ marginBottom: '8px' }}>Shift</label>
+                <div className="flex gap-2" style={{ gap: '8px' }}>
+                  <button onClick={() => setSessionShift('Morning')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${sessionShift === 'Morning' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30' : 'bg-white/5 text-white/60 hover:bg-white/10'}`} style={{ padding: '8px 16px', fontSize: '13px' }}>Morning</button>
+                  <button onClick={() => setSessionShift('Evening')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${sessionShift === 'Evening' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30' : 'bg-white/5 text-white/60 hover:bg-white/10'}`} style={{ padding: '8px 16px', fontSize: '13px' }}>Evening</button>
                 </div>
               </div>
               <div>
-                <label className="label-text">Mode</label>
-                <div className="flex gap-2">
-                  <button onClick={() => setSessionMode('SNF')} className={sessionMode === 'SNF' ? 'btn-3d w-full' : 'btn-secondary w-full'} style={{ height: '36px', fontSize: '13px' }}>SNF</button>
-                  <button onClick={() => setSessionMode('CLR')} className={sessionMode === 'CLR' ? 'btn-3d w-full' : 'btn-secondary w-full'} style={{ height: '36px', fontSize: '13px' }}>CLR</button>
+                <label className="label-text" style={{ marginBottom: '8px' }}>Mode</label>
+                <div className="flex gap-2" style={{ gap: '8px' }}>
+                  <button onClick={() => setSessionMode('SNF')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${sessionMode === 'SNF' ? 'bg-green-500 text-white shadow-lg shadow-green-500/30' : 'bg-white/5 text-white/60 hover:bg-white/10'}`} style={{ padding: '8px 16px', fontSize: '13px' }}>SNF</button>
+                  <button onClick={() => setSessionMode('CLR')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${sessionMode === 'CLR' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30' : 'bg-white/5 text-white/60 hover:bg-white/10'}`} style={{ padding: '8px 16px', fontSize: '13px' }}>CLR</button>
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-4 p-3 glass-card" style={{ marginBottom: 0, gap: '16px' }}>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={printEnabled} onChange={(e) => setPrintEnabled(e.target.checked)} className="w-4 h-4" style={{ accentColor: '#4ade80' }} />
-                <span style={{ color: 'white', fontSize: 13 }}>Print Slips</span>
+            <div className="flex items-center gap-6" style={{ marginTop: '4px', marginBottom: '20px', gap: '20px' }}>
+              <label className="flex items-center gap-2 cursor-pointer group" style={{ fontSize: '14px' }}>
+                <input type="checkbox" checked={printEnabled} onChange={(e) => setPrintEnabled(e.target.checked)} className="w-4 h-4 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-blue-500/30" />
+                <span className="text-white/70 group-hover:text-white transition-colors">Print Slips</span>
               </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={smsEnabled} onChange={(e) => setSmsEnabled(e.target.checked)} className="w-4 h-4" style={{ accentColor: '#4ade80' }} />
-                <span style={{ color: 'white', fontSize: 13 }}>Send SMS</span>
+              <label className="flex items-center gap-2 cursor-pointer group" style={{ fontSize: '14px' }}>
+                <input type="checkbox" checked={smsEnabled} onChange={(e) => setSmsEnabled(e.target.checked)} className="w-4 h-4 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-blue-500/30" />
+                <span className="text-white/70 group-hover:text-white transition-colors">Send SMS</span>
               </label>
             </div>
 
-            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-              <button
-                onClick={() => onNavigate('dashboard')}
-                className="btn-secondary"
-                style={{ flex: 1, height: '40px' }}
-              >
-                ✕ Cancel
-              </button>
-              <button onClick={handleStartSession} className="btn-3d" style={{ flex: 2, height: '40px' }}>
-                🚀 Start Collection
-              </button>
+            <div className="flex gap-3" style={{ marginTop: '24px', display: 'flex', gap: '12px' }}>
+              <button onClick={() => onNavigate('dashboard')} className="btn-secondary" style={{ flex: 1, padding: '12px', minHeight: '40px', fontSize: '14px', fontWeight: 600 }}>Cancel</button>
+              <button onClick={handleStartSession} className="btn-3d" style={{ flex: 2, padding: '12px', minHeight: '40px', fontSize: '14px', fontWeight: 600 }}>Start Collection</button>
             </div>
           </div>
         </div>
@@ -350,183 +342,229 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'linear-gradient(135deg, #0a1f0f 0%, #0d2d18 100%)', overflowY: 'auto' }}>
-      {/* Top Bar */}
-      <div style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '8px 24px', height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 4px 24px rgba(0,0,0,0.6)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <div style={{ width: 40, height: 40, background: 'linear-gradient(135deg, #4ade80, #1a5c2e)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(74,222,128,0.4)' }}>🥛</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 8, padding: '4px 12px', color: '#4ade80', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><Calendar size={14} /> {sessionDate}</div>
-            <div style={{ background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 8, padding: '4px 12px', color: '#4ade80', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><Clock size={14} /> {sessionShift}</div>
-            <div style={{ background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 8, padding: '4px 12px', color: '#4ade80', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><Zap size={14} /> {sessionMode} Mode</div>
-          </div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginRight: 16 }}>
-            {printEnabled && <div style={{ background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 8, padding: '4px 12px', color: '#4ade80', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><Printer size={14} /> Print On</div>}
-            {smsEnabled && <div style={{ background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 8, padding: '4px 12px', color: '#4ade80', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}><MessageSquare size={14} /> SMS On</div>}
-          </div>
-          <button onClick={() => onNavigate('dashboard')} className="btn-secondary">
-            <X size={18} /> Close Session
-          </button>
-        </div>
-      </div>
+    <div className="page-wrapper animate-fadeIn">
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Left Panel: Entry Form */}
+        <div className="w-full lg:w-1/3">
+          <div className="glass-card" style={{ padding: '20px 24px' }}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <Droplet className="text-blue-400" size={20} />
+                New Entry
+              </h2>
+              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
+                <div className={`w-2 h-2 rounded-full ${sessionShift === 'Morning' ? 'bg-blue-400' : 'bg-orange-400'}`} />
+                <span className="text-xs font-bold text-white/70">{sessionShift}</span>
+              </div>
+            </div>
 
-      <div className="p-6 flex gap-6">
-        {/* Left Form */}
-        <div style={{ width: '380px', flexShrink: 0 }} className="space-y-6">
-          <div className="glass-card animate-fadeIn" style={{ padding: 24 }}>
-            <h3 className="modal-title" style={{ border: 'none', marginBottom: 20, padding: 0, color: 'white', fontWeight: 800, fontSize: 18 }}>
-              <Droplet color="#4ade80" /> {isModifying ? 'Modify Entry' : 'New Collection'}
-            </h3>
-            
-            <div className="space-y-3">
-              <div>
+            <div className="space-y-4">
+              <div className="relative">
                 <label className="label-text">Farmer Code</label>
                 <input
                   ref={farmerCodeRef}
-                  type="number"
+                  type="text"
                   value={farmerCode}
                   onChange={(e) => handleFarmerCodeChange(e.target.value)}
                   onKeyDown={handleFarmerCodeKeyDown}
-                  className="input-3d"
-                  style={{ padding: '8px 12px' }}
-                  placeholder="Enter Farmer Code"
+                  className={`input-3d ${warningMessage ? 'border-orange-500/50' : ''}`}
+                  placeholder="Enter Code"
+                  autoFocus
                 />
-                
-                {farmerFound && (
-                  <div className="farmer-found-box mt-3">
-                    <span style={{ color: '#4ade80', fontSize: 11 }}>✓ Farmer Found</span>
-                    <div style={{ color: 'white', fontWeight: 700, fontSize: 16 }}>{farmerName}</div>
-                  </div>
+                {warningMessage && (
+                  <p className="absolute -bottom-5 left-0 text-[10px] text-orange-400 font-medium">{warningMessage}</p>
                 )}
-                
-                {farmerCode.length > 0 && !farmerFound && (
-                  <div style={{ color: '#f87171', fontSize: 12, marginTop: 4 }}>Farmer not found</div>
-                )}
-                
-                {warningMessage && <p style={{ color: '#f87171', fontSize: 12, marginTop: 4, fontWeight: 600 }}>{warningMessage}</p>}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="label-text">Farmer Name</label>
+                <input
+                  type="text"
+                  value={farmerName}
+                  readOnly
+                  className="input-3d bg-white/5 text-white/50"
+                  placeholder="Farmer Name"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="label-text">Quantity (L)</label>
-                  <input ref={qtyRef} type="number" value={qty} onChange={(e) => setQty(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && fatRef.current?.focus()} className="input-3d" style={{ padding: '8px 12px' }} placeholder="0.00" />
+                  <input
+                    ref={qtyRef}
+                    type="number"
+                    value={qty}
+                    onChange={(e) => setQty(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && fatRef.current?.focus()}
+                    className="input-3d"
+                    placeholder="0.00"
+                  />
                 </div>
                 <div>
                   <label className="label-text">FAT %</label>
-                  <input ref={fatRef} type="number" value={fat} onChange={(e) => setFat(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && snfClrRef.current?.focus()} className="input-3d" style={{ padding: '8px 12px' }} placeholder="0.0" />
+                  <input
+                    ref={fatRef}
+                    type="number"
+                    value={fat}
+                    onChange={(e) => setFat(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && snfClrRef.current?.focus()}
+                    className="input-3d"
+                    placeholder="0.0"
+                  />
                 </div>
               </div>
 
               <div>
                 <label className="label-text">{sessionMode} %</label>
-                <input ref={snfClrRef} type="number" value={snfClr} onChange={(e) => setSnfClr(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSaveOrUpdate()} className="input-3d" style={{ padding: '9px 12px' }} placeholder="0.0" />
+                <input
+                  ref={snfClrRef}
+                  type="number"
+                  value={snfClr}
+                  onChange={(e) => setSnfClr(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSaveOrUpdate()}
+                  className="input-3d"
+                  placeholder="0.0"
+                />
               </div>
 
-              <div className="grid grid-cols-2 gap-2 mt-3">
-                <div style={{ background: 'linear-gradient(135deg, #1e3a5f, #1e40af)', borderRadius: 10, padding: 12, border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(30,64,175,0.4)' }}>
-                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 9, fontWeight: 700, textTransform: 'uppercase' }}>Rate / L</p>
-                  <p style={{ color: '#4ade80', fontSize: 16, fontWeight: 800 }}>₹{rate.toFixed(2)}</p>
+              <div className="p-4 rounded-xl bg-white/5 border border-white/10 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-white/50 text-sm">Rate per Liter</span>
+                  <span className="text-white font-bold">₹{rate.toFixed(2)}</span>
                 </div>
-                <div style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)', borderRadius: 10, padding: 12, border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(22,163,74,0.3)' }}>
-                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 9, fontWeight: 700, textTransform: 'uppercase' }}>Total Amount</p>
-                  <p style={{ color: '#4ade80', fontSize: 16, fontWeight: 800 }}>₹{amount.toFixed(2)}</p>
+                <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                  <span className="text-white/50 text-sm">Total Amount</span>
+                  <span className="text-2xl font-black text-green-400">{formatIndianCurrency(amount)}</span>
                 </div>
               </div>
 
-              <button onClick={handleSaveOrUpdate} className="btn-3d w-full" style={{ fontSize: 14, padding: '10px 16px', marginTop: 8, background: 'linear-gradient(135deg, #4ade80, #16a34a)', boxShadow: '0 8px 24px rgba(74,222,128,0.5)', color: '#0a1f0f', fontWeight: 700 }}>
-                {isModifying ? 'Update Entry' : 'Save Collection'}
-              </button>
-              
-              {isModifying && (
-                <button onClick={clearForm} className="w-full text-slate-400 hover:text-white text-sm font-semibold transition py-2">Cancel Modification</button>
-              )}
+              <div className="flex gap-3 pt-2">
+                <button onClick={clearForm} className="btn-secondary flex-1">Clear</button>
+                <button
+                  onClick={handleSaveOrUpdate}
+                  className={`btn-3d flex-[2] relative overflow-hidden ${showSavedMessage ? 'bg-green-500' : ''}`}
+                >
+                  {showSavedMessage ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <CheckCircle size={18} /> Saved
+                    </span>
+                  ) : (
+                    isModifying ? 'Update Entry' : 'Save Entry'
+                  )}
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="glass-card" style={{ padding: '12px 14px', background: 'linear-gradient(135deg, #1a5c2e, #16a34a)' }}>
-            <h3 style={{ color: 'white', fontWeight: 700, fontSize: 13, marginBottom: 8 }}>Session Summary</h3>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-              <div>
-                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>Total Liters</p>
-                <p style={{ color: 'white', fontSize: 18, fontWeight: 800 }}>{totalQty.toFixed(2)} L</p>
+          {/* Session Summary Card */}
+          <div className="glass-card mt-6 p-5">
+            <h3 className="text-sm font-bold text-white/40 uppercase tracking-wider mb-4">Session Summary</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                <p className="text-[10px] text-white/40 uppercase mb-1">Total Qty</p>
+                <p className="text-lg font-bold text-white">{totalQty.toFixed(2)} <span className="text-xs font-normal text-white/40">L</span></p>
               </div>
-              <div>
-                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>Total Amount</p>
-                <p style={{ color: 'white', fontSize: 18, fontWeight: 800 }}>{formatIndianCurrency(totalAmount)}</p>
+              <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                <p className="text-[10px] text-white/40 uppercase mb-1">Total Amount</p>
+                <p className="text-lg font-bold text-green-400">₹{totalAmount.toFixed(0)}</p>
               </div>
-              <div>
-                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>Avg FAT</p>
-                <p style={{ color: 'white', fontSize: 15, fontWeight: 700 }}>{avgFat.toFixed(2)} %</p>
+              <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                <p className="text-[10px] text-white/40 uppercase mb-1">Avg FAT</p>
+                <p className="text-lg font-bold text-blue-400">{avgFat.toFixed(2)}%</p>
               </div>
-              <div>
-                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>Avg {sessionMode}</p>
-                <p style={{ color: 'white', fontSize: 15, fontWeight: 700 }}>{avgSnfClr.toFixed(2)} %</p>
+              <div className="p-3 rounded-xl bg-white/5 border border-white/10">
+                <p className="text-[10px] text-white/40 uppercase mb-1">Avg {sessionMode}</p>
+                <p className="text-lg font-bold text-purple-400">{avgSnfClr.toFixed(2)}%</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right Table */}
-        <div style={{ flex: 1 }}>
-          <div className="glass-card animate-fadeIn" style={{ height: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ color: 'white', fontWeight: 800, fontSize: 20 }}>Today's Entries <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, fontWeight: 400 }}>({todayEntries.length})</span></h3>
-            </div>
-            
-            <div style={{ flex: 1, overflowY: 'auto', padding: 12, maxHeight: 'calc(100vh - 200px)' }}>
-              <div className="table-container">
-                <table className="w-full table-3d">
-                  <thead className="table-header" style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-                    <tr>
-                      <th className="px-4 py-3">Farmer</th>
-                      <th className="px-4 py-3 text-right">Qty</th>
-                      <th className="px-4 py-3 text-right">FAT</th>
-                      <th className="px-4 py-3 text-right">{sessionMode}</th>
-                      <th className="px-4 py-3 text-right">Rate</th>
-                      <th className="px-4 py-3 text-right">Amount</th>
-                      <th className="px-4 py-3 text-center">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {todayEntries.sort((a, b) => b.timestamp - a.timestamp).map((entry) => (
-                      <tr key={entry.farmerCode} className="table-row">
-                        <td className="px-4 py-2" style={{ padding: '8px 12px' }}>
-                          <div style={{ fontWeight: 700, color: 'white' }}>{entry.farmerCode}</div>
-                          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>{entry.farmerName}</div>
-                        </td>
-                        <td className="px-4 py-2 text-right font-semibold" style={{ color: 'white', padding: '8px 12px' }}>{entry.qty.toFixed(2)}</td>
-                        <td className="px-4 py-2 text-right" style={{ color: 'rgba(255,255,255,0.85)', padding: '8px 12px' }}>{entry.fat.toFixed(1)}</td>
-                        <td className="px-4 py-2 text-right" style={{ color: 'rgba(255,255,255,0.85)', padding: '8px 12px' }}>{(entry.snf || entry.clr || 0).toFixed(1)}</td>
-                        <td className="px-4 py-2 text-right" style={{ color: 'rgba(255,255,255,0.85)', padding: '8px 12px' }}>₹{entry.rate.toFixed(2)}</td>
-                        <td className="px-4 py-2 text-right font-bold" style={{ color: '#4ade80', padding: '8px 12px' }}>₹{entry.amount.toFixed(2)}</td>
-                        <td className="px-4 py-2" style={{ padding: '8px 12px' }}>
-                          <div className="flex justify-center gap-2">
-                            <button onClick={() => handleModify(entry)} className="btn-success" style={{ padding: 6 }} title="Edit"><Edit2 size={14} /></button>
-                            <button onClick={() => handleDelete(entry.farmerCode)} className="btn-danger" style={{ padding: 6 }} title="Delete"><Trash2 size={14} /></button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                    {todayEntries.length === 0 && (
-                      <tr>
-                        <td colSpan={7} className="px-4 py-12 text-center" style={{ color: 'rgba(255,255,255,0.5)' }}>No entries yet for this session</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+        {/* Right Panel: Entries List */}
+        <div className="w-full lg:w-2/3">
+          <div className="glass-card h-full flex flex-col" style={{ padding: '20px 24px' }}>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
+                  <Clock size={20} />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">Recent Entries</h2>
+                  <p className="text-xs text-white/40">{sessionDate} | {sessionShift} Shift</p>
+                </div>
               </div>
+              <button
+                onClick={() => setShowSessionSetup(true)}
+                className="p-2 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 transition-colors"
+                title="Change Session"
+              >
+                <Calendar size={20} />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-auto">
+              <table className="w-full table-3d">
+                <thead className="table-header sticky top-0 z-10">
+                  <tr>
+                    <th className="px-4 py-3 text-left" style={{ padding: '12px 16px', fontSize: '14px' }}>Farmer</th>
+                    <th className="px-4 py-3 text-right" style={{ padding: '12px 16px', fontSize: '14px' }}>Qty</th>
+                    <th className="px-4 py-3 text-right" style={{ padding: '12px 16px', fontSize: '14px' }}>FAT</th>
+                    <th className="px-4 py-3 text-right" style={{ padding: '12px 16px', fontSize: '14px' }}>{sessionMode}</th>
+                    <th className="px-4 py-3 text-right" style={{ padding: '12px 16px', fontSize: '14px' }}>Rate</th>
+                    <th className="px-4 py-3 text-right" style={{ padding: '12px 16px', fontSize: '14px' }}>Amount</th>
+                    <th className="px-4 py-3 text-center" style={{ padding: '12px 16px', fontSize: '14px' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {todayEntries.sort((a, b) => b.timestamp - a.timestamp).map((entry) => (
+                    <tr key={entry.farmerCode} className="table-row group">
+                      <td className="px-4 py-3" style={{ padding: '12px 16px', fontSize: '14px' }}>
+                        <div className="flex flex-col">
+                          <span className="text-white font-bold">{entry.farmerCode}</span>
+                          <span className="text-[10px] text-white/40 truncate max-w-[120px]">{entry.farmerName}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right font-bold text-white" style={{ padding: '12px 16px', fontSize: '14px' }}>{entry.qty.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right text-blue-400" style={{ padding: '12px 16px', fontSize: '14px' }}>{entry.fat.toFixed(1)}</td>
+                      <td className="px-4 py-3 text-right text-purple-400" style={{ padding: '12px 16px', fontSize: '14px' }}>{(entry.snf || entry.clr || 0).toFixed(1)}</td>
+                      <td className="px-4 py-3 text-right text-white/60" style={{ padding: '12px 16px', fontSize: '14px' }}>₹{entry.rate.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right font-bold text-green-400" style={{ padding: '12px 16px', fontSize: '14px' }}>₹{entry.amount.toFixed(2)}</td>
+                      <td className="px-4 py-3" style={{ padding: '12px 16px', fontSize: '14px' }}>
+                        <div className="flex justify-center gap-2">
+                          <button
+                            onClick={() => handleModify(entry)}
+                            className="p-1.5 rounded-md bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
+                            title="Edit"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(entry.farmerCode)}
+                            className="p-1.5 rounded-md bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                            title="Delete"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {todayEntries.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-20 text-center">
+                        <div className="flex flex-col items-center gap-3 text-white/20">
+                          <Zap size={48} strokeWidth={1} />
+                          <p>No entries for this session yet.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       </div>
-      
-      {showSavedMessage && (
-        <div style={{ position: 'fixed', bottom: 40, left: '50%', transform: 'translateX(-50%)', background: 'linear-gradient(135deg, #4ade80, #16a34a)', color: '#0a1f0f', padding: '12px 24px', borderRadius: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 8px 32px rgba(74,222,128,0.5)', zIndex: 10000 }}>
-          <CheckCircle size={20} /> Entry Saved Successfully!
-        </div>
-      )}
     </div>
   );
 };

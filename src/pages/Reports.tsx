@@ -301,7 +301,7 @@ const Reports: React.FC = () => {
             </div>
             <div style={{ textAlign: 'center' }}>
               <h3 style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>Farmer Wise</h3>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Farmer-wise collection details</p>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Individual farmer performance</p>
             </div>
           </div>
 
@@ -318,32 +318,32 @@ const Reports: React.FC = () => {
 
         {showFilterModal && (
           <div className="modal-overlay">
-            <div className="modal-box animate-fadeUp">
-              <div className="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
-                <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                  <Search size={20} className="text-amber-500" /> 
-                  {activeReport === 'collection' ? 'Collection Filters' : activeReport === 'farmer' ? 'Farmer Filters' : 'Payment Filters'}
+            <div className="modal-3d animate-fadeIn" style={{ padding: '28px', maxWidth: '450px', width: '90%' }}>
+              <div className="flex justify-between items-center" style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                <h2 style={{ fontSize: 18, fontWeight: 800, color: 'white' }}>
+                  {activeReport === 'collection' ? 'Collection Filters' : 
+                   activeReport === 'farmer' ? 'Farmer Filters' : 'Payment Filters'}
                 </h2>
-                <button onClick={() => setShowFilterModal(false)} className="text-slate-400 hover:text-white"><X /></button>
+                <button onClick={() => setShowFilterModal(false)} style={{ color: 'rgba(255,255,255,0.6)' }}>
+                  <X size={24} />
+                </button>
               </div>
 
               <div className="space-y-4">
                 {activeReport !== 'payment' ? (
                   <>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="label-text">From Date</label>
-                        <input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="input-field" />
-                      </div>
-                      <div>
-                        <label className="label-text">To Date</label>
-                        <input type="date" value={toDate} onChange={e => setToDate(e.target.value)} className="input-field" />
-                      </div>
+                    <div style={{ marginBottom: '16px' }}>
+                      <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>From Date</label>
+                      <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="input-3d" style={{ padding: '10px 14px', fontSize: '14px' }} />
+                    </div>
+                    <div style={{ marginBottom: '16px' }}>
+                      <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>To Date</label>
+                      <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="input-3d" style={{ padding: '10px 14px', fontSize: '14px' }} />
                     </div>
                     {activeReport === 'collection' && (
-                      <div>
-                        <label className="label-text">Shift</label>
-                        <select value={shift} onChange={e => setShift(e.target.value as any)} className="input-field">
+                      <div style={{ marginBottom: '16px' }}>
+                        <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Shift</label>
+                        <select value={shift} onChange={(e) => setShift(e.target.value as any)} className="input-3d" style={{ padding: '10px 14px', fontSize: '14px' }}>
                           <option value="All">All Shifts</option>
                           <option value="Morning">Morning</option>
                           <option value="Evening">Evening</option>
@@ -351,24 +351,26 @@ const Reports: React.FC = () => {
                       </div>
                     )}
                     {activeReport === 'farmer' && (
-                      <div>
-                        <label className="label-text">Farmer Code (Optional)</label>
-                        <input type="text" value={farmerCode} onChange={e => setFarmerCode(e.target.value)} className="input-field" placeholder="Leave empty for all" />
+                      <div style={{ marginBottom: '16px' }}>
+                        <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Farmer Code (Optional)</label>
+                        <input type="text" value={farmerCode} onChange={(e) => setFarmerCode(e.target.value)} className="input-3d" style={{ padding: '10px 14px', fontSize: '14px' }} placeholder="All Farmers" />
                       </div>
                     )}
                   </>
                 ) : (
-                  <div>
-                    <label className="label-text">Select Month</label>
-                    <input type="month" value={month} onChange={e => setMonth(e.target.value)} className="input-field" />
+                  <div style={{ marginBottom: '16px' }}>
+                    <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Select Month</label>
+                    <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="input-3d" style={{ padding: '10px 14px', fontSize: '14px' }} />
                   </div>
                 )}
 
-                <div className="flex gap-3 mt-8">
-                  <button onClick={() => setShowFilterModal(false)} className="btn-secondary flex-1">Cancel</button>
+                <div style={{ marginTop: '24px', display: 'flex', gap: '12px' }}>
+                  <button onClick={() => setShowFilterModal(false)} className="btn-secondary" style={{ flex: 1, padding: '12px', minHeight: '40px', fontSize: '14px', fontWeight: 600 }}>Cancel</button>
                   <button 
-                    onClick={activeReport === 'collection' ? generateCollectionReport : activeReport === 'farmer' ? generateFarmerReport : generatePaymentReport} 
-                    className="btn-primary flex-1"
+                    onClick={activeReport === 'collection' ? generateCollectionReport : 
+                             activeReport === 'farmer' ? generateFarmerReport : generatePaymentReport}
+                    className="btn-3d" 
+                    style={{ flex: 2, padding: '12px', minHeight: '40px', fontSize: '14px', fontWeight: 600 }}
                     disabled={loading}
                   >
                     {loading ? 'Generating...' : 'Generate Report'}
@@ -383,250 +385,132 @@ const Reports: React.FC = () => {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6 no-print">
-        <button onClick={() => setActiveReport(null)} className="btn-secondary"><X size={16} /> Back to Options</button>
-        <button onClick={handlePrint} className="btn-primary"><Printer size={16} /> Print Report</button>
+    <div className="page-wrapper animate-fadeIn">
+      <div className="no-print" style={{ padding: '12px 24px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: '10px' }}>
+        <button onClick={() => setReportData([])} className="btn-secondary" style={{ padding: '9px 18px', minHeight: '40px', fontSize: '14px' }}>
+          Back to Options
+        </button>
+        <button onClick={handlePrint} className="btn-3d" style={{ padding: '9px 18px', minHeight: '40px', fontSize: '14px' }}>
+          <Printer size={16} /> Print Report
+        </button>
       </div>
 
-      <div className="glass-card p-8 animate-fadeUp">
-        {/* Report Header */}
-        <div className="text-center mb-8 border-b border-slate-700 pb-6">
-          <h2 className="text-2xl font-black text-white mb-1">{dcsInfo.name || 'DCS Pro'}</h2>
-          <p className="text-slate-400 text-sm">{dcsInfo.address || ''}</p>
-          <p className="text-slate-400 text-sm">Code: {dcsInfo.code || '—'} | Phone: {dcsInfo.phone || '—'}</p>
-          <div className="mt-4 inline-block px-4 py-1 bg-amber-500/10 border border-amber-500/30 rounded-full">
-            <span className="text-amber-500 font-bold uppercase tracking-wider text-xs">{reportTitle}</span>
+      <div className="report-container glass-card" style={{ padding: 0 }}>
+        <div className="report-header" style={{ padding: '20px', marginBottom: 0, textAlign: 'center' }}>
+          <h1 style={{ fontSize: 24, fontWeight: 900, color: 'white', textTransform: 'uppercase' }}>{dcsInfo.name || 'DCS PRO'}</h1>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>{dcsInfo.address || 'Milk Collection System'}</p>
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px dashed rgba(255,255,255,0.1)' }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#f59e0b' }}>{reportTitle}</h2>
+            <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: 600 }}>Period: {period}</p>
           </div>
-          <p className="text-slate-300 mt-2 font-medium">Period: {period}</p>
         </div>
 
-        {/* Report Table */}
-        <div className="table-container">
-          <table className="w-full">
+        <div className="report-body" style={{ marginTop: 0 }}>
+          <table className="w-full report-table" style={{ tableLayout: 'fixed' }}>
             <thead className="table-header">
               {activeReport === 'collection' && (
                 <tr>
-                  <th className="px-4 py-3">Date</th>
-                  <th className="px-4 py-3">Shift</th>
-                  <th className="px-4 py-3 text-right">Farmers</th>
-                  <th className="px-4 py-3 text-right">Qty (L)</th>
-                  <th className="px-4 py-3 text-right">Avg FAT</th>
-                  <th className="px-4 py-3 text-right">Avg SNF</th>
-                  <th className="px-4 py-3 text-right">Amount</th>
+                  <th style={{ width: '130px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Date</th>
+                  <th style={{ width: '100px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Shift</th>
+                  <th style={{ width: '90px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Farmers</th>
+                  <th style={{ width: '100px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Qty (L)</th>
+                  <th style={{ width: '100px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Avg FAT</th>
+                  <th style={{ width: '100px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Avg SNF</th>
+                  <th style={{ width: '120px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Amount</th>
                 </tr>
               )}
               {activeReport === 'farmer' && (
                 <tr>
-                  <th className="px-4 py-3">Code</th>
-                  <th className="px-4 py-3">Farmer Name</th>
-                  <th className="px-4 py-3 text-right">Entries</th>
-                  <th className="px-4 py-3 text-right">Qty (L)</th>
-                  <th className="px-4 py-3 text-right">Avg FAT</th>
-                  <th className="px-4 py-3 text-right">Avg SNF</th>
-                  <th className="px-4 py-3 text-right">Amount</th>
+                  <th style={{ width: '80px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Code</th>
+                  <th style={{ width: 'auto', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Name</th>
+                  <th style={{ width: '80px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Entries</th>
+                  <th style={{ width: '100px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Qty (L)</th>
+                  <th style={{ width: '100px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Avg FAT</th>
+                  <th style={{ width: '100px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Avg SNF</th>
+                  <th style={{ width: '120px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Amount</th>
                 </tr>
               )}
               {activeReport === 'payment' && (
                 <tr>
-                  <th className="px-4 py-3">Code</th>
-                  <th className="px-4 py-3">Farmer Name</th>
-                  <th className="px-4 py-3 text-right">Total Qty</th>
-                  <th className="px-4 py-3 text-right">Gross ₹</th>
-                  <th className="px-4 py-3 text-right">Deductions ₹</th>
-                  <th className="px-4 py-3 text-right">Net Payable ₹</th>
+                  <th style={{ width: '80px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Code</th>
+                  <th style={{ width: 'auto', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Name</th>
+                  <th style={{ width: '100px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Qty (L)</th>
+                  <th style={{ width: '120px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Gross</th>
+                  <th style={{ width: '120px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Deductions</th>
+                  <th style={{ width: '130px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Net Payable</th>
                 </tr>
               )}
             </thead>
             <tbody>
-              {activeReport === 'collection' && reportData.map((row, i) => (
+              {activeReport === 'collection' && reportData.map((r, i) => (
                 <tr key={i} className="table-row">
-                  <td className="px-4 py-3 text-white font-medium">{row.date}</td>
-                  <td className="px-4 py-3 text-slate-300">{row.shift}</td>
-                  <td className="px-4 py-3 text-right text-slate-300">{row.count}</td>
-                  <td className="px-4 py-3 text-right text-white font-bold">{row.qty.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right text-slate-300">{row.fat.toFixed(2)}%</td>
-                  <td className="px-4 py-3 text-right text-slate-300">{row.snf.toFixed(2)}%</td>
-                  <td className="px-4 py-3 text-right text-amber-400 font-bold">₹{row.amount.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px' }}>{r.date}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px' }}>{r.shift}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px' }}>{r.count}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px' }}>{r.qty.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px' }}>{r.fat.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px' }}>{r.snf.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px' }}>₹{r.amount.toFixed(2)}</td>
                 </tr>
               ))}
-              {activeReport === 'farmer' && reportData.map((row, i) => (
+              {activeReport === 'farmer' && reportData.map((r, i) => (
                 <tr key={i} className="table-row">
-                  <td className="px-4 py-3 text-white font-bold">{row.code}</td>
-                  <td className="px-4 py-3 text-slate-300">{row.name}</td>
-                  <td className="px-4 py-3 text-right text-slate-300">{row.count}</td>
-                  <td className="px-4 py-3 text-right text-white font-bold">{row.qty.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right text-slate-300">{(row.fat / row.count).toFixed(2)}%</td>
-                  <td className="px-4 py-3 text-right text-slate-300">{(row.snf / row.count).toFixed(2)}%</td>
-                  <td className="px-4 py-3 text-right text-amber-400 font-bold">₹{row.amount.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px' }}>{r.code}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px' }}>{r.name}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px' }}>{r.count}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px' }}>{r.qty.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px' }}>{(r.fat / r.count).toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px' }}>{(r.snf / r.count).toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px' }}>₹{r.amount.toFixed(2)}</td>
                 </tr>
               ))}
-              {activeReport === 'payment' && reportData.map((row, i) => (
+              {activeReport === 'payment' && reportData.map((r, i) => (
                 <tr key={i} className="table-row">
-                  <td className="px-4 py-3 text-white font-bold">{row.code}</td>
-                  <td className="px-4 py-3 text-slate-300">{row.name}</td>
-                  <td className="px-4 py-3 text-right text-white">{row.qty.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right text-slate-300">₹{row.gross.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right text-red-400">₹{row.deductions.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right text-green-400 font-bold">₹{row.net.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px' }}>{r.code}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px' }}>{r.name}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px' }}>{r.qty.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px' }}>₹{r.gross.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px' }}>₹{r.deductions.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px' }}>₹{r.net.toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
-            <tfoot className="bg-slate-800/50 font-bold">
+            <tfoot style={{ background: 'rgba(255,255,255,0.05)', fontWeight: 700 }}>
               {activeReport === 'collection' && (
                 <tr>
-                  <td colSpan={2} className="px-4 py-4 text-white">GRAND TOTAL</td>
-                  <td className="px-4 py-4 text-right text-white">{grandTotal.count}</td>
-                  <td className="px-4 py-4 text-right text-white">{grandTotal.qty.toFixed(2)}</td>
-                  <td className="px-4 py-4 text-right text-white">{grandTotal.fat.toFixed(2)}%</td>
-                  <td className="px-4 py-4 text-right text-white">{grandTotal.snf.toFixed(2)}%</td>
-                  <td className="px-4 py-4 text-right text-amber-400">₹{grandTotal.amount.toFixed(2)}</td>
+                  <td colSpan={3} style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700 }}>GRAND TOTAL</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700 }}>{grandTotal.qty.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700 }}>{grandTotal.fat.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700 }}>{grandTotal.snf.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700 }}>₹{grandTotal.amount.toFixed(2)}</td>
                 </tr>
               )}
               {activeReport === 'farmer' && (
                 <tr>
-                  <td colSpan={2} className="px-4 py-4 text-white">GRAND TOTAL</td>
-                  <td className="px-4 py-4 text-right text-white">{grandTotal.count}</td>
-                  <td className="px-4 py-4 text-right text-white">{grandTotal.qty.toFixed(2)}</td>
-                  <td className="px-4 py-4 text-right text-white">{grandTotal.fat.toFixed(2)}%</td>
-                  <td className="px-4 py-4 text-right text-white">{grandTotal.snf.toFixed(2)}%</td>
-                  <td className="px-4 py-4 text-right text-amber-400">₹{grandTotal.amount.toFixed(2)}</td>
+                  <td colSpan={3} style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700 }}>GRAND TOTAL</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700 }}>{grandTotal.qty.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700 }}>{grandTotal.fat.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700 }}>{grandTotal.snf.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700 }}>₹{grandTotal.amount.toFixed(2)}</td>
                 </tr>
               )}
               {activeReport === 'payment' && (
                 <tr>
-                  <td colSpan={2} className="px-4 py-4 text-white">GRAND TOTAL</td>
-                  <td className="px-4 py-4 text-right text-white">{grandTotal.qty.toFixed(2)}</td>
-                  <td className="px-4 py-4 text-right text-white">₹{grandTotal.gross.toFixed(2)}</td>
-                  <td className="px-4 py-4 text-right text-red-400">₹{grandTotal.deductions.toFixed(2)}</td>
-                  <td className="px-4 py-4 text-right text-green-400">₹{grandTotal.net.toFixed(2)}</td>
+                  <td colSpan={2} style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700 }}>GRAND TOTAL</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700 }}>{grandTotal.qty.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700 }}>₹{grandTotal.gross.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700 }}>₹{grandTotal.deductions.toFixed(2)}</td>
+                  <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700 }}>₹{grandTotal.net.toFixed(2)}</td>
                 </tr>
               )}
             </tfoot>
           </table>
         </div>
-        
-        <div className="mt-8 text-slate-500 text-xs flex justify-between items-center">
+
+        <div className="report-footer" style={{ padding: '12px 16px', fontSize: '12px', opacity: 0.6 }}>
           <p>Generated on: {new Date().toLocaleString()}</p>
-          <p>DCS Pro - Dairy Collection System</p>
+          <p style={{ marginTop: 4 }}>DCS PRO - Advanced Dairy Management Solution</p>
         </div>
-      </div>
-
-      {/* Hidden Print Area */}
-      <div id="print-area">
-        <div style={{ textAlign: 'center', marginBottom: '20px', fontFamily: 'sans-serif' }}>
-          <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0' }}>{dcsInfo.name}</h2>
-          <p style={{ margin: '4px 0' }}>{dcsInfo.address}</p>
-          <p style={{ margin: '4px 0' }}>Code: {dcsInfo.code} | Phone: {dcsInfo.phone}</p>
-          <hr style={{ border: 'none', borderTop: '2px solid #000', margin: '15px 0' }} />
-          <h3 style={{ fontSize: '18px', fontWeight: 'bold', textTransform: 'uppercase' }}>{reportTitle}</h3>
-          <p>Period: {period}</p>
-        </div>
-
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontFamily: 'sans-serif', fontSize: '12px' }}>
-          <thead>
-            <tr style={{ background: '#f0f0f0' }}>
-              {activeReport === 'collection' && (
-                <>
-                  <th style={{ border: '1px solid #000', padding: '8px' }}>Date</th>
-                  <th style={{ border: '1px solid #000', padding: '8px' }}>Shift</th>
-                  <th style={{ border: '1px solid #000', padding: '8px' }}>Farmers</th>
-                  <th style={{ border: '1px solid #000', padding: '8px' }}>Qty (L)</th>
-                  <th style={{ border: '1px solid #000', padding: '8px' }}>FAT %</th>
-                  <th style={{ border: '1px solid #000', padding: '8px' }}>SNF %</th>
-                  <th style={{ border: '1px solid #000', padding: '8px' }}>Amount ₹</th>
-                </>
-              )}
-              {activeReport === 'farmer' && (
-                <>
-                  <th style={{ border: '1px solid #000', padding: '8px' }}>Code</th>
-                  <th style={{ border: '1px solid #000', padding: '8px' }}>Farmer Name</th>
-                  <th style={{ border: '1px solid #000', padding: '8px' }}>Entries</th>
-                  <th style={{ border: '1px solid #000', padding: '8px' }}>Qty (L)</th>
-                  <th style={{ border: '1px solid #000', padding: '8px' }}>FAT %</th>
-                  <th style={{ border: '1px solid #000', padding: '8px' }}>SNF %</th>
-                  <th style={{ border: '1px solid #000', padding: '8px' }}>Amount ₹</th>
-                </>
-              )}
-              {activeReport === 'payment' && (
-                <>
-                  <th style={{ border: '1px solid #000', padding: '8px' }}>Code</th>
-                  <th style={{ border: '1px solid #000', padding: '8px' }}>Farmer Name</th>
-                  <th style={{ border: '1px solid #000', padding: '8px' }}>Total Qty</th>
-                  <th style={{ border: '1px solid #000', padding: '8px' }}>Gross ₹</th>
-                  <th style={{ border: '1px solid #000', padding: '8px' }}>Deductions ₹</th>
-                  <th style={{ border: '1px solid #000', padding: '8px' }}>Net Payable ₹</th>
-                </>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {activeReport === 'collection' && reportData.map((row, i) => (
-              <tr key={i}>
-                <td style={{ border: '1px solid #000', padding: '8px' }}>{row.date}</td>
-                <td style={{ border: '1px solid #000', padding: '8px' }}>{row.shift}</td>
-                <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{row.count}</td>
-                <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{row.qty.toFixed(2)}</td>
-                <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{row.fat.toFixed(2)}</td>
-                <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{row.snf.toFixed(2)}</td>
-                <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{row.amount.toFixed(2)}</td>
-              </tr>
-            ))}
-            {activeReport === 'farmer' && reportData.map((row, i) => (
-              <tr key={i}>
-                <td style={{ border: '1px solid #000', padding: '8px' }}>{row.code}</td>
-                <td style={{ border: '1px solid #000', padding: '8px' }}>{row.name}</td>
-                <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{row.count}</td>
-                <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{row.qty.toFixed(2)}</td>
-                <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{(row.fat / row.count).toFixed(2)}</td>
-                <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{(row.snf / row.count).toFixed(2)}</td>
-                <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{row.amount.toFixed(2)}</td>
-              </tr>
-            ))}
-            {activeReport === 'payment' && reportData.map((row, i) => (
-              <tr key={i}>
-                <td style={{ border: '1px solid #000', padding: '8px' }}>{row.code}</td>
-                <td style={{ border: '1px solid #000', padding: '8px' }}>{row.name}</td>
-                <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{row.qty.toFixed(2)}</td>
-                <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{row.gross.toFixed(2)}</td>
-                <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{row.deductions.toFixed(2)}</td>
-                <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{row.net.toFixed(2)}</td>
-              </tr>
-            ))}
-          </tbody>
-          <tfoot>
-            <tr style={{ fontWeight: 'bold', background: '#f0f0f0' }}>
-              <td colSpan={2} style={{ border: '1px solid #000', padding: '8px' }}>GRAND TOTAL</td>
-              {activeReport === 'collection' && (
-                <>
-                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{grandTotal.count}</td>
-                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{grandTotal.qty.toFixed(2)}</td>
-                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{grandTotal.fat.toFixed(2)}</td>
-                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{grandTotal.snf.toFixed(2)}</td>
-                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{grandTotal.amount.toFixed(2)}</td>
-                </>
-              )}
-              {activeReport === 'farmer' && (
-                <>
-                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{grandTotal.count}</td>
-                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{grandTotal.qty.toFixed(2)}</td>
-                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{grandTotal.fat.toFixed(2)}</td>
-                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{grandTotal.snf.toFixed(2)}</td>
-                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{grandTotal.amount.toFixed(2)}</td>
-                </>
-              )}
-              {activeReport === 'payment' && (
-                <>
-                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{grandTotal.qty.toFixed(2)}</td>
-                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{grandTotal.gross.toFixed(2)}</td>
-                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{grandTotal.deductions.toFixed(2)}</td>
-                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'right' }}>{grandTotal.net.toFixed(2)}</td>
-                </>
-              )}
-            </tr>
-          </tfoot>
-        </table>
-        <p style={{ marginTop: '20px', fontSize: '10px' }}>Generated on: {new Date().toLocaleString()}</p>
       </div>
     </div>
   );

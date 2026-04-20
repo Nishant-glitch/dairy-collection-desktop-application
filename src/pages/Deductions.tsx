@@ -274,8 +274,8 @@ const Deductions: React.FC = () => {
               <BarChart2 size={20} color="white" />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <h2 style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>Deduction Report</h2>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Monthly Summary</p>
+              <h2 style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>Monthly Summary</h2>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Deduction Totals</p>
             </div>
           </div>
         </div>
@@ -284,233 +284,345 @@ const Deductions: React.FC = () => {
   }
 
   if (activeSection === 'newEntry') {
-    if (step === 1) {
-      return (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div className="modal-3d animate-fadeIn" style={{ padding: 24, maxWidth: 400, width: '90%' }}>
-            <div className="flex justify-between items-center mb-8">
-              <h2 style={{ color: 'white', fontWeight: 800, fontSize: 22 }}>New Gross Entry - Step 1</h2>
-              <button onClick={() => setActiveSection(null)} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition"><X size={24} /></button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label style={labelStyle}>Farmer Code</label>
-                <input type="number" value={selectedFarmerCode} onChange={(e) => setSelectedFarmerCode(e.target.value)} className="input-3d w-full" placeholder="Enter Farmer ID" style={{ padding: '9px 12px' }} />
-              </div>
-              <div>
-                <label style={labelStyle}>Entry Date</label>
-                <input type="date" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} className="input-3d w-full" style={{ padding: '9px 12px' }} />
-              </div>
-              <button onClick={handleNextStep} className="btn-3d w-full" style={{ padding: '10px 16px', fontSize: 14 }}>Next Step</button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
     return (
-      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'linear-gradient(135deg, #0a1f0f 0%, #0d2d18 100%)', overflowY: 'auto' }}>
-        <div style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <button onClick={() => setStep(1)} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition"><ArrowLeft size={20} /></button>
-            <h2 style={{ color: 'white', fontWeight: 800, fontSize: 20 }}>{selectedFarmerName} <span style={{ color: 'white/40', fontSize: 14, fontWeight: 400 }}>({selectedFarmerCode})</span></h2>
-          </div>
-          <button onClick={() => setActiveSection(null)} className="btn-3d" style={{ padding: '8px 16px', background: 'rgba(239,68,68,0.2)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.3)', boxShadow: 'none' }}><X size={18} /> Exit</button>
+      <div className="page-wrapper animate-fadeIn">
+        <div className="flex items-center gap-4 mb-6">
+          <button onClick={() => setActiveSection(null)} className="p-2 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 transition-colors">
+            <ArrowLeft size={20} />
+          </button>
+          <h1 className="page-title" style={{ marginBottom: 0 }}>New Gross Entry</h1>
         </div>
 
-        <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-          <div className="lg:col-span-4 space-y-6">
-            <div className="glass-card animate-fadeIn" style={{ padding: 24 }}>
-              <h3 style={{ color: 'white', fontWeight: 800, fontSize: 18, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}><ShoppingBag color="#4ade80" /> {isModifyingEntry ? 'Edit Entry' : 'Add Item'}</h3>
+        {step === 1 && (
+          <div className="modal-overlay">
+            <div className="modal-3d animate-fadeIn" style={{ padding: '28px', maxWidth: '400px', width: '90%' }}>
+              <h2 style={{ fontSize: 20, fontWeight: 'bold', color: 'white', marginBottom: '20px' }}>Select Farmer & Date</h2>
               <div className="space-y-4">
-                <div>
-                  <label style={labelStyle}>Item Name</label>
-                  <input ref={itemRef} type="text" value={item} onChange={(e) => setItem(e.target.value)} className="input-3d w-full" placeholder="e.g. Cattle Feed" />
+                <div style={{ marginBottom: '16px' }}>
+                  <label className="label-text" style={{ marginBottom: '6px' }}>Farmer Code</label>
+                  <input
+                    type="text"
+                    value={selectedFarmerCode}
+                    onChange={(e) => setSelectedFarmerCode(e.target.value)}
+                    className="input-3d"
+                    style={{ padding: '10px 14px', fontSize: '14px' }}
+                    placeholder="e.g. F001"
+                    autoFocus
+                  />
                 </div>
-                <div>
-                  <label style={labelStyle}>Category</label>
-                  <select value={category} onChange={(e) => setCategory(e.target.value)} className="input-3d w-full" style={{ appearance: 'none' }}>
-                    <option value="Cattle Feed">Cattle Feed</option>
-                    <option value="Medicine">Medicine</option>
-                    <option value="Cash Advance">Cash Advance</option>
-                    <option value="Others">Others</option>
-                  </select>
+                <div style={{ marginBottom: '0' }}>
+                  <label className="label-text" style={{ marginBottom: '6px' }}>Entry Date</label>
+                  <input
+                    type="date"
+                    value={entryDate}
+                    onChange={(e) => setEntryDate(e.target.value)}
+                    className="input-3d"
+                    style={{ padding: '10px 14px', fontSize: '14px' }}
+                  />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label style={labelStyle}>Pcs / Qty</label>
-                    <input type="number" value={pcs} onChange={(e) => setPcs(e.target.value)} className="input-3d w-full" placeholder="0" />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Rate</label>
-                    <input type="number" value={entryRate} onChange={(e) => setEntryRate(e.target.value)} className="input-3d w-full" placeholder="0.00" />
-                  </div>
-                </div>
-                <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: 16, marginTop: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: 'white/50', fontSize: 13 }}>Total Amount</span>
-                  <span style={{ color: '#4ade80', fontSize: 20, fontWeight: 800 }}>{formatIndianCurrency(parseFloat(pcs || '0') * parseFloat(entryRate || '0'))}</span>
-                </div>
-                <button onClick={handleSaveEntry} className="btn-3d w-full" style={{ padding: 16, marginTop: 12 }}>{isModifyingEntry ? 'Update Entry' : 'Add Entry'}</button>
-                {isModifyingEntry && <button onClick={clearEntryForm} className="w-full text-white/40 hover:text-white text-sm py-2">Cancel Edit</button>}
-              </div>
-            </div>
-
-            <div className="glass-card" style={{ padding: 24 }}>
-              <h3 style={{ color: 'white', fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Farmer Summary</h3>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ color: 'white/50' }}>Total Deductions</span>
-                <span style={{ color: '#ef4444', fontSize: 20, fontWeight: 800 }}>{formatIndianCurrency(totalEntryAmount)}</span>
+                <button
+                  onClick={handleNextStep}
+                  className="btn-3d"
+                  style={{ marginTop: '24px', padding: '12px', width: '100%', minHeight: '40px', fontSize: '14px', fontWeight: 600 }}
+                >
+                  Next Step
+                </button>
               </div>
             </div>
           </div>
+        )}
 
-          <div className="lg:col-span-8">
-            <div className="glass-card animate-fadeIn" style={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                <h3 style={{ color: 'white', fontWeight: 800, fontSize: 20 }}>Entries List <span style={{ color: 'white/40', fontSize: 14, fontWeight: 400 }}>({grossEntries.length})</span></h3>
+        {step === 2 && (
+          <div className="flex flex-col lg:flex-row gap-6">
+            <div className="w-full lg:w-1/3">
+              <div className="glass-card" style={{ padding: '20px' }}>
+                <h2 style={{ fontSize: 18, fontWeight: 'bold', color: 'white', marginBottom: '16px' }}>Add Item</h2>
+                <div className="space-y-4">
+                  <div style={{ marginBottom: '14px' }}>
+                    <label className="label-text">Item Name</label>
+                    <input
+                      ref={itemRef}
+                      type="text"
+                      value={item}
+                      onChange={(e) => setItem(e.target.value)}
+                      className="input-3d"
+                      placeholder="e.g. Cattle Feed"
+                    />
+                  </div>
+                  <div style={{ marginBottom: '14px' }}>
+                    <label className="label-text">Category</label>
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="input-3d"
+                    >
+                      <option value="Cattle Feed">Cattle Feed</option>
+                      <option value="Medicine">Medicine</option>
+                      <option value="Advance">Advance</option>
+                      <option value="Store">Store</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2" style={{ gap: '12px', marginBottom: '14px' }}>
+                    <div>
+                      <label className="label-text">Pcs/Qty</label>
+                      <input
+                        type="number"
+                        value={pcs}
+                        onChange={(e) => setPcs(e.target.value)}
+                        className="input-3d"
+                        placeholder="0"
+                      />
+                    </div>
+                    <div>
+                      <label className="label-text">Rate</label>
+                      <input
+                        type="number"
+                        value={entryRate}
+                        onChange={(e) => setEntryRate(e.target.value)}
+                        className="input-3d"
+                        placeholder="0.00"
+                      />
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10" style={{ marginTop: '4px', marginBottom: '20px', padding: '12px 16px' }}>
+                    <div className="flex justify-between items-center">
+                      <span className="text-white/50 text-sm">Total Amount</span>
+                      <span className="text-xl font-black text-green-400">
+                        {formatIndianCurrency(parseFloat(pcs || '0') * parseFloat(entryRate || '0'))}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleSaveEntry}
+                    className="btn-3d"
+                    style={{ padding: '12px', width: '100%', minHeight: '40px', fontSize: '14px', fontWeight: 600 }}
+                  >
+                    {isModifyingEntry ? 'Update Entry' : 'Add Entry'}
+                  </button>
+
+                  <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                    <h3 style={{ color: '#4ade80', fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '12px' }}>Farmer Summary</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-white/50">Farmer:</span>
+                        <span className="text-white font-bold">{selectedFarmerCode} - {selectedFarmerName}</span>
+                      </div>
+                      <div className="flex justify-between" style={{ fontSize: '16px' }}>
+                        <span className="text-white/50">Total Deductions:</span>
+                        <span className="text-green-400 font-black">{formatIndianCurrency(totalEntryAmount)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
-                <div className="table-3d">
-                  <table className="w-full">
-                    <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+            </div>
+
+            <div className="w-full lg:w-2/3">
+              <div className="glass-card h-full" style={{ padding: '20px' }}>
+                <h2 style={{ fontSize: 18, fontWeight: 'bold', color: 'white', marginBottom: '16px' }}>Entries List</h2>
+                <div className="table-container overflow-x-auto">
+                  <table className="w-full table-3d" style={{ tableLayout: 'fixed' }}>
+                    <thead className="table-header">
                       <tr>
-                        <th className="px-4 py-3">Date</th>
-                        <th className="px-4 py-3">Item</th>
-                        <th className="px-4 py-3">Category</th>
-                        <th className="px-4 py-3 text-right">Pcs</th>
-                        <th className="px-4 py-3 text-right">Rate</th>
-                        <th className="px-4 py-3 text-right">Amount</th>
-                        <th className="px-4 py-3 text-center">Actions</th>
+                        <th className="px-4 py-3 text-left" style={{ width: '120px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Date</th>
+                        <th className="px-4 py-3 text-left" style={{ width: 'auto', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Item</th>
+                        <th className="px-4 py-3 text-left" style={{ width: '120px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Category</th>
+                        <th className="px-4 py-3 text-right" style={{ width: '70px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Pcs</th>
+                        <th className="px-4 py-3 text-right" style={{ width: '100px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Rate</th>
+                        <th className="px-4 py-3 text-right" style={{ width: '100px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Amount</th>
+                        <th className="px-4 py-3 text-center" style={{ width: '80px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {grossEntries.map((entry) => (
-                        <tr key={entry.id}>
-                          <td className="px-4 py-3">{entry.date}</td>
-                          <td className="px-4 py-3 font-bold">{entry.item}</td>
-                          <td className="px-4 py-3"><span className="badge-3d" style={{ background: 'rgba(255,255,255,0.1)', color: 'white' }}>{entry.category}</span></td>
-                          <td className="px-4 py-3 text-right">{entry.pcs}</td>
-                          <td className="px-4 py-3 text-right">₹{entry.rate.toFixed(2)}</td>
-                          <td className="px-4 py-3 text-right font-bold" style={{ color: '#ef4444' }}>{formatIndianCurrency(entry.amount)}</td>
-                          <td className="px-4 py-3">
+                        <tr key={entry.id} className="table-row">
+                          <td className="px-4 py-3 text-white/70" style={{ padding: '12px 16px', fontSize: '14px' }}>{entry.date}</td>
+                          <td className="px-4 py-3 text-white font-bold" style={{ padding: '12px 16px', fontSize: '14px' }}>{entry.item}</td>
+                          <td className="px-4 py-3 text-white/50" style={{ padding: '12px 16px', fontSize: '14px' }}>{entry.category}</td>
+                          <td className="px-4 py-3 text-right text-white" style={{ padding: '12px 16px', fontSize: '14px' }}>{entry.pcs}</td>
+                          <td className="px-4 py-3 text-right text-white/70" style={{ padding: '12px 16px', fontSize: '14px' }}>₹{entry.rate.toFixed(2)}</td>
+                          <td className="px-4 py-3 text-right text-green-400 font-bold" style={{ padding: '12px 16px', fontSize: '14px' }}>₹{entry.amount.toFixed(2)}</td>
+                          <td className="px-4 py-3" style={{ padding: '12px 16px', fontSize: '14px' }}>
                             <div className="flex justify-center gap-2">
-                              <button onClick={() => handleModifyEntry(entry)} className="p-2 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition"><Edit2 size={16} /></button>
-                              <button onClick={() => handleDeleteEntry(entry.id)} className="p-2 rounded-lg hover:bg-red-500/20 text-red-400 hover:text-red-500 transition"><Trash2 size={16} /></button>
+                              <button onClick={() => handleModifyEntry(entry)} className="p-1.5 rounded-md bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"><Edit2 size={14} /></button>
+                              <button onClick={() => handleDeleteEntry(entry.id)} className="p-1.5 rounded-md bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"><Trash2 size={14} /></button>
                             </div>
                           </td>
                         </tr>
                       ))}
+                      {grossEntries.length === 0 && (
+                        <tr>
+                          <td colSpan={7} className="px-4 py-20 text-center text-white/20">No entries found for this farmer.</td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     );
   }
 
   if (activeSection === 'grossReport') {
     return (
-      <div className="p-6 animate-fadeIn">
-        <div className="flex items-center gap-4 mb-8">
-          <button onClick={() => setActiveSection(null)} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition"><ArrowLeft size={24} /></button>
-          <h1 style={{ color: 'white', fontWeight: 800, fontSize: 28 }}>Farmer Gross Report</h1>
+      <div className="page-wrapper animate-fadeIn">
+        <div className="flex items-center gap-4 mb-6">
+          <button onClick={() => setActiveSection(null)} className="p-2 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 transition-colors">
+            <ArrowLeft size={20} />
+          </button>
+          <h1 className="page-title" style={{ marginBottom: 0 }}>Farmer Gross Report</h1>
         </div>
-        <div className="glass-card mb-8" style={{ padding: 24 }}>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
-            <div>
-              <label style={labelStyle}>Farmer Code (Optional)</label>
-              <input type="number" value={reportFarmerCode} onChange={(e) => setReportFarmerCode(e.target.value)} className="input-3d w-full" placeholder="All Farmers" />
+
+        <div className="glass-card" style={{ padding: '20px 24px', marginBottom: '20px' }}>
+          <div className="flex flex-wrap items-end" style={{ gap: '16px' }}>
+            <div className="flex-1 min-w-[200px]">
+              <label className="label-text" style={{ marginBottom: '6px' }}>Farmer Code (Optional)</label>
+              <input
+                type="text"
+                value={reportFarmerCode}
+                onChange={(e) => setReportFarmerCode(e.target.value)}
+                className="input-3d"
+                style={{ padding: '10px 14px', fontSize: '14px' }}
+                placeholder="All Farmers"
+              />
             </div>
-            <div>
-              <label style={labelStyle}>From Date</label>
-              <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="input-3d w-full" />
+            <div className="flex-1 min-w-[150px]">
+              <label className="label-text" style={{ marginBottom: '6px' }}>From Date</label>
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="input-3d"
+                style={{ padding: '10px 14px', fontSize: '14px' }}
+              />
             </div>
-            <div>
-              <label style={labelStyle}>To Date</label>
-              <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="input-3d w-full" />
+            <div className="flex-1 min-w-[150px]">
+              <label className="label-text" style={{ marginBottom: '6px' }}>To Date</label>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="input-3d"
+                style={{ padding: '10px 14px', fontSize: '14px' }}
+              />
             </div>
-            <button onClick={handleGenerateGrossReport} className="btn-3d w-full" style={{ padding: 12 }}>Generate Report</button>
+            <button
+              onClick={handleGenerateGrossReport}
+              className="btn-3d"
+              style={{ alignSelf: 'flex-end', padding: '10px 24px', minHeight: '40px', fontSize: '14px', fontWeight: 600 }}
+            >
+              Generate Report
+            </button>
           </div>
         </div>
-        {reportData.length > 0 && (
-          <div className="glass-card" style={{ padding: 24 }}>
-            <div className="table-3d overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr>
-                    <th className="px-4 py-3">Date</th>
-                    <th className="px-4 py-3">Farmer</th>
-                    <th className="px-4 py-3">Item</th>
-                    <th className="px-4 py-3 text-right">Pcs</th>
-                    <th className="px-4 py-3 text-right">Rate</th>
-                    <th className="px-4 py-3 text-right">Amount</th>
+
+        <div className="glass-card" style={{ padding: '20px 24px' }}>
+          <div className="table-container overflow-x-auto">
+            <table className="w-full table-3d" style={{ tableLayout: 'fixed' }}>
+              <thead className="table-header">
+                <tr>
+                  <th className="px-4 py-3 text-left" style={{ width: '120px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Date</th>
+                  <th className="px-4 py-3 text-left" style={{ width: '200px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Farmer</th>
+                  <th className="px-4 py-3 text-left" style={{ width: 'auto', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Item</th>
+                  <th className="px-4 py-3 text-right" style={{ width: '70px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Pcs</th>
+                  <th className="px-4 py-3 text-right" style={{ width: '100px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Rate</th>
+                  <th className="px-4 py-3 text-right" style={{ width: '110px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reportData.map((entry, idx) => (
+                  <tr key={idx} className="table-row">
+                    <td className="px-4 py-3 text-white/70" style={{ padding: '12px 16px', fontSize: '14px' }}>{entry.date}</td>
+                    <td className="px-4 py-3" style={{ padding: '12px 16px', fontSize: '14px' }}>
+                      <div className="flex flex-col">
+                        <span className="text-white font-bold">{entry.farmerCode}</span>
+                        <span className="text-[10px] text-white/40">{entry.farmerName}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-white font-bold" style={{ padding: '12px 16px', fontSize: '14px' }}>{entry.item}</td>
+                    <td className="px-4 py-3 text-right text-white" style={{ padding: '12px 16px', fontSize: '14px' }}>{entry.pcs}</td>
+                    <td className="px-4 py-3 text-right text-white/70" style={{ padding: '12px 16px', fontSize: '14px' }}>₹{entry.rate.toFixed(2)}</td>
+                    <td className="px-4 py-3 text-right text-green-400 font-bold" style={{ padding: '12px 16px', fontSize: '14px' }}>₹{entry.amount.toFixed(2)}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {reportData.map((entry, idx) => (
-                    <tr key={idx}>
-                      <td className="px-4 py-3">{entry.date}</td>
-                      <td className="px-4 py-3"><div style={{ fontWeight: 700 }}>{entry.farmerCode}</div><div style={{ fontSize: 11, opacity: 0.5 }}>{entry.farmerName}</div></td>
-                      <td className="px-4 py-3 font-bold">{entry.item}</td>
-                      <td className="px-4 py-3 text-right">{entry.pcs}</td>
-                      <td className="px-4 py-3 text-right">₹{entry.rate.toFixed(2)}</td>
-                      <td className="px-4 py-3 text-right font-bold" style={{ color: '#ef4444' }}>{formatIndianCurrency(entry.amount)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+                {reportData.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-20 text-center text-white/20">No report data found.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
+        </div>
       </div>
     );
   }
 
   if (activeSection === 'deductionReport') {
     return (
-      <div className="p-6 animate-fadeIn">
-        <div className="flex items-center gap-4 mb-8">
-          <button onClick={() => setActiveSection(null)} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition"><ArrowLeft size={24} /></button>
-          <h1 style={{ color: 'white', fontWeight: 800, fontSize: 28 }}>Monthly Deduction Summary</h1>
+      <div className="page-wrapper animate-fadeIn">
+        <div className="flex items-center gap-4 mb-6">
+          <button onClick={() => setActiveSection(null)} className="p-2 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 transition-colors">
+            <ArrowLeft size={20} />
+          </button>
+          <h1 className="page-title" style={{ marginBottom: 0 }}>Monthly Deduction Summary</h1>
         </div>
-        <div className="glass-card mb-8" style={{ padding: 24 }}>
-          <div className="flex flex-col md:flex-row gap-6 items-end">
-            <div className="flex-1">
-              <label style={labelStyle}>Select Month</label>
-              <input type="month" value={deductionMonth} onChange={(e) => setDeductionMonth(e.target.value)} className="input-3d w-full" />
+
+        <div className="glass-card" style={{ padding: '20px 24px', marginBottom: '20px' }}>
+          <div className="flex items-end" style={{ gap: '16px' }}>
+            <div style={{ flex: 1 }}>
+              <label className="label-text" style={{ marginBottom: '6px' }}>Select Month</label>
+              <input
+                type="month"
+                value={deductionMonth}
+                onChange={(e) => setDeductionMonth(e.target.value)}
+                className="input-3d"
+                style={{ padding: '10px 14px', fontSize: '14px' }}
+              />
             </div>
-            <button onClick={handleGenerateDeductionReport} className="btn-3d" style={{ padding: '12px 40px' }}>Generate Summary</button>
+            <button
+              onClick={handleGenerateDeductionReport}
+              className="btn-3d"
+              style={{ padding: '10px 24px', minHeight: '40px', fontSize: '14px', fontWeight: 600 }}
+            >
+              Generate Summary
+            </button>
           </div>
         </div>
-        {deductionReportData.length > 0 && (
-          <div className="glass-card" style={{ padding: 24 }}>
-            <div className="table-3d overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr>
-                    <th className="px-4 py-3">Farmer Code</th>
-                    <th className="px-4 py-3">Farmer Name</th>
-                    <th className="px-4 py-3 text-right">Total Entries</th>
-                    <th className="px-4 py-3 text-right">Total Deduction</th>
+
+        <div className="glass-card" style={{ padding: '20px 24px' }}>
+          <div className="table-container overflow-x-auto">
+            <table className="w-full table-3d">
+              <thead className="table-header">
+                <tr>
+                  <th className="px-4 py-3 text-left" style={{ width: '150px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Farmer Code</th>
+                  <th className="px-4 py-3 text-left" style={{ width: 'auto', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Farmer Name</th>
+                  <th className="px-4 py-3 text-right" style={{ width: '130px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Total Entries</th>
+                  <th className="px-4 py-3 text-right" style={{ width: '160px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Total Deduction</th>
+                </tr>
+              </thead>
+              <tbody>
+                {deductionReportData.map((row, idx) => (
+                  <tr key={idx} className="table-row">
+                    <td className="px-4 py-3 text-white font-bold" style={{ padding: '12px 16px', fontSize: '14px' }}>{row.farmerCode}</td>
+                    <td className="px-4 py-3 text-white/70" style={{ padding: '12px 16px', fontSize: '14px' }}>{row.farmerName}</td>
+                    <td className="px-4 py-3 text-right text-white" style={{ padding: '12px 16px', fontSize: '14px' }}>{row.totalEntries}</td>
+                    <td className="px-4 py-3 text-right text-green-400 font-bold" style={{ padding: '12px 16px', fontSize: '14px' }}>₹{row.totalAmount.toFixed(2)}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {deductionReportData.map((row, idx) => (
-                    <tr key={idx}>
-                      <td className="px-4 py-3 font-bold">{row.farmerCode}</td>
-                      <td className="px-4 py-3">{row.farmerName}</td>
-                      <td className="px-4 py-3 text-right">{row.totalEntries}</td>
-                      <td className="px-4 py-3 text-right font-bold" style={{ color: '#ef4444' }}>{formatIndianCurrency(row.totalAmount)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+                {deductionReportData.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-20 text-center text-white/20">No deduction data found for this month.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
-        )}
+        </div>
       </div>
     );
   }

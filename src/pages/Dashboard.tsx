@@ -127,9 +127,9 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="page-wrapper space-y-4 animate-fadeIn">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h1 className="page-title">{t('dashboard')}</h1>
+    <div className="page-wrapper animate-fadeIn" style={{ padding: '24px 28px' }}>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4" style={{ marginBottom: '20px' }}>
+        <h1 className="page-title" style={{ marginBottom: 0 }}>{t('dashboard')}</h1>
         
         {/* Rate Chart Status Card */}
         <div className="glass-card" style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 0 }}>
@@ -159,8 +159,8 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 stats-grid">
-        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2563eb)', height: 'auto', padding: '18px 20px' }}>
+      <div className="grid grid-cols-2 md:grid-cols-4 stats-grid" style={{ gap: '20px' }}>
+        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2563eb)', height: 'auto', padding: '22px 24px' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="label-text" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{t('todayCollection')}</p>
@@ -172,7 +172,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)', height: 'auto', padding: '18px 20px' }}>
+        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)', height: 'auto', padding: '22px 24px' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="label-text" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{t('thisMonth')}</p>
@@ -184,7 +184,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #4c1d95, #7c3aed)', height: 'auto', padding: '18px 20px' }}>
+        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #4c1d95, #7c3aed)', height: 'auto', padding: '22px 24px' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="label-text" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{t('totalFarmers')}</p>
@@ -195,7 +195,7 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #7c2d12, #ea580c)', height: 'auto', padding: '18px 20px' }}>
+        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #7c2d12, #ea580c)', height: 'auto', padding: '22px 24px' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="label-text" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{t('pendingPayments')}</p>
@@ -208,8 +208,8 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-card" style={{ padding: 24 }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" style={{ marginTop: '20px' }}>
+        <div className="glass-card" style={{ padding: '20px 24px' }}>
           <h2 style={{ color: 'white', fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Last 7 Days Collection</h2>
           <ResponsiveContainer width="100%" height={240}>
             <LineChart data={chartData} style={{ padding: '16px' }}>
@@ -226,7 +226,7 @@ const Dashboard: React.FC = () => {
           </ResponsiveContainer>
         </div>
 
-        <div className="glass-card" style={{ padding: 24 }}>
+        <div className="glass-card" style={{ padding: '20px 24px' }}>
           <h2 style={{ color: 'white', fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Monthly Comparison</h2>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={chartData} style={{ padding: '16px' }}>
@@ -245,33 +245,33 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Recent Entries */}
-      <div className="glass-card" style={{ padding: 24 }}>
+      <div className="glass-card" style={{ padding: '20px 24px', marginTop: '20px' }}>
         <h2 style={{ color: 'white', fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Recent Collections</h2>
         <div className="table-container" style={{ maxHeight: '320px', overflowY: 'auto' }}>
           <table className="w-full table-3d">
             <thead className="table-header">
               <tr>
-                <th className="px-4 py-3">Date</th>
-                <th className="px-4 py-3">Shift</th>
-                <th className="px-4 py-3">Farmer ID</th>
-                <th className="px-4 py-3 text-right">Qty (L)</th>
-                <th className="px-4 py-3 text-right">FAT %</th>
-                <th className="px-4 py-3 text-right">SNF %</th>
-                <th className="px-4 py-3 text-right">Rate</th>
-                <th className="px-4 py-3 text-right">Amount</th>
+                <th className="px-4 py-3" style={{ padding: '12px 16px', fontSize: '14px' }}>Date</th>
+                <th className="px-4 py-3" style={{ padding: '12px 16px', fontSize: '14px' }}>Shift</th>
+                <th className="px-4 py-3" style={{ padding: '12px 16px', fontSize: '14px' }}>Farmer ID</th>
+                <th className="px-4 py-3 text-right" style={{ padding: '12px 16px', fontSize: '14px' }}>Qty (L)</th>
+                <th className="px-4 py-3 text-right" style={{ padding: '12px 16px', fontSize: '14px' }}>FAT %</th>
+                <th className="px-4 py-3 text-right" style={{ padding: '12px 16px', fontSize: '14px' }}>SNF %</th>
+                <th className="px-4 py-3 text-right" style={{ padding: '12px 16px', fontSize: '14px' }}>Rate</th>
+                <th className="px-4 py-3 text-right" style={{ padding: '12px 16px', fontSize: '14px' }}>Amount</th>
               </tr>
             </thead>
             <tbody>
               {recentEntries.map((entry, index) => (
                 <tr key={index} className="table-row">
-                  <td className="px-4 py-[9px]" style={{ color: 'rgba(255,255,255,0.85)' }}>{entry.date}</td>
-                  <td className="px-4 py-[9px]" style={{ color: 'rgba(255,255,255,0.85)' }}>{entry.shift}</td>
-                  <td className="px-4 py-[9px]" style={{ color: 'white', fontWeight: 'bold' }}>{entry.farmerId}</td>
-                  <td className="px-4 py-[9px] text-right" style={{ color: 'white' }}>{parseFloat(entry.qty).toFixed(2)}</td>
-                  <td className="px-4 py-[9px] text-right" style={{ color: 'rgba(255,255,255,0.85)' }}>{parseFloat(entry.fat).toFixed(2)}</td>
-                  <td className="px-4 py-[9px] text-right" style={{ color: 'rgba(255,255,255,0.85)' }}>{parseFloat(entry.snf || entry.clr || 0).toFixed(2)}</td>
-                  <td className="px-4 py-[9px] text-right" style={{ color: 'rgba(255,255,255,0.85)' }}>₹{parseFloat(entry.rate).toFixed(2)}</td>
-                  <td className="px-4 py-[9px] text-right" style={{ fontWeight: 'bold', color: '#4ade80' }}>
+                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.85)' }}>{entry.date}</td>
+                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.85)' }}>{entry.shift}</td>
+                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '14px', color: 'white', fontWeight: 'bold' }}>{entry.farmerId}</td>
+                  <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: 'white' }}>{parseFloat(entry.qty).toFixed(2)}</td>
+                  <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.85)' }}>{parseFloat(entry.fat).toFixed(2)}</td>
+                  <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.85)' }}>{parseFloat(entry.snf || entry.clr || 0).toFixed(2)}</td>
+                  <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.85)' }}>₹{parseFloat(entry.rate).toFixed(2)}</td>
+                  <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 'bold', color: '#4ade80' }}>
                     {formatIndianCurrency(entry.amount)}
                   </td>
                 </tr>

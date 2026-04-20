@@ -187,8 +187,8 @@ const PaymentRegister: React.FC = () => {
     <div className="page-wrapper animate-fadeIn">
       <h1 className="page-title">{t('paymentRegister')}</h1>
 
-      <div className="glass-card" style={{ padding: '20px 24px', marginBottom: '16px' }}>
-        <div className="flex flex-col md:flex-row gap-4 items-start md:items-end">
+      <div className="glass-card" style={{ padding: '20px 24px', marginBottom: '20px' }}>
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-end" style={{ gap: '16px' }}>
           <div style={{ maxWidth: '280px', width: '100%' }}>
             <label style={labelStyle}>Select Payment Month</label>
             <input
@@ -196,13 +196,13 @@ const PaymentRegister: React.FC = () => {
               value={month}
               onChange={(e) => setMonth(e.target.value)}
               className="input-3d w-full"
-              style={{ height: '40px', padding: '9px 12px' }}
+              style={{ height: '40px', padding: '10px 14px', fontSize: '14px' }}
             />
           </div>
           <button
             onClick={calculatePayments}
             className="btn-3d"
-            style={{ padding: '10px 20px', height: '40px', marginLeft: 'auto' }}
+            style={{ padding: '10px 20px', height: '40px', minHeight: '40px', marginLeft: 'auto' }}
           >
             <Calculator size={16} />
             Calculate
@@ -211,35 +211,35 @@ const PaymentRegister: React.FC = () => {
       </div>
 
       {payments.length > 0 && (
-        <div className="glass-card" style={{ padding: 24 }}>
+        <div className="glass-card" style={{ padding: '20px 24px' }}>
           <div className="table-3d overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr>
-                  <th className="px-4 py-[9px]" style={{ fontSize: '13px' }}>Farmer Code</th>
-                  <th className="px-4 py-[9px]" style={{ fontSize: '13px' }}>Name</th>
-                  <th className="px-4 py-[9px] text-right" style={{ fontSize: '13px' }}>Gross Amount</th>
-                  <th className="px-4 py-[9px] text-right" style={{ fontSize: '13px' }}>Deductions</th>
-                  <th className="px-4 py-[9px] text-right" style={{ fontSize: '13px' }}>Net Payable</th>
-                  <th className="px-4 py-[9px] text-right" style={{ fontSize: '13px' }}>Pay Amount</th>
-                  <th className="px-4 py-[9px] text-center" style={{ fontSize: '13px' }}>Actions</th>
+                  <th className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Farmer Code</th>
+                  <th className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Name</th>
+                  <th className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Gross Amount</th>
+                  <th className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Deductions</th>
+                  <th className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Net Payable</th>
+                  <th className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Pay Amount</th>
+                  <th className="px-4 py-[9px] text-center" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {payments.map((payment) => (
                   <tr key={payment.farmerId} className="table-row">
-                    <td className="px-4 py-[9px] font-bold" style={{ fontSize: '13px' }}>{payment.farmerId}</td>
-                    <td className="px-4 py-[9px]" style={{ fontSize: '13px' }}>{payment.farmerName}</td>
-                    <td className="px-4 py-[9px] text-right" style={{ color: '#4ade80', fontWeight: 600, fontSize: '13px' }}>
+                    <td className="px-4 py-[9px] font-bold" style={{ padding: '12px 16px', fontSize: '14px' }}>{payment.farmerId}</td>
+                    <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '14px' }}>{payment.farmerName}</td>
+                    <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: '#4ade80', fontWeight: 600 }}>
                       {formatIndianCurrency(payment.grossAmount)}
                     </td>
-                    <td className="px-4 py-[9px] text-right" style={{ color: '#ef4444', fontSize: '13px' }}>
+                    <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: '#ef4444' }}>
                       {formatIndianCurrency(payment.deductions)}
                     </td>
-                    <td className="px-4 py-[9px] text-right font-bold" style={{ color: 'white', fontSize: '13px' }}>
+                    <td className="px-4 py-[9px] text-right font-bold" style={{ padding: '12px 16px', fontSize: '14px', color: 'white' }}>
                       {formatIndianCurrency(payment.netPayable)}
                     </td>
-                    <td className="px-4 py-[9px]" style={{ fontSize: '13px' }}>
+                    <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '14px' }}>
                       <input
                         type="number"
                         value={payment.customAmount.toFixed(2)}
@@ -248,10 +248,10 @@ const PaymentRegister: React.FC = () => {
                         }
                         className="input-3d w-24 text-right"
                         disabled={payment.isPaid}
-                        style={{ opacity: payment.isPaid ? 0.5 : 1, padding: '5px 8px', height: '30px', fontSize: '12px' }}
+                        style={{ opacity: payment.isPaid ? 0.5 : 1, padding: '5px 8px', height: '30px', fontSize: '14px' }}
                       />
                     </td>
-                    <td className="px-4 py-[9px]" style={{ fontSize: '13px' }}>
+                    <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '14px' }}>
                       {payment.isPaid ? (
                         <div style={{ color: '#4ade80', fontWeight: 800, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                           <div style={{ width: 18, height: 18, background: 'rgba(74,222,128,0.2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -261,9 +261,9 @@ const PaymentRegister: React.FC = () => {
                         </div>
                       ) : (
                         <div className="flex gap-2 justify-center">
-                          <button onClick={() => handlePayViaPhonePe(payment)} className="btn-3d" style={{ padding: '5px 10px', height: '30px', fontSize: 12, background: 'linear-gradient(145deg, #7c3aed, #4c1d95)', boxShadow: '0 4px 12px rgba(124,58,237,0.3)' }} title="Pay via PhonePe"><Smartphone size={12} /></button>
-                          <button onClick={() => handleShowQR(payment)} className="btn-3d" style={{ padding: '5px 10px', height: '30px', fontSize: 12, background: 'linear-gradient(145deg, #2563eb, #1e3a5f)', boxShadow: '0 4px 12px rgba(37,99,235,0.3)' }} title="Show QR Code"><QrCode size={12} /></button>
-                          <button onClick={() => markAsPaid(payment)} className="btn-3d" style={{ padding: '5px 10px', height: '30px', fontSize: 12 }} title="Mark as Paid"><Check size={12} /></button>
+                          <button onClick={() => handlePayViaPhonePe(payment)} className="btn-3d" style={{ padding: '6px 12px', minHeight: '40px', fontSize: '12px', background: 'linear-gradient(145deg, #7c3aed, #4c1d95)', boxShadow: '0 4px 12px rgba(124,58,237,0.3)' }} title="Pay via PhonePe"><Smartphone size={12} /></button>
+                          <button onClick={() => handleShowQR(payment)} className="btn-3d" style={{ padding: '6px 12px', minHeight: '40px', fontSize: '12px', background: 'linear-gradient(145deg, #2563eb, #1e3a5f)', boxShadow: '0 4px 12px rgba(37,99,235,0.3)' }} title="Show QR Code"><QrCode size={12} /></button>
+                          <button onClick={() => markAsPaid(payment)} className="btn-3d" style={{ padding: '6px 12px', minHeight: '40px', fontSize: '12px' }} title="Mark as Paid"><Check size={12} /></button>
                         </div>
                       )}
                     </td>
@@ -272,20 +272,17 @@ const PaymentRegister: React.FC = () => {
               </tbody>
               <tfoot style={{ background: 'rgba(255, 255, 255, 0.05)', fontWeight: 700 }}>
                 <tr>
-                  <td colSpan={2} className="px-4 py-[9px]" style={{ color: 'white', fontSize: '13px' }}>TOTAL</td>
-                  <td className="px-4 py-[9px] text-right" style={{ color: '#4ade80', fontSize: '13px' }}>
+                  <td colSpan={2} className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'white', fontSize: '14px', fontWeight: 700 }}>TOTAL</td>
+                  <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', color: '#4ade80', fontSize: '14px', fontWeight: 700 }}>
                     {formatIndianCurrency(payments.reduce((sum, p) => sum + p.grossAmount, 0))}
                   </td>
-                  <td className="px-4 py-[9px] text-right" style={{ color: '#ef4444', fontSize: '13px' }}>
+                  <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', color: '#ef4444', fontSize: '14px', fontWeight: 700 }}>
                     {formatIndianCurrency(payments.reduce((sum, p) => sum + p.deductions, 0))}
                   </td>
-                  <td className="px-4 py-[9px] text-right" style={{ color: 'white', fontSize: '13px' }}>
+                  <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', color: 'white', fontSize: '14px', fontWeight: 700 }}>
                     {formatIndianCurrency(payments.reduce((sum, p) => sum + p.netPayable, 0))}
                   </td>
-                  <td className="px-4 py-[9px] text-right" style={{ color: '#4ade80', fontSize: '13px' }}>
-                    {formatIndianCurrency(payments.reduce((sum, p) => sum + p.customAmount, 0))}
-                  </td>
-                  <td></td>
+                  <td colSpan={2}></td>
                 </tr>
               </tfoot>
             </table>
@@ -293,24 +290,24 @@ const PaymentRegister: React.FC = () => {
         </div>
       )}
 
-      {/* QR Code Modal */}
       {showQR.show && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div className="modal-3d animate-fadeIn" style={{ padding: 32, textAlign: 'center', maxWidth: 400, width: '90%' }}>
+        <div className="modal-overlay">
+          <div className="modal-3d animate-fadeIn" style={{ padding: 32, maxWidth: 400, textAlign: 'center' }}>
             <div className="flex justify-between items-center mb-6">
-              <h3 style={{ color: 'white', fontWeight: 800, fontSize: 20 }}>Scan to Pay</h3>
-              <button onClick={() => setShowQR({ show: false, data: '', farmer: '' })} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition">
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: 'white' }}>Scan to Pay</h2>
+              <button onClick={() => setShowQR({ ...showQR, show: false })} style={{ color: 'rgba(255,255,255,0.6)' }}>
                 <X size={24} />
               </button>
             </div>
-            <p style={{ color: '#4ade80', fontWeight: 700, marginBottom: 24, fontSize: 18 }}>{showQR.farmer}</p>
-            <div style={{ background: 'white', padding: 24, borderRadius: 20, display: 'inline-block', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
-              <QRCodeSVG value={showQR.data} size={220} />
+            <div style={{ background: 'white', padding: 20, borderRadius: 16, display: 'inline-block', marginBottom: 20 }}>
+              <QRCodeSVG value={showQR.data} size={240} />
             </div>
+            <p style={{ color: 'white', fontWeight: 700, fontSize: 16 }}>{showQR.farmer}</p>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 8 }}>Scan using any UPI App (PhonePe, Google Pay, etc.)</p>
             <button
-              onClick={() => setShowQR({ show: false, data: '', farmer: '' })}
-              className="btn-3d w-full mt-10"
-              style={{ background: 'rgba(255,255,255,0.05)', boxShadow: 'none', border: '1px solid rgba(255,255,255,0.1)' }}
+              onClick={() => setShowQR({ ...showQR, show: false })}
+              className="btn-3d w-full mt-8"
+              style={{ padding: 12 }}
             >
               Close
             </button>

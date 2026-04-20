@@ -146,8 +146,8 @@ const FarmerMaster: React.FC = () => {
         </button>
       </div>
 
-      <div className="glass-card" style={{ padding: '20px 24px' }}>
-        <div className="flex justify-between items-center gap-4 mb-4">
+      <div className="glass-card" style={{ padding: '20px 24px', marginBottom: '20px' }}>
+        <div className="flex justify-between items-center gap-4" style={{ marginBottom: '16px' }}>
           <div className="relative flex-1" style={{ maxWidth: '400px' }}>
             <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.6)' }}>
               <Search size={16} />
@@ -158,36 +158,36 @@ const FarmerMaster: React.FC = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="input-3d"
-              style={{ paddingLeft: 40, height: '36px' }}
+              style={{ paddingLeft: 40, height: '36px', fontSize: '14px' }}
             />
           </div>
         </div>
 
-        <div className="table-container overflow-x-auto">
+        <div className="table-container overflow-x-auto" style={{ padding: 0 }}>
           <table className="w-full table-3d">
             <thead className="table-header">
               <tr>
-                <th className="px-4 py-[9px]" style={{ fontSize: '13px' }}>Code</th>
-                <th className="px-4 py-[9px]" style={{ fontSize: '13px' }}>Name</th>
-                <th className="px-4 py-[9px]" style={{ fontSize: '13px' }}>Mobile</th>
-                <th className="px-4 py-[9px]" style={{ fontSize: '13px' }}>Bank Name</th>
-                <th className="px-4 py-[9px]" style={{ fontSize: '13px' }}>Bank A/C</th>
-                <th className="px-4 py-[9px]" style={{ fontSize: '13px' }}>IFSC Code</th>
-                <th className="px-4 py-[9px]" style={{ fontSize: '13px' }}>UPI ID</th>
-                <th className="px-4 py-[9px] text-center" style={{ fontSize: '13px' }}>Actions</th>
+                <th className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '13px' }}>Code</th>
+                <th className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '13px' }}>Name</th>
+                <th className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '13px' }}>Mobile</th>
+                <th className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '13px' }}>Bank Name</th>
+                <th className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '13px' }}>Bank A/C</th>
+                <th className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '13px' }}>IFSC Code</th>
+                <th className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '13px' }}>UPI ID</th>
+                <th className="px-4 py-[9px] text-center" style={{ padding: '12px 16px', fontSize: '13px' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredFarmers.map((farmer) => (
-                <tr key={farmer.farmerCode} className="table-row">
-                  <td className="px-4 py-[9px]" style={{ fontWeight: 'bold', color: 'white', fontSize: '13px' }}>{farmer.farmerCode}</td>
-                  <td className="px-4 py-[9px]" style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px' }}>{farmer.farmerName}</td>
-                  <td className="px-4 py-[9px]" style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px' }}>{farmer.mobileNo}</td>
-                  <td className="px-4 py-[9px]" style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px' }}>{farmer.bankName}</td>
-                  <td className="px-4 py-[9px]" style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px' }}>{farmer.bankAC}</td>
-                  <td className="px-4 py-[9px]" style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px' }}>{farmer.ifscCode}</td>
-                  <td className="px-4 py-[9px]" style={{ color: 'rgba(255,255,255,0.85)', fontSize: '13px' }}>{farmer.upiId}</td>
-                  <td className="px-4 py-[9px]" style={{ fontSize: '13px' }}>
+                <tr key={farmer.farmerCode} className="table-row" style={{ height: 'auto' }}>
+                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontWeight: 'bold', color: 'white', fontSize: '14px' }}>{farmer.farmerCode}</td>
+                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.85)', fontSize: '14px' }}>{farmer.farmerName}</td>
+                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.85)', fontSize: '14px' }}>{farmer.mobileNo}</td>
+                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.85)', fontSize: '14px' }}>{farmer.bankName}</td>
+                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.85)', fontSize: '14px' }}>{farmer.bankAC}</td>
+                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.85)', fontSize: '14px' }}>{farmer.ifscCode}</td>
+                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.85)', fontSize: '14px' }}>{farmer.upiId}</td>
+                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '14px' }}>
                     <div className="flex justify-center gap-2">
                       <button onClick={() => handleView(farmer)} className="btn-info" style={{ width: '28px', height: '28px', padding: 0 }} title="View"><Eye size={14} /></button>
                       <button onClick={() => handleEdit(farmer)} className="btn-success" style={{ width: '28px', height: '28px', padding: 0 }} title="Edit"><Edit2 size={14} /></button>
@@ -214,8 +214,8 @@ const FarmerMaster: React.FC = () => {
       {/* Add/Edit Modal */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal-3d animate-fadeIn" style={{ maxWidth: 800, padding: 32, width: '90%' }}>
-            <div className="flex justify-between items-center mb-8" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16 }}>
+          <div className="modal-3d animate-fadeIn" style={{ maxWidth: 800, padding: '28px', width: '90%' }}>
+            <div className="flex justify-between items-center" style={{ marginBottom: '20px' }}>
               <h2 style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>
                 {isEditing ? 'Edit Farmer' : 'Add New Farmer'}
               </h2>
@@ -224,90 +224,94 @@ const FarmerMaster: React.FC = () => {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: '16px' }}>
               <div>
-                <label className="label-text">Farmer Code *</label>
+                <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Farmer Code *</label>
                 <input
                   type="text"
                   value={formData.farmerCode}
                   onChange={(e) => setFormData({ ...formData, farmerCode: e.target.value })}
                   disabled={isEditing}
                   className="input-3d"
-                  style={{ opacity: isEditing ? 0.6 : 1 }}
+                  style={{ opacity: isEditing ? 0.6 : 1, padding: '10px 14px', fontSize: '14px' }}
                   placeholder="e.g. F001"
                 />
               </div>
 
               <div>
-                <label className="label-text">Farmer Name *</label>
+                <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Farmer Name *</label>
                 <input
                   type="text"
                   value={formData.farmerName}
                   onChange={(e) => setFormData({ ...formData, farmerName: e.target.value })}
                   className="input-3d"
+                  style={{ padding: '10px 14px', fontSize: '14px' }}
                   placeholder="Full Name"
                 />
               </div>
 
               <div className="md:col-span-2">
-                <label className="label-text">Address</label>
+                <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Address</label>
                 <textarea
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   className="input-3d"
+                  style={{ padding: '10px 14px', fontSize: '14px' }}
                   rows={2}
                   placeholder="Complete Address"
                 />
               </div>
 
               <div>
-                <label className="label-text">Aadhar No</label>
+                <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Aadhar No</label>
                 <input
                   type="text"
                   value={formData.aadharNo}
                   onChange={(e) => setFormData({ ...formData, aadharNo: e.target.value })}
                   className="input-3d"
+                  style={{ padding: '10px 14px', fontSize: '14px' }}
                   placeholder="1234 5678 9012"
                 />
               </div>
 
               <div>
-                <label className="label-text">Mobile No</label>
+                <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Mobile No</label>
                 <input
                   type="text"
                   value={formData.mobileNo}
                   onChange={(e) => setFormData({ ...formData, mobileNo: e.target.value })}
                   className="input-3d"
+                  style={{ padding: '10px 14px', fontSize: '14px' }}
                   placeholder="9876543210"
                 />
               </div>
 
-              <div className="md:col-span-2 mt-4 p-4 glass-card">
-                <h3 style={{ color: '#4ade80', fontSize: 14, fontWeight: 800, marginBottom: 16, textTransform: 'uppercase', letterSpacing: '1px' }}>Bank Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="md:col-span-2" style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                <h3 style={{ color: '#4ade80', fontSize: 14, fontWeight: 800, marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>BANK DETAILS</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: '16px' }}>
                   <div>
-                    <label className="label-text">Bank Name</label>
-                    <input type="text" value={formData.bankName} onChange={(e) => setFormData({ ...formData, bankName: e.target.value })} className="input-3d" placeholder="Bank Name" />
+                    <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Bank Name</label>
+                    <input type="text" value={formData.bankName} onChange={(e) => setFormData({ ...formData, bankName: e.target.value })} className="input-3d" style={{ padding: '10px 14px', fontSize: '14px' }} placeholder="Bank Name" />
                   </div>
                   <div>
-                    <label className="label-text">Account Number</label>
-                    <input type="text" value={formData.bankAC} onChange={(e) => setFormData({ ...formData, bankAC: e.target.value })} className="input-3d" placeholder="A/C Number" />
+                    <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Account Number</label>
+                    <input type="text" value={formData.bankAC} onChange={(e) => setFormData({ ...formData, bankAC: e.target.value })} className="input-3d" style={{ padding: '10px 14px', fontSize: '14px' }} placeholder="A/C Number" />
                   </div>
                   <div>
-                    <label className="label-text">IFSC Code</label>
-                    <input type="text" value={formData.ifscCode} onChange={(e) => setFormData({ ...formData, ifscCode: e.target.value })} className="input-3d" placeholder="IFSC" />
+                    <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>IFSC Code</label>
+                    <input type="text" value={formData.ifscCode} onChange={(e) => setFormData({ ...formData, ifscCode: e.target.value })} className="input-3d" style={{ padding: '10px 14px', fontSize: '14px' }} placeholder="IFSC" />
                   </div>
                   <div>
-                    <label className="label-text">UPI ID</label>
-                    <input type="text" value={formData.upiId} onChange={(e) => setFormData({ ...formData, upiId: e.target.value })} className="input-3d" placeholder="name@upi" />
+                    <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>UPI ID</label>
+                    <input type="text" value={formData.upiId} onChange={(e) => setFormData({ ...formData, upiId: e.target.value })} className="input-3d" style={{ padding: '10px 14px', fontSize: '14px' }} placeholder="name@upi" />
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-4 mt-10">
-              <button onClick={() => setShowModal(false)} className="btn-secondary flex-1">Cancel</button>
-              <button onClick={handleSave} className="btn-3d flex-1">Save Farmer</button>
+            <div style={{ marginTop: '24px', display: 'flex', gap: '12px' }}>
+              <button onClick={() => setShowModal(false)} className="btn-secondary" style={{ flex: 1, padding: '12px', minHeight: '40px', fontSize: '14px', fontWeight: 600 }}>Cancel</button>
+              <button onClick={handleSave} className="btn-3d" style={{ flex: 2, padding: '12px', minHeight: '40px', fontSize: '14px', fontWeight: 600 }}>Save Farmer</button>
             </div>
           </div>
         </div>
@@ -316,15 +320,15 @@ const FarmerMaster: React.FC = () => {
       {/* View Modal */}
       {showViewModal && viewFarmer && (
         <div className="modal-overlay">
-          <div className="modal-3d animate-fadeIn" style={{ padding: 32, width: '90%' }}>
-            <div className="flex justify-between items-center mb-8" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16 }}>
+          <div className="modal-3d animate-fadeIn" style={{ padding: '28px', width: '90%', maxWidth: '600px' }}>
+            <div className="flex justify-between items-center" style={{ marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '16px' }}>
               <h2 style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>Farmer Details</h2>
               <button onClick={() => setShowViewModal(false)} style={{ color: 'rgba(255,255,255,0.6)', cursor: 'pointer', background: 'none', border: 'none' }}>
                 <X size={24} />
               </button>
             </div>
 
-            <div className="space-y-6">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="flex items-center gap-4 p-4 glass-card">
                 <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg, #4ade80, #1a5c2e)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 'bold', color: '#0a1f0f' }}>
                   {viewFarmer.farmerCode}
@@ -335,43 +339,43 @@ const FarmerMaster: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-2" style={{ gap: '16px' }}>
                 <div>
-                  <p className="label-text">Aadhar Number</p>
-                  <p style={{ color: 'white', fontWeight: '500' }}>{viewFarmer.aadharNo || '—'}</p>
+                  <p className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Aadhar Number</p>
+                  <p style={{ color: 'white', fontWeight: '500', fontSize: '14px' }}>{viewFarmer.aadharNo || '—'}</p>
                 </div>
                 <div>
-                  <p className="label-text">UPI ID</p>
-                  <p style={{ color: 'white', fontWeight: '500' }}>{viewFarmer.upiId || '—'}</p>
+                  <p className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>UPI ID</p>
+                  <p style={{ color: 'white', fontWeight: '500', fontSize: '14px' }}>{viewFarmer.upiId || '—'}</p>
                 </div>
                 <div className="col-span-2">
-                  <p className="label-text">Address</p>
-                  <p style={{ color: 'white', fontWeight: '500' }}>{viewFarmer.address || '—'}</p>
+                  <p className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Address</p>
+                  <p style={{ color: 'white', fontWeight: '500', fontSize: '14px' }}>{viewFarmer.address || '—'}</p>
                 </div>
               </div>
 
               <div className="p-4 glass-card">
-                <h4 style={{ color: '#4ade80', fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 16 }}>Bank Information</h4>
-                <div className="grid grid-cols-2 gap-4">
+                <h4 style={{ color: '#4ade80', fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '16px' }}>Bank Information</h4>
+                <div className="grid grid-cols-2" style={{ gap: '16px' }}>
                   <div>
-                    <p className="label-text">Bank Name</p>
-                    <p style={{ color: 'white', fontWeight: '500' }}>{viewFarmer.bankName || '—'}</p>
+                    <p className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Bank Name</p>
+                    <p style={{ color: 'white', fontWeight: '500', fontSize: '14px' }}>{viewFarmer.bankName || '—'}</p>
                   </div>
                   <div>
-                    <p className="label-text">Account No</p>
-                    <p style={{ color: 'white', fontWeight: '500' }}>{viewFarmer.bankAC || '—'}</p>
+                    <p className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Account No</p>
+                    <p style={{ color: 'white', fontWeight: '500', fontSize: '14px' }}>{viewFarmer.bankAC || '—'}</p>
                   </div>
                   <div>
-                    <p className="label-text">IFSC Code</p>
-                    <p style={{ color: 'white', fontWeight: '500' }}>{viewFarmer.ifscCode || '—'}</p>
+                    <p className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>IFSC Code</p>
+                    <p style={{ color: 'white', fontWeight: '500', fontSize: '14px' }}>{viewFarmer.ifscCode || '—'}</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-4 mt-8">
-              <button onClick={() => setShowViewModal(false)} className="btn-secondary flex-1">Close</button>
-              <button onClick={() => { setShowViewModal(false); handleEdit(viewFarmer); }} className="btn-3d flex-1">Edit Farmer</button>
+            <div style={{ marginTop: '24px', display: 'flex', gap: '12px' }}>
+              <button onClick={() => setShowViewModal(false)} className="btn-secondary" style={{ flex: 1, padding: '12px', minHeight: '40px', fontSize: '14px', fontWeight: 600 }}>Close</button>
+              <button onClick={() => { setShowViewModal(false); handleEdit(viewFarmer); }} className="btn-3d" style={{ flex: 2, padding: '12px', minHeight: '40px', fontSize: '14px', fontWeight: 600 }}>Edit Farmer</button>
             </div>
           </div>
         </div>
