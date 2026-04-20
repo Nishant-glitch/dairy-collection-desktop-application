@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ref, get, set, push } from 'firebase/database';
 import { database } from '../firebase/config';
 import { isAdmin } from '../utils/userDb';
-import { FileSpreadsheet, History, X, Table as TableIcon, ShieldCheck } from 'lucide-react';
+import { FileSpreadsheet, History, X, Table as TableIcon, ShieldCheck, Plus, Trash2, Save, RotateCcw } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { parseDairyExcel } from '../utils/excelParser';
+import { getRawExcelData } from '../utils/excelParser';
 
 export const getRateFromMap = (fat: number, snf: number, config: any): number => {
   if (!config || !config.rateMap) return 0;
@@ -37,6 +37,8 @@ const RateChart: React.FC = () => {
   const [viewingConfig, setViewingConfig] = useState<any>(null);
   const [effectiveDate, setEffectiveDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [tableData, setTableData] = useState<any[][]>([]);
+  const [editMode, setEditMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const userIsAdmin = isAdmin();
 
@@ -63,43 +65,119 @@ const RateChart: React.FC = () => {
     setShowHistoryModal(true);
   };
 
-  const handleExcelImport = async (file: File, effectiveFrom: string) => {
+  const handleFileChange = async (file: File) => {
     try {
       const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const data = e.target?.result as ArrayBuffer;
-          const { rateMap, snfValues, fatValues } = parseDairyExcel(data);
-
-          const config = {
-            rateMap,
-            snfValues,
-            fatValues,
-            effectiveFrom,
-            importedAt: Date.now(),
-            type: 'excel',
-            fileName: file.name,
-          };
-
-          // Save to Firebase
-          await set(ref(database, 'globalRateConfig/current'), config);
-          await push(ref(database, 'globalRateConfig/history'), config);
-
-          setCurrentConfig(config);
-          setSelectedFile(null);
-          setShowImportPopup(false);
-          alert(`✓ Rate chart published successfully!\nFile: ${file.name}\nEffective from: ${effectiveFrom}\nFAT values: ${fatValues.length} | SNF values: ${snfValues.length}`);
-
-        } catch (parseError) {
-          console.error('Parse error:', parseError);
-          alert('Could not read Excel file. Please ensure it is a valid .xlsx or .xls file.');
-        }
+      reader.onload = (e) => {
+        const data = e.target?.result as ArrayBuffer;
+        const raw = getRawExcelData(data);
+        setTableData(raw);
+        setEditMode(true);
+        setShowImportPopup(false);
       };
-      reader.onerror = () => alert('Failed to read file.');
       reader.readAsArrayBuffer(file);
     } catch (err) {
-      console.error('Import error:', err);
-      alert('Import failed. Please try again.');
+      console.error('File read error:', err);
+      alert('Failed to read Excel file.');
+    }
+  };
+
+  const updateCell = (rowIndex: number, colIndex: number, value: string) => {
+    const newData = [...tableData];
+    newData[rowIndex][colIndex] = value;
+    setTableData(newData);
+  };
+
+  const addRow = () => {
+    const colCount = tableData[0]?.length || 1;
+    setTableData([...tableData, new Array(colCount).fill("")]);
+  };
+
+  const addColumn = () => {
+    setTableData(tableData.map(row => [...row, ""]));
+  };
+
+  const deleteRow = (rowIndex: number) => {
+    if (tableData.length <= 1) return;
+    setTableData(tableData.filter((_, i) => i !== rowIndex));
+  };
+
+  const deleteColumn = (colIndex: number) => {
+    if (tableData[0]?.length <= 1) return;
+    setTableData(tableData.map(row => row.filter((_, i) => i !== colIndex)));
+  };
+
+  const handleSaveAndPublish = async () => {
+    try {
+      // 1. Validate and extract SNF (header row) and FAT (first column)
+      const snfValuesRaw = tableData[0].slice(1);
+      const snfValues: number[] = [];
+      const validColIndices: number[] = [];
+
+      snfValuesRaw.forEach((val, idx) => {
+        const num = Number(val);
+        if (!isNaN(num) && val !== "") {
+          snfValues.push(Math.round(num * 10) / 10);
+          validColIndices.push(idx + 1);
+        }
+      });
+
+      if (snfValues.length === 0) {
+        alert("Critical: No valid SNF values found in the first row.");
+        return;
+      }
+
+      const fatValues: number[] = [];
+      const rateMap: Record<number, Record<number, number>> = {};
+
+      // 2. Extract FAT and rates
+      for (let i = 1; i < tableData.length; i++) {
+        const row = tableData[i];
+        const fatRaw = row[0];
+        const fatNum = Number(fatRaw);
+
+        if (isNaN(fatNum) || fatRaw === "") continue;
+
+        const roundedFat = Math.round(fatNum * 10) / 10;
+        fatValues.push(roundedFat);
+        rateMap[roundedFat] = {};
+
+        validColIndices.forEach((colIdx, snfIdx) => {
+          const snf = snfValues[snfIdx];
+          const rateRaw = row[colIdx];
+          const rateNum = Number(rateRaw);
+          rateMap[roundedFat][snf] = isNaN(rateNum) ? 0 : Math.round(rateNum * 100) / 100;
+        });
+      }
+
+      if (fatValues.length === 0) {
+        alert("Critical: No valid FAT values found in the first column.");
+        return;
+      }
+
+      const config = {
+        rateMap,
+        snfValues: [...new Set(snfValues)].sort((a, b) => a - b),
+        fatValues: [...new Set(fatValues)].sort((a, b) => a - b),
+        effectiveFrom: effectiveDate,
+        importedAt: Date.now(),
+        type: 'excel',
+        fileName: selectedFile?.name || 'Manual Entry',
+      };
+
+      // Save to Firebase
+      await set(ref(database, 'globalRateConfig/current'), config);
+      await push(ref(database, 'globalRateConfig/history'), config);
+
+      setCurrentConfig(config);
+      setEditMode(false);
+      setTableData([]);
+      setSelectedFile(null);
+      alert(`✓ Rate chart published successfully!`);
+
+    } catch (err) {
+      console.error('Save error:', err);
+      alert('Failed to publish rate chart.');
     }
   };
 
@@ -109,6 +187,84 @@ const RateChart: React.FC = () => {
     if (rate < 45) return 'rgba(74, 222, 128, 0.1)';
     return 'rgba(74, 222, 128, 0.2)';
   };
+
+  const EditableTable = () => (
+    <div className="glass-card overflow-hidden animate-fadeIn">
+      <div style={{ padding: 20, background: 'rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h3 style={{ color: 'white', fontWeight: 800, fontSize: 18 }}>Edit Rate Chart</h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
+            <label style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Effective From:</label>
+            <input 
+              type="date" 
+              value={effectiveDate} 
+              onChange={(e) => setEffectiveDate(e.target.value)} 
+              className="input-3d" 
+              style={{ padding: '4px 10px', fontSize: 12, width: 140 }}
+            />
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={addRow} className="btn-secondary" style={{ padding: '8px 12px', fontSize: 12 }}><Plus size={14} /> Row</button>
+          <button onClick={addColumn} className="btn-secondary" style={{ padding: '8px 12px', fontSize: 12 }}><Plus size={14} /> Column</button>
+          <button onClick={() => { setEditMode(false); setTableData([]); }} className="btn-secondary" style={{ padding: '8px 12px', fontSize: 12, background: 'rgba(248,113,113,0.1)', color: '#f87171' }}><RotateCcw size={14} /> Cancel</button>
+          <button onClick={handleSaveAndPublish} className="btn-3d" style={{ padding: '8px 16px', fontSize: 12 }}><Save size={14} /> Save & Publish</button>
+        </div>
+      </div>
+      <div style={{ overflow: 'auto', maxHeight: 600 }}>
+        <table className="w-full text-sm border-collapse table-3d">
+          <thead>
+            <tr className="table-header">
+              <th style={{ padding: 8, border: '1px solid rgba(255,255,255,0.1)', color: 'white', position: 'sticky', left: 0, zIndex: 30, background: '#1e293b' }}>FAT \ SNF</th>
+              {tableData[0]?.slice(1).map((val, idx) => (
+                <th key={idx} style={{ padding: 4, border: '1px solid rgba(255,255,255,0.1)', minWidth: 80 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <input 
+                      value={val} 
+                      onChange={(e) => updateCell(0, idx + 1, e.target.value)}
+                      className="table-input"
+                      style={{ textAlign: 'center', background: isNaN(Number(val)) || val === "" ? 'rgba(248,113,113,0.2)' : 'transparent' }}
+                    />
+                    <button onClick={() => deleteColumn(idx + 1)} style={{ color: '#f87171', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={12} /></button>
+                  </div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {tableData.slice(1).map((row, rIdx) => (
+              <tr key={rIdx} className="table-row">
+                <th style={{ padding: 4, border: '1px solid rgba(255,255,255,0.1)', position: 'sticky', left: 0, zIndex: 10, background: '#1e293b' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <button onClick={() => deleteRow(rIdx + 1)} style={{ color: '#f87171', background: 'none', border: 'none', cursor: 'pointer' }}><Trash2 size={12} /></button>
+                    <input 
+                      value={row[0]} 
+                      onChange={(e) => updateCell(rIdx + 1, 0, e.target.value)}
+                      className="table-input"
+                      style={{ textAlign: 'center', background: isNaN(Number(row[0])) || row[0] === "" ? 'rgba(248,113,113,0.2)' : 'transparent' }}
+                    />
+                  </div>
+                </th>
+                {row.slice(1).map((cell, cIdx) => (
+                  <td key={cIdx} style={{ padding: 2, border: '1px solid rgba(255,255,255,0.1)' }}>
+                    <input 
+                      value={cell} 
+                      onChange={(e) => updateCell(rIdx + 1, cIdx + 1, e.target.value)}
+                      className="table-input"
+                      style={{ 
+                        textAlign: 'center', 
+                        background: isNaN(Number(cell)) && cell !== "" ? 'rgba(248,113,113,0.2)' : 'transparent'
+                      }}
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 
   const RateTable = ({ config }: { config: any }) => {
     if (!config || !config.rateMap) return null;
@@ -203,7 +359,7 @@ const RateChart: React.FC = () => {
         </div>
       )}
 
-      {userIsAdmin && (
+      {userIsAdmin && !editMode && (
         <div className="glass-card" style={{ padding: '16px 20px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(74,222,128,0.05)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <FileSpreadsheet color="#4ade80" size={24} />
@@ -216,7 +372,9 @@ const RateChart: React.FC = () => {
         </div>
       )}
 
-      {currentConfig ? (
+      {editMode ? (
+        <EditableTable />
+      ) : currentConfig ? (
         <div className="space-y-4">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#4ade80', fontWeight: 800, fontSize: 14, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 12 }}>
             <TableIcon size={18} />
@@ -240,7 +398,7 @@ const RateChart: React.FC = () => {
       {showImportPopup && userIsAdmin && (
         <div className="modal-overlay">
           <div className="modal-3d animate-fadeIn" style={{ maxWidth: 400, padding: 28, width: '90%' }}>
-            <div className="flex justify-between items-center" style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="flex justify-between items-center mb-6">
               <h2 style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>Import & Publish Chart</h2>
               <button onClick={() => { setShowImportPopup(false); setSelectedFile(null); }} style={{ color: 'rgba(255,255,255,0.6)', cursor: 'pointer', background: 'none', border: 'none' }}>
                 <X size={24} />
@@ -271,7 +429,6 @@ const RateChart: React.FC = () => {
                 </div>
               </div>
 
-              {/* Show selected file name */}
               {selectedFile && (
                 <div style={{
                   background: 'rgba(74,222,128,0.1)',
@@ -294,7 +451,6 @@ const RateChart: React.FC = () => {
                 </div>
               )}
 
-              {/* Hidden file input */}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -302,28 +458,13 @@ const RateChart: React.FC = () => {
                 style={{ display: 'none' }}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
-                  if (file) setSelectedFile(file);
+                  if (file) {
+                    setSelectedFile(file);
+                    handleFileChange(file);
+                  }
                   e.target.value = '';
                 }}
               />
-
-              {/* Upload & Publish button — only show when file selected */}
-              {selectedFile && (
-                <button
-                  onClick={() => handleExcelImport(selectedFile, effectiveDate)}
-                  style={{
-                    width: '100%', padding: '13px',
-                    background: 'linear-gradient(135deg, #4ade80, #16a34a)',
-                    border: 'none', borderRadius: 10,
-                    color: '#0f172a', fontWeight: 700, fontSize: 15,
-                    cursor: 'pointer', marginTop: 8,
-                    display: 'flex', alignItems: 'center',
-                    justifyContent: 'center', gap: 8
-                  }}
-                >
-                  🚀 Upload & Publish Rate Chart
-                </button>
-              )}
             </div>
           </div>
         </div>

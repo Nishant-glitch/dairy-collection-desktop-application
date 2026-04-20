@@ -507,3 +507,28 @@ body {
   .stats-grid { grid-template-columns: 1fr !important; }
   .page-title { font-size: 20px !important; }
 }
+
+/* Editable Table Input */
+.table-input {
+  width: 100%;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: white;
+  padding: 4px 8px;
+  text-align: center;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+.table-input:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.table-input:focus {
+  outline: none;
+  background: rgba(0, 0, 0, 0.4);
+  border-color: #4ade80;
+  box-shadow: 0 0 10px rgba(74, 222, 128, 0.2);
+}
