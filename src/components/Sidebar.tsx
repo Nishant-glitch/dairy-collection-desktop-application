@@ -37,7 +37,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
       background: 'linear-gradient(180deg, #051208 0%, #0a1f0f 100%)',
       borderRight: '1px solid rgba(255,255,255,0.08)',
       boxShadow: '4px 0 24px rgba(0,0,0,0.5)',
-      width: 240, minHeight: 'calc(100vh - 64px)',
+      width: 220, minHeight: 'calc(100vh - 60px)',
       padding: '20px 12px',
       display: 'flex', flexDirection: 'column', gap: 4
     }}>
@@ -52,19 +52,20 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
               onClick={() => onNavigate(item.id)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 12,
-                padding: '12px 16px', borderRadius: 12,
+                padding: '10px 16px', borderRadius: 12,
+                height: '42px',
                 background: isActive
-                  ? 'linear-gradient(135deg, rgba(74,222,128,0.2), rgba(45,158,79,0.15))'
+                  ? 'linear-gradient(135deg, rgba(74,222,128,0.3), rgba(45,158,79,0.25))'
                   : 'transparent',
                 border: isActive
-                  ? '1px solid rgba(74,222,128,0.3)'
+                  ? '1px solid rgba(74,222,128,0.4)'
                   : '1px solid transparent',
                 boxShadow: isActive
-                  ? '0 4px 16px rgba(74,222,128,0.15), inset 0 1px 0 rgba(255,255,255,0.1)'
+                  ? '0 4px 16px rgba(74,222,128,0.2), inset 0 1px 0 rgba(255,255,255,0.1)'
                   : 'none',
                 color: isActive ? '#4ade80' : 'rgba(255,255,255,0.6)',
                 fontWeight: isActive ? 700 : 500,
-                fontSize: 14,
+                fontSize: 13,
                 cursor: 'pointer',
                 transition: 'all 0.2s',
                 textAlign: 'left',
@@ -83,7 +84,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
                 }
               }}
             >
-              <Icon style={{ width: 18, height: 18, color: isActive ? '#4ade80' : 'inherit' }} />
+              <Icon style={{ width: 17, height: 17, color: isActive ? '#4ade80' : 'inherit' }} />
               {item.label}
               {isActive && (
                 <div style={{
@@ -96,6 +97,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
           );
         })}
       </nav>
+      <div style={{ marginTop: 'auto', padding: '10px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>
+        v1.0.0
+      </div>
     </aside>
   );
 };

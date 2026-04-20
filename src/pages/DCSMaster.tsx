@@ -35,10 +35,10 @@ const DCSMaster: React.FC = () => {
   };
 
   return (
-    <div className="p-6 animate-fadeIn">
+    <div className="page-wrapper animate-fadeIn">
       <h1 className="page-title">{t('dcsMaster')}</h1>
 
-      <div className="glass-card" style={{ padding: 32, maxWidth: 650 }}>
+      <div className="glass-card" style={{ padding: 32, maxWidth: '100%' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
           <div style={{ width: 48, height: 48, background: 'linear-gradient(135deg, #4ade80, #1a5c2e)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(74,222,128,0.3)' }}>
             <Building2 color="#0a1f0f" size={24} />
@@ -49,8 +49,8 @@ const DCSMaster: React.FC = () => {
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="label-text">Society Name</label>
               <input
@@ -72,20 +72,7 @@ const DCSMaster: React.FC = () => {
                 placeholder="DCS001"
               />
             </div>
-          </div>
 
-          <div>
-            <label className="label-text">Address</label>
-            <textarea
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              className="input-3d"
-              rows={3}
-              placeholder="Complete physical address"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="label-text">Phone Number</label>
               <input
@@ -96,43 +83,55 @@ const DCSMaster: React.FC = () => {
                 placeholder="Contact Number"
               />
             </div>
-          </div>
 
-          <div style={{ padding: 20, background: 'rgba(255,255,255,0.05)', borderRadius: 16, border: '1px solid rgba(255,255,255,0.1)' }}>
-            <h3 style={{ color: '#4ade80', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 20 }}>Payment Settings</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="label-text">UPI ID</label>
-                <input
-                  type="text"
-                  value={formData.upiId}
-                  onChange={(e) => setFormData({ ...formData, upiId: e.target.value })}
-                  className="input-3d"
-                  placeholder="example@upi"
-                />
-              </div>
+            <div>
+              <label className="label-text">UPI ID</label>
+              <input
+                type="text"
+                value={formData.upiId}
+                onChange={(e) => setFormData({ ...formData, upiId: e.target.value })}
+                className="input-3d"
+                placeholder="example@upi"
+              />
+            </div>
 
-              <div>
-                <label className="label-text">UPI Account Name</label>
-                <input
-                  type="text"
-                  value={formData.upiName}
-                  onChange={(e) => setFormData({ ...formData, upiName: e.target.value })}
-                  className="input-3d"
-                  placeholder="Display Name for UPI"
-                />
-              </div>
+            <div>
+              <label className="label-text">UPI Account Name</label>
+              <input
+                type="text"
+                value={formData.upiName}
+                onChange={(e) => setFormData({ ...formData, upiName: e.target.value })}
+                className="input-3d"
+                placeholder="Display Name for UPI"
+              />
+            </div>
+            
+            <div className="col-span-2">
+              <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '8px 0' }}></div>
+            </div>
+
+            <div className="col-span-2">
+              <label className="label-text">Address</label>
+              <textarea
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                className="input-3d"
+                rows={2}
+                placeholder="Complete physical address"
+              />
             </div>
           </div>
 
-          <button
-            onClick={handleSave}
-            className="btn-3d w-full"
-            style={{ padding: 16, fontSize: 16, marginTop: 12 }}
-          >
-            <Save size={20} />
-            <span>{t('save')} Settings</span>
-          </button>
+          <div className="flex justify-end pt-4">
+            <button
+              onClick={handleSave}
+              className="btn-3d"
+              style={{ padding: '10px 32px', width: 'auto' }}
+            >
+              <Save size={18} />
+              <span>{t('save')} Settings</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

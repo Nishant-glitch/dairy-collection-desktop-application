@@ -281,32 +281,38 @@ const Reports: React.FC = () => {
 
   if (!activeReport || reportData.length === 0) {
     return (
-      <div className="p-6">
+      <div className="page-wrapper animate-fadeIn">
         <h1 className="page-title"><BarChart3 color="#f59e0b" /> Reports Module</h1>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-          <div onClick={() => handleOpenFilter('collection')} className="glass-card p-8 cursor-pointer hover:scale-105 transition-transform border-l-4 border-blue-500">
-            <div className="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center mb-6">
-              <Calendar className="text-blue-400" size={32} />
+        <div className="grid grid-cols-3 gap-4 mt-8">
+          <div onClick={() => handleOpenFilter('collection')} className="stat-card-3d cursor-pointer hover:translate-y-[-4px] hover:shadow-[0_0_20px_rgba(59,130,246,0.3)]" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2563eb)', height: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', borderRadius: '14px', padding: '24px' }}>
+            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Calendar className="text-white" size={24} />
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">Collection Shift Wise</h3>
-            <p className="text-slate-400 text-sm">Daily and shift-wise milk collection summary with totals.</p>
+            <div style={{ textAlign: 'center' }}>
+              <h3 className="text-lg font-bold text-white">Collection Shift Wise</h3>
+              <p className="text-slate-300 text-xs opacity-70">Daily and shift-wise summary</p>
+            </div>
           </div>
 
-          <div onClick={() => handleOpenFilter('farmer')} className="glass-card p-8 cursor-pointer hover:scale-105 transition-transform border-l-4 border-green-500">
-            <div className="w-16 h-16 bg-green-500/20 rounded-2xl flex items-center justify-center mb-6">
-              <Users className="text-green-400" size={32} />
+          <div onClick={() => handleOpenFilter('farmer')} className="stat-card-3d cursor-pointer hover:translate-y-[-4px] hover:shadow-[0_0_20px_rgba(34,197,94,0.3)]" style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)', height: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', borderRadius: '14px', padding: '24px' }}>
+            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Users className="text-white" size={24} />
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">Farmer Wise Report</h3>
-            <p className="text-slate-400 text-sm">Detailed collection history and summary for individual farmers.</p>
+            <div style={{ textAlign: 'center' }}>
+              <h3 className="text-lg font-bold text-white">Farmer Wise Report</h3>
+              <p className="text-slate-300 text-xs opacity-70">Detailed history for farmers</p>
+            </div>
           </div>
 
-          <div onClick={() => handleOpenFilter('payment')} className="glass-card p-8 cursor-pointer hover:scale-105 transition-transform border-l-4 border-amber-500">
-            <div className="w-16 h-16 bg-amber-500/20 rounded-2xl flex items-center justify-center mb-6">
-              <Wallet className="text-amber-400" size={32} />
+          <div onClick={() => handleOpenFilter('payment')} className="stat-card-3d cursor-pointer hover:translate-y-[-4px] hover:shadow-[0_0_20px_rgba(245,158,11,0.3)]" style={{ background: 'linear-gradient(135deg, #7c2d12, #ea580c)', height: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', borderRadius: '14px', padding: '24px' }}>
+            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Wallet className="text-white" size={24} />
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">Payment Register</h3>
-            <p className="text-slate-400 text-sm">Monthly payment calculation including milk gross and deductions.</p>
+            <div style={{ textAlign: 'center' }}>
+              <h3 className="text-lg font-bold text-white">Payment Register</h3>
+              <p className="text-slate-300 text-xs opacity-70">Monthly payment summary</p>
+            </div>
           </div>
         </div>
 

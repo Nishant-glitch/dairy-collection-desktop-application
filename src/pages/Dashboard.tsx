@@ -127,31 +127,31 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="p-6 space-y-6 animate-fadeIn">
+    <div className="page-wrapper space-y-4 animate-fadeIn">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="page-title">{t('dashboard')}</h1>
         
         {/* Rate Chart Status Card */}
-        <div className="glass-card" style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="glass-card" style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 0 }}>
           <div style={{
-            padding: 8, borderRadius: 10,
+            padding: 6, borderRadius: 8,
             background: activeRateChart ? 'rgba(74,222,128,0.1)' : 'rgba(248,113,113,0.1)'
           }}>
-            <Table size={20} color={activeRateChart ? '#4ade80' : '#f87171'} />
+            <Table size={16} color={activeRateChart ? '#4ade80' : '#f87171'} />
           </div>
           <div>
-            <p className="label-text" style={{ marginBottom: 0 }}>Active Rate Chart</p>
+            <p className="label-text" style={{ marginBottom: 0, fontSize: '10px' }}>Active Rate Chart</p>
             {loadingRateChart ? (
-              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>Loading...</p>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>Loading...</p>
             ) : activeRateChart ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <p style={{ color: 'white', fontSize: 13, fontWeight: 700 }}>Effective: {activeRateChart.effectiveFrom}</p>
-                <CheckCircle2 size={14} color="#4ade80" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <p style={{ color: 'white', fontSize: 12, fontWeight: 700 }}>Effective: {activeRateChart.effectiveFrom}</p>
+                <CheckCircle2 size={12} color="#4ade80" />
               </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <p style={{ color: '#f87171', fontSize: 13, fontWeight: 700 }}>No chart uploaded</p>
-                <AlertTriangle size={14} color="#f87171" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <p style={{ color: '#f87171', fontSize: 12, fontWeight: 700 }}>No chart uploaded</p>
+                <AlertTriangle size={12} color="#f87171" />
               </div>
             )}
           </div>
@@ -159,50 +159,50 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2563eb)' }}>
+      <div className="grid grid-cols-4 gap-4">
+        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2563eb)', minHeight: '120px', padding: '20px' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="label-text" style={{ color: 'rgba(255,255,255,0.6)' }}>{t('todayCollection')}</p>
-              <p style={{ fontSize: 36, fontWeight: 800, color: '#fff', lineHeight: 1, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>{stats.todayQty.toFixed(2)}</p>
-              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 4 }}>{t('liters')}</p>
-              <p style={{ color: '#4ade80', fontSize: 18, fontWeight: 700, marginTop: 8 }}>{formatIndianCurrency(stats.todayAmount)}</p>
+              <p className="label-text" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{t('todayCollection')}</p>
+              <p style={{ fontSize: 32, fontWeight: 800, color: '#fff', lineHeight: 1, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>{stats.todayQty.toFixed(2)}</p>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, marginTop: 2 }}>{t('liters')}</p>
+              <p style={{ color: '#4ade80', fontSize: 16, fontWeight: 700, marginTop: 4 }}>{formatIndianCurrency(stats.todayAmount)}</p>
             </div>
-            <Droplet className="w-12 h-12" style={{ color: 'rgba(255,255,255,0.1)' }} />
+            <Droplet className="w-10 h-10" style={{ color: 'rgba(255,255,255,0.1)' }} />
           </div>
         </div>
 
-        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)' }}>
+        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)', minHeight: '120px', padding: '20px' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="label-text" style={{ color: 'rgba(255,255,255,0.6)' }}>{t('thisMonth')}</p>
-              <p style={{ fontSize: 36, fontWeight: 800, color: '#fff', lineHeight: 1, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>{stats.monthQty.toFixed(2)}</p>
-              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 4 }}>{t('liters')}</p>
-              <p style={{ color: '#4ade80', fontSize: 18, fontWeight: 700, marginTop: 8 }}>{formatIndianCurrency(stats.monthAmount)}</p>
+              <p className="label-text" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{t('thisMonth')}</p>
+              <p style={{ fontSize: 32, fontWeight: 800, color: '#fff', lineHeight: 1, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>{stats.monthQty.toFixed(2)}</p>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, marginTop: 2 }}>{t('liters')}</p>
+              <p style={{ color: '#4ade80', fontSize: 16, fontWeight: 700, marginTop: 4 }}>{formatIndianCurrency(stats.monthAmount)}</p>
             </div>
-            <TrendingUp className="w-12 h-12" style={{ color: 'rgba(255,255,255,0.1)' }} />
+            <TrendingUp className="w-10 h-10" style={{ color: 'rgba(255,255,255,0.1)' }} />
           </div>
         </div>
 
-        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #4c1d95, #7c3aed)' }}>
+        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #4c1d95, #7c3aed)', minHeight: '120px', padding: '20px' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="label-text" style={{ color: 'rgba(255,255,255,0.6)' }}>{t('totalFarmers')}</p>
-              <p style={{ fontSize: 36, fontWeight: 800, color: '#fff', lineHeight: 1, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>{stats.totalFarmers}</p>
-              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 4 }}>Registered</p>
+              <p className="label-text" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{t('totalFarmers')}</p>
+              <p style={{ fontSize: 32, fontWeight: 800, color: '#fff', lineHeight: 1, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>{stats.totalFarmers}</p>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, marginTop: 2 }}>Registered</p>
             </div>
-            <Users className="w-12 h-12" style={{ color: 'rgba(255,255,255,0.1)' }} />
+            <Users className="w-10 h-10" style={{ color: 'rgba(255,255,255,0.1)' }} />
           </div>
         </div>
 
-        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #7c2d12, #ea580c)' }}>
+        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #7c2d12, #ea580c)', minHeight: '120px', padding: '20px' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="label-text" style={{ color: 'rgba(255,255,255,0.6)' }}>{t('pendingPayments')}</p>
-              <p style={{ fontSize: 36, fontWeight: 800, color: '#fff', lineHeight: 1, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>{stats.pendingPayments}</p>
-              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 4 }}>Farmers</p>
+              <p className="label-text" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{t('pendingPayments')}</p>
+              <p style={{ fontSize: 32, fontWeight: 800, color: '#fff', lineHeight: 1, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>{stats.pendingPayments}</p>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, marginTop: 2 }}>Farmers</p>
             </div>
-            <Clock className="w-12 h-12" style={{ color: 'rgba(255,255,255,0.1)' }} />
+            <Clock className="w-10 h-10" style={{ color: 'rgba(255,255,255,0.1)' }} />
           </div>
         </div>
       </div>
@@ -211,7 +211,7 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="glass-card" style={{ padding: 24 }}>
           <h2 style={{ color: 'white', fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Last 7 Days Collection</h2>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={260}>
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
               <XAxis dataKey="date" stroke="rgba(255,255,255,0.6)" fontSize={12} tickLine={false} axisLine={false} />
@@ -228,7 +228,7 @@ const Dashboard: React.FC = () => {
 
         <div className="glass-card" style={{ padding: 24 }}>
           <h2 style={{ color: 'white', fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Monthly Comparison</h2>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={260}>
             <BarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
               <XAxis dataKey="date" stroke="rgba(255,255,255,0.6)" fontSize={12} tickLine={false} axisLine={false} />
@@ -247,7 +247,7 @@ const Dashboard: React.FC = () => {
       {/* Recent Entries */}
       <div className="glass-card" style={{ padding: 24 }}>
         <h2 style={{ color: 'white', fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Recent Collections</h2>
-        <div className="table-container">
+        <div className="table-container" style={{ maxHeight: '320px', overflowY: 'auto' }}>
           <table className="w-full table-3d">
             <thead className="table-header">
               <tr>

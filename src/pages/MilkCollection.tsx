@@ -294,51 +294,52 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   if (showSessionSetup) {
     return (
       <div className="modal-overlay">
-        <div className="modal-3d animate-fadeIn" style={{ padding: 32, maxWidth: 600, width: '90%' }}>
-          <h2 className="modal-title" style={{ color: 'white', fontWeight: 800, fontSize: 22, marginBottom: 20 }}>Start Collection Session</h2>
+        <div className="modal-3d animate-fadeIn" style={{ padding: '24px 28px', maxWidth: '420px', width: '90%' }}>
+          <h2 className="modal-title" style={{ color: 'white', fontWeight: 800, fontSize: 18, marginBottom: 16 }}>Start Collection Session</h2>
           
-          <div className="space-y-6">
+          <div className="space-y-4">
             <div>
               <label className="label-text">Date</label>
-              <input type="date" value={sessionDate} onChange={(e) => setSessionDate(e.target.value)} className="input-3d" />
+              <input type="date" value={sessionDate} onChange={(e) => setSessionDate(e.target.value)} className="input-3d" style={{ padding: '8px 12px' }} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="label-text">Shift</label>
                 <div className="flex gap-2">
-                  <button onClick={() => setSessionShift('Morning')} className={sessionShift === 'Morning' ? 'btn-3d w-full' : 'btn-secondary w-full'}>Morning</button>
-                  <button onClick={() => setSessionShift('Evening')} className={sessionShift === 'Evening' ? 'btn-3d w-full' : 'btn-secondary w-full'}>Evening</button>
+                  <button onClick={() => setSessionShift('Morning')} className={sessionShift === 'Morning' ? 'btn-3d w-full' : 'btn-secondary w-full'} style={{ height: '36px', fontSize: '13px' }}>Morning</button>
+                  <button onClick={() => setSessionShift('Evening')} className={sessionShift === 'Evening' ? 'btn-3d w-full' : 'btn-secondary w-full'} style={{ height: '36px', fontSize: '13px' }}>Evening</button>
                 </div>
               </div>
               <div>
                 <label className="label-text">Mode</label>
                 <div className="flex gap-2">
-                  <button onClick={() => setSessionMode('SNF')} className={sessionMode === 'SNF' ? 'btn-3d w-full' : 'btn-secondary w-full'}>SNF</button>
-                  <button onClick={() => setSessionMode('CLR')} className={sessionMode === 'CLR' ? 'btn-3d w-full' : 'btn-secondary w-full'}>CLR</button>
+                  <button onClick={() => setSessionMode('SNF')} className={sessionMode === 'SNF' ? 'btn-3d w-full' : 'btn-secondary w-full'} style={{ height: '36px', fontSize: '13px' }}>SNF</button>
+                  <button onClick={() => setSessionMode('CLR')} className={sessionMode === 'CLR' ? 'btn-3d w-full' : 'btn-secondary w-full'} style={{ height: '36px', fontSize: '13px' }}>CLR</button>
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-4 p-4 glass-card">
+            <div className="flex gap-4 p-3 glass-card" style={{ marginBottom: 0, gap: '16px' }}>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={printEnabled} onChange={(e) => setPrintEnabled(e.target.checked)} className="w-4 h-4" style={{ accentColor: '#4ade80' }} />
-                <span style={{ color: 'white', fontSize: 14 }}>Print Slips</span>
+                <span style={{ color: 'white', fontSize: 13 }}>Print Slips</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={smsEnabled} onChange={(e) => setSmsEnabled(e.target.checked)} className="w-4 h-4" style={{ accentColor: '#4ade80' }} />
-                <span style={{ color: 'white', fontSize: 14 }}>Send SMS</span>
+                <span style={{ color: 'white', fontSize: 13 }}>Send SMS</span>
               </label>
             </div>
 
-            <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
               <button
                 onClick={() => onNavigate('dashboard')}
-                className="btn-secondary flex-1"
+                className="btn-secondary"
+                style={{ flex: 1, height: '40px' }}
               >
                 ✕ Cancel
               </button>
-              <button onClick={handleStartSession} className="btn-3d flex-[2]">
+              <button onClick={handleStartSession} className="btn-3d" style={{ flex: 2, height: '40px' }}>
                 🚀 Start Collection
               </button>
             </div>
@@ -351,7 +352,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'linear-gradient(135deg, #0a1f0f 0%, #0d2d18 100%)', overflowY: 'auto' }}>
       {/* Top Bar */}
-      <div style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 4px 24px rgba(0,0,0,0.6)' }}>
+      <div style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '8px 24px', height: '52px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 4px 24px rgba(0,0,0,0.6)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ width: 40, height: 40, background: 'linear-gradient(135deg, #4ade80, #1a5c2e)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(74,222,128,0.4)' }}>🥛</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -371,15 +372,15 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
         </div>
       </div>
 
-      <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="p-6 flex gap-6">
         {/* Left Form */}
-        <div className="lg:col-span-4 space-y-6">
+        <div style={{ width: '380px', flexShrink: 0 }} className="space-y-6">
           <div className="glass-card animate-fadeIn" style={{ padding: 24 }}>
             <h3 className="modal-title" style={{ border: 'none', marginBottom: 20, padding: 0, color: 'white', fontWeight: 800, fontSize: 18 }}>
               <Droplet color="#4ade80" /> {isModifying ? 'Modify Entry' : 'New Collection'}
             </h3>
             
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
                 <label className="label-text">Farmer Code</label>
                 <input
@@ -389,6 +390,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                   onChange={(e) => handleFarmerCodeChange(e.target.value)}
                   onKeyDown={handleFarmerCodeKeyDown}
                   className="input-3d"
+                  style={{ padding: '8px 12px' }}
                   placeholder="Enter Farmer Code"
                 />
                 
@@ -406,30 +408,30 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                 {warningMessage && <p style={{ color: '#f87171', fontSize: 12, marginTop: 4, fontWeight: 600 }}>{warningMessage}</p>}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="label-text">Quantity (L)</label>
-                  <input ref={qtyRef} type="number" value={qty} onChange={(e) => setQty(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && fatRef.current?.focus()} className="input-3d" placeholder="0.00" />
+                  <input ref={qtyRef} type="number" value={qty} onChange={(e) => setQty(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && fatRef.current?.focus()} className="input-3d" style={{ padding: '8px 12px' }} placeholder="0.00" />
                 </div>
                 <div>
                   <label className="label-text">FAT %</label>
-                  <input ref={fatRef} type="number" value={fat} onChange={(e) => setFat(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && snfClrRef.current?.focus()} className="input-3d" placeholder="0.0" />
+                  <input ref={fatRef} type="number" value={fat} onChange={(e) => setFat(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && snfClrRef.current?.focus()} className="input-3d" style={{ padding: '8px 12px' }} placeholder="0.0" />
                 </div>
               </div>
 
               <div>
                 <label className="label-text">{sessionMode} %</label>
-                <input ref={snfClrRef} type="number" value={snfClr} onChange={(e) => setSnfClr(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSaveOrUpdate()} className="input-3d" placeholder="0.0" />
+                <input ref={snfClrRef} type="number" value={snfClr} onChange={(e) => setSnfClr(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSaveOrUpdate()} className="input-3d" style={{ padding: '8px 12px' }} placeholder="0.0" />
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mt-6">
-                <div style={{ background: 'linear-gradient(135deg, #1e3a5f, #1e40af)', borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(30,64,175,0.4)' }}>
-                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Rate / L</p>
-                  <p style={{ color: '#4ade80', fontSize: 24, fontWeight: 800 }}>₹{rate.toFixed(2)}</p>
+              <div className="grid grid-cols-2 gap-3 mt-4">
+                <div style={{ background: 'linear-gradient(135deg, #1e3a5f, #1e40af)', borderRadius: 14, padding: 16, border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(30,64,175,0.4)' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>Rate / L</p>
+                  <p style={{ color: '#4ade80', fontSize: 20, fontWeight: 800 }}>₹{rate.toFixed(2)}</p>
                 </div>
-                <div style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)', borderRadius: 16, padding: 16, border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(22,163,74,0.3)' }}>
-                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase' }}>Total Amount</p>
-                  <p style={{ color: '#4ade80', fontSize: 24, fontWeight: 800 }}>₹{amount.toFixed(2)}</p>
+                <div style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)', borderRadius: 14, padding: 16, border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(22,163,74,0.3)' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>Total Amount</p>
+                  <p style={{ color: '#4ade80', fontSize: 20, fontWeight: 800 }}>₹{amount.toFixed(2)}</p>
                 </div>
               </div>
 
@@ -443,37 +445,37 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
             </div>
           </div>
 
-          <div className="glass-card" style={{ padding: 24, background: 'linear-gradient(135deg, #1a5c2e, #16a34a)' }}>
-            <h3 style={{ color: 'white', fontWeight: 800, fontSize: 16, marginBottom: 16 }}>Session Summary</h3>
-            <div className="grid grid-cols-2 gap-4">
+          <div className="glass-card" style={{ padding: '14px 16px', background: 'linear-gradient(135deg, #1a5c2e, #16a34a)' }}>
+            <h3 style={{ color: 'white', fontWeight: 800, fontSize: 15, marginBottom: 12 }}>Session Summary</h3>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
               <div>
-                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Total Liters</p>
-                <p style={{ color: 'white', fontSize: 20, fontWeight: 800 }}>{totalQty.toFixed(2)} L</p>
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>Total Liters</p>
+                <p style={{ color: 'white', fontSize: 18, fontWeight: 800 }}>{totalQty.toFixed(2)} L</p>
               </div>
               <div>
-                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Total Amount</p>
-                <p style={{ color: 'white', fontSize: 20, fontWeight: 800 }}>{formatIndianCurrency(totalAmount)}</p>
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>Total Amount</p>
+                <p style={{ color: 'white', fontSize: 18, fontWeight: 800 }}>{formatIndianCurrency(totalAmount)}</p>
               </div>
               <div>
-                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Avg FAT</p>
-                <p style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>{avgFat.toFixed(2)} %</p>
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>Avg FAT</p>
+                <p style={{ color: 'white', fontSize: 15, fontWeight: 700 }}>{avgFat.toFixed(2)} %</p>
               </div>
               <div>
-                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Avg {sessionMode}</p>
-                <p style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>{avgSnfClr.toFixed(2)} %</p>
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>Avg {sessionMode}</p>
+                <p style={{ color: 'white', fontSize: 15, fontWeight: 700 }}>{avgSnfClr.toFixed(2)} %</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Right Table */}
-        <div className="lg:col-span-8">
-          <div className="glass-card animate-fadeIn" style={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ flex: 1 }}>
+          <div className="glass-card animate-fadeIn" style={{ height: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ color: 'white', fontWeight: 800, fontSize: 20 }}>Today's Entries <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14, fontWeight: 400 }}>({todayEntries.length})</span></h3>
             </div>
             
-            <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: 12, maxHeight: 'calc(100vh - 200px)' }}>
               <div className="table-container">
                 <table className="w-full table-3d">
                   <thead className="table-header" style={{ position: 'sticky', top: 0, zIndex: 10 }}>
@@ -490,19 +492,19 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                   <tbody>
                     {todayEntries.sort((a, b) => b.timestamp - a.timestamp).map((entry) => (
                       <tr key={entry.farmerCode} className="table-row">
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-2" style={{ padding: '8px 12px' }}>
                           <div style={{ fontWeight: 700, color: 'white' }}>{entry.farmerCode}</div>
                           <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>{entry.farmerName}</div>
                         </td>
-                        <td className="px-4 py-3 text-right font-semibold" style={{ color: 'white' }}>{entry.qty.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right" style={{ color: 'rgba(255,255,255,0.85)' }}>{entry.fat.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right" style={{ color: 'rgba(255,255,255,0.85)' }}>{(entry.snf || entry.clr || 0).toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right" style={{ color: 'rgba(255,255,255,0.85)' }}>₹{entry.rate.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right font-bold" style={{ color: '#4ade80' }}>₹{entry.amount.toFixed(2)}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-2 text-right font-semibold" style={{ color: 'white', padding: '8px 12px' }}>{entry.qty.toFixed(2)}</td>
+                        <td className="px-4 py-2 text-right" style={{ color: 'rgba(255,255,255,0.85)', padding: '8px 12px' }}>{entry.fat.toFixed(1)}</td>
+                        <td className="px-4 py-2 text-right" style={{ color: 'rgba(255,255,255,0.85)', padding: '8px 12px' }}>{(entry.snf || entry.clr || 0).toFixed(1)}</td>
+                        <td className="px-4 py-2 text-right" style={{ color: 'rgba(255,255,255,0.85)', padding: '8px 12px' }}>₹{entry.rate.toFixed(2)}</td>
+                        <td className="px-4 py-2 text-right font-bold" style={{ color: '#4ade80', padding: '8px 12px' }}>₹{entry.amount.toFixed(2)}</td>
+                        <td className="px-4 py-2" style={{ padding: '8px 12px' }}>
                           <div className="flex justify-center gap-2">
-                            <button onClick={() => handleModify(entry)} className="btn-info" style={{ padding: 6 }}><Edit2 size={14} /></button>
-                            <button onClick={() => handleDelete(entry.farmerCode)} className="btn-danger" style={{ padding: 6 }}><Trash2 size={14} /></button>
+                            <button onClick={() => handleModify(entry)} className="btn-success" style={{ padding: 6 }} title="Edit"><Edit2 size={14} /></button>
+                            <button onClick={() => handleDelete(entry.farmerCode)} className="btn-danger" style={{ padding: 6 }} title="Delete"><Trash2 size={14} /></button>
                           </div>
                         </td>
                       </tr>

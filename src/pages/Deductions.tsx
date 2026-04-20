@@ -245,41 +245,43 @@ const Deductions: React.FC = () => {
 
   if (activeSection === null) {
     return (
-      <div className="p-6 animate-fadeIn">
-        <h1 style={{ color: 'white', fontWeight: 800, fontSize: 28, textShadow: '0 2px 8px rgba(0,0,0,0.3)', marginBottom: 32 }}>Deductions & Gross Entries</h1>
+      <div className="page-wrapper animate-fadeIn">
+        <h1 className="page-title">Deductions & Gross Entries</h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div onClick={handleNewEntryClick} className="stat-card-3d cursor-pointer" style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)', padding: 40 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
-              <div style={{ width: 80, height: 80, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Plus size={48} color="white" />
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <h2 style={{ color: 'white', fontSize: 24, fontWeight: 800 }}>New Entry</h2>
-                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, marginTop: 4 }}>Add Farmer Gross Entry</p>
-              </div>
+        <div className="grid grid-cols-3 gap-4">
+          <div onClick={handleNewEntryClick} className="stat-card-3d cursor-pointer hover:translate-y-[-4px] hover:shadow-[0_0_20px_rgba(74,222,128,0.3)]" style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)', height: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', borderRadius: '14px', padding: '24px' }}>
+            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Plus size={24} color="white" />
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <h2 style={{ color: 'white', fontSize: 18, fontWeight: 700 }}>New Entry</h2>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>Add Farmer Gross Entry</p>
             </div>
           </div>
 
-          <div onClick={handleGrossReportClick} className="stat-card-3d cursor-pointer" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2563eb)', padding: 40 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
-              <div style={{ width: 80, height: 80, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <FileText size={48} color="white" />
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <h2 style={{ color: 'white', fontSize: 24, fontWeight: 800 }}>Farmer Gross</h2>
-                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, marginTop: 4 }}>Detailed Report</p>
-              </div>
+          <div onClick={handleGrossReportClick} className="stat-card-3d cursor-pointer hover:translate-y-[-4px] hover:shadow-[0_0_20px_rgba(37,99,235,0.3)]" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2563eb)', height: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', borderRadius: '14px', padding: '24px' }}>
+            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <FileText size={24} color="white" />
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <h2 style={{ color: 'white', fontSize: 18, fontWeight: 700 }}>Farmer Gross</h2>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>Detailed Report</p>
             </div>
           </div>
 
-          <div onClick={handleDeductionReportClick} className="stat-card-3d cursor-pointer" style={{ background: 'linear-gradient(135deg, #7c2d12, #ea580c)', padding: 40 }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
-              <div style={{ width: 80, height: 80, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <BarChart2 size={48} color="white" />
-              </div>
-              <div style={{ textAlign: 'center' }}>
-                <h2 style={{ color: 'white', fontSize: 24, fontWeight: 800 }}>Deduction</h2>
+          <div onClick={handleDeductionReportClick} className="stat-card-3d cursor-pointer hover:translate-y-[-4px] hover:shadow-[0_0_20px_rgba(234,88,12,0.3)]" style={{ background: 'linear-gradient(135deg, #7c2d12, #ea580c)', height: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', borderRadius: '14px', padding: '24px' }}>
+            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <BarChart2 size={24} color="white" />
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <h2 style={{ color: 'white', fontSize: 18, fontWeight: 700 }}>Deduction Report</h2>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>Monthly Summary</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }n</h2>
                 <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, marginTop: 4 }}>Monthly Summary</p>
               </div>
             </div>

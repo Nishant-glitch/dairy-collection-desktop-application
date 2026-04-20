@@ -133,22 +133,22 @@ const FarmerMaster: React.FC = () => {
   };
 
   return (
-    <div className="p-6 animate-fadeIn">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="page-title">{t('farmerMaster')}</h1>
+    <div className="page-wrapper animate-fadeIn">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="page-title" style={{ marginBottom: 0 }}>{t('farmerMaster')}</h1>
         <button
           onClick={handleAdd}
           className="btn-3d"
         >
-          <Plus size={20} />
+          <Plus size={18} />
           Add Farmer
         </button>
       </div>
 
-      <div className="glass-card" style={{ padding: 24 }}>
-        <div className="mb-6 relative">
+      <div className="glass-card" style={{ padding: '20px 24px' }}>
+        <div className="mb-4 relative" style={{ maxWidth: '400px' }}>
           <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.6)' }}>
-            <Search size={18} />
+            <Search size={16} />
           </div>
           <input
             type="text"
@@ -156,7 +156,7 @@ const FarmerMaster: React.FC = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="input-3d"
-            style={{ paddingLeft: 40 }}
+            style={{ paddingLeft: 40, height: '38px' }}
           />
         </div>
 
@@ -177,18 +177,18 @@ const FarmerMaster: React.FC = () => {
             <tbody>
               {filteredFarmers.map((farmer) => (
                 <tr key={farmer.farmerCode} className="table-row">
-                  <td className="px-4 py-3" style={{ fontWeight: 'bold', color: 'white' }}>{farmer.farmerCode}</td>
-                  <td className="px-4 py-3" style={{ color: 'rgba(255,255,255,0.85)' }}>{farmer.farmerName}</td>
-                  <td className="px-4 py-3" style={{ color: 'rgba(255,255,255,0.85)' }}>{farmer.mobileNo}</td>
-                  <td className="px-4 py-3" style={{ color: 'rgba(255,255,255,0.85)' }}>{farmer.bankName}</td>
-                  <td className="px-4 py-3" style={{ color: 'rgba(255,255,255,0.85)' }}>{farmer.bankAC}</td>
-                  <td className="px-4 py-3" style={{ color: 'rgba(255,255,255,0.85)' }}>{farmer.ifscCode}</td>
-                  <td className="px-4 py-3" style={{ color: 'rgba(255,255,255,0.85)' }}>{farmer.upiId}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-2" style={{ fontWeight: 'bold', color: 'white', padding: '10px 14px' }}>{farmer.farmerCode}</td>
+                  <td className="px-4 py-2" style={{ color: 'rgba(255,255,255,0.85)', padding: '10px 14px' }}>{farmer.farmerName}</td>
+                  <td className="px-4 py-2" style={{ color: 'rgba(255,255,255,0.85)', padding: '10px 14px' }}>{farmer.mobileNo}</td>
+                  <td className="px-4 py-2" style={{ color: 'rgba(255,255,255,0.85)', padding: '10px 14px' }}>{farmer.bankName}</td>
+                  <td className="px-4 py-2" style={{ color: 'rgba(255,255,255,0.85)', padding: '10px 14px' }}>{farmer.bankAC}</td>
+                  <td className="px-4 py-2" style={{ color: 'rgba(255,255,255,0.85)', padding: '10px 14px' }}>{farmer.ifscCode}</td>
+                  <td className="px-4 py-2" style={{ color: 'rgba(255,255,255,0.85)', padding: '10px 14px' }}>{farmer.upiId}</td>
+                  <td className="px-4 py-2" style={{ padding: '10px 14px' }}>
                     <div className="flex justify-center gap-2">
-                      <button onClick={() => handleView(farmer)} className="btn-info" style={{ padding: 6 }} title="View"><Eye size={16} /></button>
-                      <button onClick={() => handleEdit(farmer)} className="btn-success" style={{ padding: 6 }} title="Edit"><Edit2 size={16} /></button>
-                      <button onClick={() => handleDelete(farmer.farmerCode)} className="btn-danger" style={{ padding: 6 }} title="Delete"><Trash2 size={16} /></button>
+                      <button onClick={() => handleView(farmer)} className="btn-info" style={{ width: '32px', height: '32px', padding: 0 }} title="View"><Eye size={14} /></button>
+                      <button onClick={() => handleEdit(farmer)} className="btn-success" style={{ width: '32px', height: '32px', padding: 0 }} title="Edit"><Edit2 size={14} /></button>
+                      <button onClick={() => handleDelete(farmer.farmerCode)} className="btn-danger" style={{ width: '32px', height: '32px', padding: 0 }} title="Delete"><Trash2 size={14} /></button>
                     </div>
                   </td>
                 </tr>
@@ -202,6 +202,9 @@ const FarmerMaster: React.FC = () => {
               )}
             </tbody>
           </table>
+        </div>
+        <div style={{ marginTop: '12px', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
+          Total Farmers: {filteredFarmers.length}
         </div>
       </div>
 

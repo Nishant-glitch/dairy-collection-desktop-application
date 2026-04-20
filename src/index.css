@@ -435,3 +435,9 @@ body {
   #print-area { display: block !important; }
 }
 #print-area { display: none; }
+
+.page-wrapper {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 24px 32px;
+}

@@ -176,7 +176,7 @@ const RateChart: React.FC = () => {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto animate-fadeIn">
+    <div className="page-wrapper animate-fadeIn">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
         <div>
           <h1 className="page-title">Rate Chart Management</h1>
@@ -211,6 +211,19 @@ const RateChart: React.FC = () => {
         </div>
       )}
 
+      {userIsAdmin && (
+        <div className="glass-card" style={{ padding: '16px 20px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(74,222,128,0.05)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <FileSpreadsheet color="#4ade80" size={24} />
+            <div>
+              <p style={{ color: 'white', fontSize: '14px', fontWeight: 700 }}>Admin: Upload Rate Chart</p>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '12px' }}>Admin can upload rate chart from Excel file. All users will automatically get the updated rates.</p>
+            </div>
+          </div>
+          <button onClick={() => setShowImportPopup(true)} className="btn-3d" style={{ padding: '8px 20px', fontSize: '13px' }}>Import Excel</button>
+        </div>
+      )}
+
       {currentConfig ? (
         <div className="space-y-4">
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#4ade80', fontWeight: 800, fontSize: 14, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 12 }}>
@@ -220,17 +233,14 @@ const RateChart: React.FC = () => {
           <RateTable config={currentConfig} />
         </div>
       ) : (
-        <div className="glass-card" style={{ padding: 64, textAlign: 'center', borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.15)' }}>
-          <div style={{ width: 80, height: 80, background: 'rgba(74,222,128,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-            <FileSpreadsheet color="#4ade80" size={40} />
+        <div className="glass-card" style={{ height: '200px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.15)', padding: '24px' }}>
+          <div style={{ width: 48, height: 48, background: 'rgba(74,222,128,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
+            <FileSpreadsheet color="#4ade80" size={24} />
           </div>
-          <h3 style={{ color: 'white', fontSize: 22, fontWeight: 800, marginBottom: 8 }}>No Rate Chart Found</h3>
-          <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: 32, maxWidth: 400, margin: '0 auto 32px' }}>
+          <h3 style={{ color: 'white', fontSize: 18, fontWeight: 800, marginBottom: 4 }}>No Rate Chart Found</h3>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', maxWidth: 400 }}>
             {userIsAdmin ? 'Please import an Excel file to publish the rate chart for all users.' : 'No rate chart uploaded yet. Please contact your administrator.'}
           </p>
-          {userIsAdmin && (
-            <button onClick={() => setShowImportPopup(true)} className="btn-3d" style={{ padding: '12px 32px', fontSize: 16 }}>Import Now</button>
-          )}
         </div>
       )}
 
