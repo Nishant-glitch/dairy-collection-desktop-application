@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ref, get, set, push } from 'firebase/database';
 import { database } from '../firebase/config';
 import { isAdmin } from '../utils/userDb';
@@ -35,6 +35,8 @@ const RateChart: React.FC = () => {
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [viewingConfig, setViewingConfig] = useState<any>(null);
   const [effectiveDate, setEffectiveDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const userIsAdmin = isAdmin();
 
   useEffect(() => {
@@ -60,55 +62,83 @@ const RateChart: React.FC = () => {
     setShowHistoryModal(true);
   };
 
-  const handleExcelImport = (file: File, effectiveFrom: string) => {
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const data = new Uint8Array(e.target?.result as ArrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const json = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
-        
-        if (json.length < 2) {
-          alert('Invalid Excel format. Please check the template.');
-          return;
-        }
+  const handleExcelImport = async (file: File, effectiveFrom: string) => {
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+          const json = XLSX.utils.sheet_to_json(sheet, { 
+            header: 1, 
+            defval: 0,
+            raw: false 
+          }) as any[][];
 
-        const snfValues = json[0].slice(1).map(Number).filter(v => !isNaN(v));
-        
-        const rateMap: any = {};
-        for (let i = 1; i < json.length; i++) {
-          const fat = parseFloat(json[i][0]);
-          if (isNaN(fat)) continue;
-          rateMap[fat] = {};
-          snfValues.forEach((snf, idx) => {
-            rateMap[fat][snf] = parseFloat(json[i][idx + 1]) || 0;
-          });
-        }
-        
-        const fatValues = Object.keys(rateMap).map(Number).sort((a, b) => a - b);
+          if (!json || json.length < 2) {
+            alert('Excel file is empty or has insufficient data!');
+            return;
+          }
 
-        const config = {
-          rateMap,
-          snfValues,
-          fatValues,
-          effectiveFrom,
-          importedAt: Date.now(),
-          type: 'excel'
-        };
-        
-        await set(ref(database, 'globalRateConfig/current'), config);
-        await push(ref(database, 'globalRateConfig/history'), config);
-        
-        setCurrentConfig(config);
-        setShowImportPopup(false);
-        alert('✓ Rate chart published! All users will now use this chart.');
-      } catch (error) {
-        console.error('Error importing Excel:', error);
-        alert('Error importing Excel file. Please ensure it follows the required format.');
-      }
-    };
-    reader.readAsArrayBuffer(file);
+          // Parse SNF values from row 0 (skip first cell)
+          const snfValues: number[] = [];
+          for (let i = 1; i < json[0].length; i++) {
+            const val = parseFloat(String(json[0][i]));
+            if (!isNaN(val)) snfValues.push(val);
+          }
+
+          // Parse FAT rows
+          const fatValues: number[] = [];
+          const rateMap: any = {};
+
+          for (let i = 1; i < json.length; i++) {
+            const fat = parseFloat(String(json[i][0]));
+            if (isNaN(fat)) continue;
+            fatValues.push(fat);
+            rateMap[fat] = {};
+            snfValues.forEach((snf, idx) => {
+              const rate = parseFloat(String(json[i][idx + 1]));
+              rateMap[fat][snf] = isNaN(rate) ? 0 : rate;
+            });
+          }
+
+          if (fatValues.length === 0 || snfValues.length === 0) {
+            alert('Could not parse FAT or SNF values from Excel. Please check file format.');
+            return;
+          }
+
+          const config = {
+            rateMap,
+            snfValues,
+            fatValues,
+            effectiveFrom,
+            importedAt: Date.now(),
+            type: 'excel',
+            fileName: file.name,
+          };
+
+          // Save to Firebase
+          await set(ref(database, 'globalRateConfig/current'), config);
+          await push(ref(database, 'globalRateConfig/history'), config);
+
+          setCurrentConfig(config);
+          setSelectedFile(null);
+          setShowImportPopup(false);
+          alert(`✓ Rate chart published successfully!\nFile: ${file.name}\nEffective from: ${effectiveFrom}\nFAT values: ${fatValues.length} | SNF values: ${snfValues.length}`);
+
+        } catch (parseError) {
+          console.error('Parse error:', parseError);
+          alert('Could not read Excel file. Please ensure it is a valid .xlsx or .xls file.');
+        }
+      };
+      reader.onerror = () => alert('Failed to read file.');
+      reader.readAsArrayBuffer(file);
+    } catch (err) {
+      console.error('Import error:', err);
+      alert('Import failed. Please try again.');
+    }
   };
 
   const getCellColor = (rate: number) => {
@@ -250,7 +280,7 @@ const RateChart: React.FC = () => {
           <div className="modal-3d animate-fadeIn" style={{ maxWidth: 400, padding: 28, width: '90%' }}>
             <div className="flex justify-between items-center" style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
               <h2 style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>Import & Publish Chart</h2>
-              <button onClick={() => setShowImportPopup(false)} style={{ color: 'rgba(255,255,255,0.6)', cursor: 'pointer', background: 'none', border: 'none' }}>
+              <button onClick={() => { setShowImportPopup(false); setSelectedFile(null); }} style={{ color: 'rgba(255,255,255,0.6)', cursor: 'pointer', background: 'none', border: 'none' }}>
                 <X size={24} />
               </button>
             </div>
@@ -261,20 +291,77 @@ const RateChart: React.FC = () => {
                 <input type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} className="input-3d" style={{ padding: '10px 14px', marginBottom: '20px' }} />
               </div>
 
-              <div className="border-2 border-dashed border-slate-700 text-center hover:border-green-500/50 transition-colors cursor-pointer relative" style={{ borderColor: 'rgba(255,255,255,0.15)', padding: '32px 20px', marginBottom: 0, borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-                <input
-                  type="file"
-                  accept=".xlsx, .xls"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleExcelImport(file, effectiveDate);
-                  }}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                />
-                <FileSpreadsheet color="#4ade80" size={48} />
-                <p style={{ color: 'white', fontWeight: 700, fontSize: '16px' }}>Click to Upload Excel</p>
-                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', opacity: 0.6 }}>Supports .xlsx and .xls formats</p>
+              <div onClick={() => fileInputRef.current?.click()} style={{
+                border: '2px dashed rgba(74,222,128,0.4)',
+                borderRadius: 12, padding: '32px 20px',
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', gap: 12,
+                cursor: 'pointer', marginBottom: 16,
+                background: selectedFile ? 'rgba(74,222,128,0.08)' : 'transparent',
+                transition: 'all 0.2s'
+              }}>
+                <FileSpreadsheet style={{ width: 48, height: 48, color: '#4ade80' }} />
+                <div style={{ fontSize: 16, fontWeight: 700, color: '#f1f5f9' }}>
+                  {selectedFile ? '✓ File Selected' : 'Click to Upload Excel'}
+                </div>
+                <div style={{ fontSize: 13, color: '#94a3b8' }}>
+                  Supports .xlsx and .xls formats
+                </div>
               </div>
+
+              {/* Show selected file name */}
+              {selectedFile && (
+                <div style={{
+                  background: 'rgba(74,222,128,0.1)',
+                  border: '1px solid rgba(74,222,128,0.3)',
+                  borderRadius: 10, padding: '10px 14px',
+                  marginBottom: 16,
+                  display: 'flex', alignItems: 'center', gap: 10
+                }}>
+                  <FileSpreadsheet style={{ width: 18, height: 18, color: '#4ade80' }} />
+                  <span style={{ fontSize: 14, color: '#4ade80', fontWeight: 600 }}>
+                    {selectedFile.name}
+                  </span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}
+                    style={{
+                      marginLeft: 'auto', background: 'none', border: 'none',
+                      color: '#f87171', cursor: 'pointer', fontSize: 18, lineHeight: 1
+                    }}
+                  >×</button>
+                </div>
+              )}
+
+              {/* Hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) setSelectedFile(file);
+                  e.target.value = '';
+                }}
+              />
+
+              {/* Upload & Publish button — only show when file selected */}
+              {selectedFile && (
+                <button
+                  onClick={() => handleExcelImport(selectedFile, effectiveDate)}
+                  style={{
+                    width: '100%', padding: '13px',
+                    background: 'linear-gradient(135deg, #4ade80, #16a34a)',
+                    border: 'none', borderRadius: 10,
+                    color: '#0f172a', fontWeight: 700, fontSize: 15,
+                    cursor: 'pointer', marginTop: 8,
+                    display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', gap: 8
+                  }}
+                >
+                  🚀 Upload & Publish Rate Chart
+                </button>
+              )}
             </div>
           </div>
         </div>
