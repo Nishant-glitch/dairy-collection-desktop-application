@@ -38,7 +38,7 @@ const RateChart: React.FC = () => {
   // Manual Entry State
   const [snfList, setSnfList] = useState<string[]>(['7.5', '7.6', '7.7']);
   const [fatList, setFatList] = useState<string[]>(['2.5', '2.6', '2.7']);
-  const [rates, setRates] = useState<Record<string, string>>({});
+  const [rates, setRates] = useState<Record<string, number>>({});
   const [editMode, setEditMode] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -72,17 +72,28 @@ const RateChart: React.FC = () => {
     return /^\d*\.?\d{0,2}$/.test(value);
   };
 
-  const updateRate = (fat: string, snf: string, value: string) => {
-    if (!validateInput(value)) return;
-    const key = `${fat}-${snf}`;
-    setRates(prev => ({ ...prev, [key]: value }));
+  const updateRate = (fat: any, snf: any, value: any) => {
+    const fatNum = Number(fat);
+    const snfNum = Number(snf);
+
+    if (isNaN(fatNum) || isNaN(snfNum)) return;
+
+    let num = Number(value);
+    if (isNaN(num)) return;
+
+    num = Number(num.toFixed(2));
+
+    const key = `${fatNum}-${snfNum}`;
+
+    setRates(prev => ({
+      ...prev,
+      [key]: num
+    }));
   };
 
-  const handleRateBlur = (fat: string, snf: string, value: string) => {
+  const handleRateBlur = (fat: any, snf: any, value: any) => {
     if (value === "") return;
-    const formatted = Number(value).toFixed(2);
-    const key = `${fat}-${snf}`;
-    setRates(prev => ({ ...prev, [key]: formatted }));
+    updateRate(fat, snf, value);
   };
 
   const updateFatValue = (index: number, value: string) => {
@@ -120,14 +131,19 @@ const RateChart: React.FC = () => {
       if (raw.length > 1) {
         const newSnfs = raw[0].slice(1).map(String);
         const newFats = raw.slice(1).map(row => String(row[0]));
-        const newRates: Record<string, string> = {};
+        const newRates: Record<string, number> = {};
         
         raw.slice(1).forEach((row, rIdx) => {
-          const fat = String(row[0]);
+          const fat = row[0];
           row.slice(1).forEach((val, cIdx) => {
-            const snf = String(raw[0][cIdx + 1]);
+            const snf = raw[0][cIdx + 1];
             if (val !== "") {
-              newRates[`${fat}-${snf}`] = Number(val).toFixed(2);
+              const fatNum = Number(fat);
+              const snfNum = Number(snf);
+              if (!isNaN(fatNum) && !isNaN(snfNum)) {
+                const key = `${fatNum}-${snfNum}`;
+                newRates[key] = Number(Number(val).toFixed(2));
+              }
             }
           });
         });
@@ -144,40 +160,53 @@ const RateChart: React.FC = () => {
 
   const handleSaveAndPublish = async () => {
     try {
-      const validFats = fatList.filter(f => f !== "" && !isNaN(Number(f))).map(f => Number(Number(f).toFixed(2)));
-      const validSnfs = snfList.filter(s => s !== "" && !isNaN(Number(s))).map(s => Number(Number(s).toFixed(2)));
+      const result: any[] = [];
 
-      if (validFats.length === 0 || validSnfs.length === 0) {
-        alert("Please enter valid FAT and SNF values.");
-        return;
-      }
+      fatList.forEach(fat => {
+        const fatNum = Number(fat);
+        if (isNaN(fatNum)) return;
 
-      const rateMap: Record<number, Record<number, number>> = {};
-      let hasData = false;
+        snfList.forEach(snf => {
+          const snfNum = Number(snf);
+          if (isNaN(snfNum)) return;
 
-      validFats.forEach(fat => {
-        rateMap[fat] = {};
-        validSnfs.forEach(snf => {
-          const rawRate = rates[`${fat}-${snf}`] || rates[`${fat.toFixed(1)}-${snf.toFixed(1)}`] || rates[`${fat.toFixed(2)}-${snf.toFixed(2)}`];
-          const rateNum = Number(rawRate);
-          if (!isNaN(rateNum) && rawRate !== undefined) {
-            rateMap[fat][snf] = Number(rateNum.toFixed(2));
-            hasData = true;
-          } else {
-            rateMap[fat][snf] = 0;
-          }
+          const key = `${fatNum}-${snfNum}`;
+          let rate = rates[key];
+
+          if (rate === undefined || (rate as any) === "") return;
+
+          rate = Number(rate);
+          if (isNaN(rate)) return;
+
+          result.push({
+            fat: fatNum,
+            snf: snfNum,
+            rate: Number(rate.toFixed(2))
+          });
         });
       });
 
-      if (!hasData) {
-        alert("No valid rates entered. Please fill the table.");
+      console.log("PUBLISH DATA:", result);
+
+      if (result.length === 0) {
+        alert("No valid data to publish");
         return;
       }
 
+      // Convert result back to the format the application expects for storage
+      const validFats = [...new Set(result.map(r => r.fat))].sort((a, b) => a - b);
+      const validSnfs = [...new Set(result.map(r => r.snf))].sort((a, b) => a - b);
+      
+      const rateMap: Record<number, Record<number, number>> = {};
+      result.forEach(item => {
+        if (!rateMap[item.fat]) rateMap[item.fat] = {};
+        rateMap[item.fat][item.snf] = item.rate;
+      });
+
       const config = {
         rateMap,
-        snfValues: [...new Set(validSnfs)].sort((a, b) => a - b),
-        fatValues: [...new Set(validFats)].sort((a, b) => a - b),
+        snfValues: validSnfs,
+        fatValues: validFats,
         effectiveFrom: effectiveDate,
         importedAt: Date.now(),
         type: 'manual',
@@ -272,8 +301,10 @@ const RateChart: React.FC = () => {
                   </div>
                 </th>
                 {snfList.map((snf, cIdx) => {
-                  const key = `${fat}-${snf}`;
-                  const val = rates[key] || "";
+                  const fatNum = Number(fat);
+                  const snfNum = Number(snf);
+                  const key = `${fatNum}-${snfNum}`;
+                  const val = rates[key] !== undefined ? rates[key] : "";
                   return (
                     <td key={cIdx} style={{ padding: 2, border: '1px solid rgba(255,255,255,0.1)' }}>
                       <input 
