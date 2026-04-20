@@ -82,10 +82,13 @@ const RateChart: React.FC = () => {
             return;
           }
 
-          // Parse SNF values from row 0 (skip first cell)
+          // Parse SNF values from row 0 (skip first cell and last cell if it's "AVG")
           const snfValues: number[] = [];
-          for (let i = 1; i < json[0].length; i++) {
-            const val = parseFloat(String(json[0][i]));
+          const headerRow = json[0];
+          for (let i = 1; i < headerRow.length; i++) {
+            const valStr = String(headerRow[i]).trim();
+            if (valStr.toUpperCase() === 'AVG') continue;
+            const val = parseFloat(valStr);
             if (!isNaN(val)) snfValues.push(val);
           }
 
@@ -94,12 +97,17 @@ const RateChart: React.FC = () => {
           const rateMap: any = {};
 
           for (let i = 1; i < json.length; i++) {
-            const fat = parseFloat(String(json[i][0]));
+            const row = json[i];
+            const fatStr = String(row[0]).trim();
+            if (fatStr.toUpperCase() === 'AVG') continue;
+            const fat = parseFloat(fatStr);
             if (isNaN(fat)) continue;
+            
             fatValues.push(fat);
             rateMap[fat] = {};
             snfValues.forEach((snf, idx) => {
-              const rate = parseFloat(String(json[i][idx + 1]));
+              const rateStr = String(row[idx + 1]).trim();
+              const rate = parseFloat(rateStr);
               rateMap[fat][snf] = isNaN(rate) ? 0 : rate;
             });
           }
