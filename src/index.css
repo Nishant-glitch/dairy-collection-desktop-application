@@ -15,7 +15,7 @@ body {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 20px;
+  border-radius: 12px;
   box-shadow:
     0 8px 32px rgba(0,0,0,0.4),
     0 2px 8px rgba(0,0,0,0.3),
@@ -96,24 +96,20 @@ body {
 
 /* 3D Stat Card */
 .stat-card-3d {
-  border-radius: 20px;
-  padding: 24px;
+  border-radius: 12px;
+  padding: 18px 20px;
   position: relative;
   overflow: hidden;
   box-shadow:
-    0 20px 60px rgba(0,0,0,0.5),
-    0 4px 16px rgba(0,0,0,0.3),
-    inset 0 1px 0 rgba(255,255,255,0.25);
-  transform: perspective(1000px) rotateX(2deg);
+    0 8px 32px rgba(0,0,0,0.4),
+    0 2px 8px rgba(0,0,0,0.3),
+    inset 0 1px 0 rgba(255,255,255,0.2);
   transition: all 0.3s ease;
 }
 
 .stat-card-3d:hover {
-  transform: perspective(1000px) rotateX(0deg) translateY(-6px) scale(1.02);
-  box-shadow:
-    0 30px 80px rgba(0,0,0,0.6),
-    0 8px 24px rgba(0,0,0,0.4),
-    inset 0 1px 0 rgba(255,255,255,0.3);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
 }
 
 .stat-card-3d::before {
@@ -439,5 +435,75 @@ body {
 .page-wrapper {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 24px 32px;
+  padding: 20px 24px;
+}
+
+.section-gap { margin-bottom: 16px; }
+
+@media (max-width: 768px) {
+  /* Sidebar hidden by default on mobile */
+  .sidebar {
+    position: fixed;
+    left: -200px;
+    top: 56px;
+    height: calc(100vh - 56px);
+    z-index: 50;
+    transition: left 0.3s ease;
+  }
+  .sidebar.open { left: 0; }
+  
+  /* Hamburger button visible on mobile */
+  .hamburger { display: flex !important; }
+  
+  /* Main content full width */
+  .main-content { margin-left: 0 !important; }
+  
+  /* Stat cards 2 columns */
+  .stats-grid { grid-template-columns: 1fr 1fr !important; }
+  
+  /* Deduction/Report cards 1 column */
+  .option-cards-grid { grid-template-columns: 1fr !important; }
+  
+  /* DCS form 1 column */
+  .form-grid { grid-template-columns: 1fr !important; }
+  
+  /* Tables scrollable */
+  .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  
+  /* Modal full screen on mobile */
+  .modal-box {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    margin: 10px;
+    padding: 16px !important;
+  }
+  
+  /* Page padding smaller */
+  .page-wrapper { padding: 12px 14px !important; }
+  
+  /* Navbar adjustments */
+  .navbar-center { display: none; }
+  .navbar-email { display: none; }
+  
+  /* Input font-size 16px prevents iOS zoom */
+  input, select, textarea { font-size: 16px !important; }
+  
+  /* Buttons touch-friendly */
+  button { min-height: 40px; }
+  
+  /* Milk collection full screen on mobile */
+  .collection-window {
+    padding: 8px !important;
+  }
+  .collection-panels {
+    flex-direction: column !important;
+  }
+  .collection-form-panel {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid { grid-template-columns: 1fr !important; }
+  .page-title { font-size: 20px !important; }
 }

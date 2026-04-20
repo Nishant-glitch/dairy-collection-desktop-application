@@ -15,9 +15,11 @@ import { useLanguage } from '../contexts/LanguageContext';
 interface SidebarProps {
   currentPage: string;
   onNavigate: (page: string) => void;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
+const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, isOpen, onClose }) => {
   const { t } = useLanguage();
 
   const menuItems = [
@@ -33,14 +35,17 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
   ];
 
   return (
-    <aside style={{
-      background: 'linear-gradient(180deg, #051208 0%, #0a1f0f 100%)',
-      borderRight: '1px solid rgba(255,255,255,0.08)',
-      boxShadow: '4px 0 24px rgba(0,0,0,0.5)',
-      width: 220, minHeight: 'calc(100vh - 60px)',
-      padding: '20px 12px',
-      display: 'flex', flexDirection: 'column', gap: 4
-    }}>
+    <aside 
+      className={`sidebar ${isOpen ? 'open' : ''}`}
+      style={{
+        background: 'linear-gradient(180deg, #051208 0%, #0a1f0f 100%)',
+        borderRight: '1px solid rgba(255,255,255,0.08)',
+        boxShadow: '4px 0 24px rgba(0,0,0,0.5)',
+        width: 200, minHeight: 'calc(100vh - 56px)',
+        padding: '20px 12px',
+        display: 'flex', flexDirection: 'column', gap: 4
+      }}
+    >
       <nav style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {menuItems.map((item) => {
           const Icon = item.icon;
@@ -49,11 +54,14 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
           return (
             <button
               key={item.id}
-              onClick={() => onNavigate(item.id)}
+              onClick={() => {
+                onNavigate(item.id);
+                onClose();
+              }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 12,
-                padding: '10px 16px', borderRadius: 12,
-                height: '42px',
+                padding: '10px 14px', borderRadius: 8,
+                height: '40px',
                 background: isActive
                   ? 'linear-gradient(135deg, rgba(74,222,128,0.3), rgba(45,158,79,0.25))'
                   : 'transparent',
@@ -84,7 +92,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => {
                 }
               }}
             >
-              <Icon style={{ width: 17, height: 17, color: isActive ? '#4ade80' : 'inherit' }} />
+              <Icon style={{ width: 16, height: 16, color: isActive ? '#4ade80' : 'inherit' }} />
               {item.label}
               {isActive && (
                 <div style={{

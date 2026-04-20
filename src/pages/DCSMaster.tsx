@@ -38,19 +38,19 @@ const DCSMaster: React.FC = () => {
     <div className="page-wrapper animate-fadeIn">
       <h1 className="page-title">{t('dcsMaster')}</h1>
 
-      <div className="glass-card" style={{ padding: 32, maxWidth: '100%' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
-          <div style={{ width: 48, height: 48, background: 'linear-gradient(135deg, #4ade80, #1a5c2e)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(74,222,128,0.3)' }}>
-            <Building2 color="#0a1f0f" size={24} />
+      <div className="glass-card" style={{ padding: 20, maxWidth: '800px', margin: '0 auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+          <div style={{ width: 40, height: 40, background: 'linear-gradient(135deg, #4ade80, #1a5c2e)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 24px rgba(74,222,128,0.3)' }}>
+            <Building2 color="#0a1f0f" size={20} />
           </div>
           <div>
-            <h2 style={{ color: 'white', fontSize: 20, fontWeight: 800 }}>Society Information</h2>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12 }}>Configure your dairy collection center details</p>
+            <h2 style={{ color: 'white', fontSize: 18, fontWeight: 800 }}>Society Information</h2>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>Configure your dairy collection center details</p>
           </div>
         </div>
 
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 form-grid">
             <div>
               <label className="label-text">Society Name</label>
               <input
@@ -106,11 +106,11 @@ const DCSMaster: React.FC = () => {
               />
             </div>
             
-            <div className="col-span-2">
+            <div className="col-span-1 md:col-span-2">
               <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '8px 0' }}></div>
             </div>
 
-            <div className="col-span-2">
+            <div className="col-span-1 md:col-span-2">
               <label className="label-text">Address</label>
               <textarea
                 value={formData.address}
@@ -126,9 +126,9 @@ const DCSMaster: React.FC = () => {
             <button
               onClick={handleSave}
               className="btn-3d"
-              style={{ padding: '10px 32px', width: 'auto' }}
+              style={{ padding: '10px 28px', width: 'auto', float: 'right' }}
             >
-              <Save size={18} />
+              <Save size={16} />
               <span>{t('save')} Settings</span>
             </button>
           </div>

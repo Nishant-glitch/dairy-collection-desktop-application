@@ -159,50 +159,50 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-4 gap-4">
-        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2563eb)', minHeight: '120px', padding: '20px' }}>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 stats-grid">
+        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2563eb)', height: 'auto', padding: '18px 20px' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="label-text" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{t('todayCollection')}</p>
-              <p style={{ fontSize: 32, fontWeight: 800, color: '#fff', lineHeight: 1, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>{stats.todayQty.toFixed(2)}</p>
+              <p style={{ fontSize: 28, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{stats.todayQty.toFixed(2)}</p>
               <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, marginTop: 2 }}>{t('liters')}</p>
-              <p style={{ color: '#4ade80', fontSize: 16, fontWeight: 700, marginTop: 4 }}>{formatIndianCurrency(stats.todayAmount)}</p>
+              <p style={{ color: '#4ade80', fontSize: 14, fontWeight: 700, marginTop: 4 }}>{formatIndianCurrency(stats.todayAmount)}</p>
             </div>
-            <Droplet className="w-10 h-10" style={{ color: 'rgba(255,255,255,0.1)' }} />
+            <Droplet className="w-8 h-8" style={{ color: 'rgba(255,255,255,0.1)' }} />
           </div>
         </div>
 
-        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)', minHeight: '120px', padding: '20px' }}>
+        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)', height: 'auto', padding: '18px 20px' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="label-text" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{t('thisMonth')}</p>
-              <p style={{ fontSize: 32, fontWeight: 800, color: '#fff', lineHeight: 1, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>{stats.monthQty.toFixed(2)}</p>
+              <p style={{ fontSize: 28, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{stats.monthQty.toFixed(2)}</p>
               <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, marginTop: 2 }}>{t('liters')}</p>
-              <p style={{ color: '#4ade80', fontSize: 16, fontWeight: 700, marginTop: 4 }}>{formatIndianCurrency(stats.monthAmount)}</p>
+              <p style={{ color: '#4ade80', fontSize: 14, fontWeight: 700, marginTop: 4 }}>{formatIndianCurrency(stats.monthAmount)}</p>
             </div>
-            <TrendingUp className="w-10 h-10" style={{ color: 'rgba(255,255,255,0.1)' }} />
+            <TrendingUp className="w-8 h-8" style={{ color: 'rgba(255,255,255,0.1)' }} />
           </div>
         </div>
 
-        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #4c1d95, #7c3aed)', minHeight: '120px', padding: '20px' }}>
+        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #4c1d95, #7c3aed)', height: 'auto', padding: '18px 20px' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="label-text" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{t('totalFarmers')}</p>
-              <p style={{ fontSize: 32, fontWeight: 800, color: '#fff', lineHeight: 1, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>{stats.totalFarmers}</p>
+              <p style={{ fontSize: 28, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{stats.totalFarmers}</p>
               <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, marginTop: 2 }}>Registered</p>
             </div>
-            <Users className="w-10 h-10" style={{ color: 'rgba(255,255,255,0.1)' }} />
+            <Users className="w-8 h-8" style={{ color: 'rgba(255,255,255,0.1)' }} />
           </div>
         </div>
 
-        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #7c2d12, #ea580c)', minHeight: '120px', padding: '20px' }}>
+        <div className="stat-card-3d" style={{ background: 'linear-gradient(135deg, #7c2d12, #ea580c)', height: 'auto', padding: '18px 20px' }}>
           <div className="flex items-center justify-between">
             <div>
               <p className="label-text" style={{ color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>{t('pendingPayments')}</p>
-              <p style={{ fontSize: 32, fontWeight: 800, color: '#fff', lineHeight: 1, textShadow: '0 2px 8px rgba(0,0,0,0.4)' }}>{stats.pendingPayments}</p>
+              <p style={{ fontSize: 28, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{stats.pendingPayments}</p>
               <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, marginTop: 2 }}>Farmers</p>
             </div>
-            <Clock className="w-10 h-10" style={{ color: 'rgba(255,255,255,0.1)' }} />
+            <Clock className="w-8 h-8" style={{ color: 'rgba(255,255,255,0.1)' }} />
           </div>
         </div>
       </div>
@@ -211,8 +211,8 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="glass-card" style={{ padding: 24 }}>
           <h2 style={{ color: 'white', fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Last 7 Days Collection</h2>
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={chartData}>
+          <ResponsiveContainer width="100%" height={240}>
+            <LineChart data={chartData} style={{ padding: '16px' }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
               <XAxis dataKey="date" stroke="rgba(255,255,255,0.6)" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis stroke="rgba(255,255,255,0.6)" fontSize={12} tickLine={false} axisLine={false} />
@@ -228,8 +228,8 @@ const Dashboard: React.FC = () => {
 
         <div className="glass-card" style={{ padding: 24 }}>
           <h2 style={{ color: 'white', fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Monthly Comparison</h2>
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={chartData}>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={chartData} style={{ padding: '16px' }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
               <XAxis dataKey="date" stroke="rgba(255,255,255,0.6)" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis stroke="rgba(255,255,255,0.6)" fontSize={12} tickLine={false} axisLine={false} />
@@ -264,14 +264,14 @@ const Dashboard: React.FC = () => {
             <tbody>
               {recentEntries.map((entry, index) => (
                 <tr key={index} className="table-row">
-                  <td className="px-4 py-3" style={{ color: 'rgba(255,255,255,0.85)' }}>{entry.date}</td>
-                  <td className="px-4 py-3" style={{ color: 'rgba(255,255,255,0.85)' }}>{entry.shift}</td>
-                  <td className="px-4 py-3" style={{ color: 'white', fontWeight: 'bold' }}>{entry.farmerId}</td>
-                  <td className="px-4 py-3 text-right" style={{ color: 'white' }}>{parseFloat(entry.qty).toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right" style={{ color: 'rgba(255,255,255,0.85)' }}>{parseFloat(entry.fat).toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right" style={{ color: 'rgba(255,255,255,0.85)' }}>{parseFloat(entry.snf || entry.clr || 0).toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right" style={{ color: 'rgba(255,255,255,0.85)' }}>₹{parseFloat(entry.rate).toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right" style={{ fontWeight: 'bold', color: '#4ade80' }}>
+                  <td className="px-4 py-[9px]" style={{ color: 'rgba(255,255,255,0.85)' }}>{entry.date}</td>
+                  <td className="px-4 py-[9px]" style={{ color: 'rgba(255,255,255,0.85)' }}>{entry.shift}</td>
+                  <td className="px-4 py-[9px]" style={{ color: 'white', fontWeight: 'bold' }}>{entry.farmerId}</td>
+                  <td className="px-4 py-[9px] text-right" style={{ color: 'white' }}>{parseFloat(entry.qty).toFixed(2)}</td>
+                  <td className="px-4 py-[9px] text-right" style={{ color: 'rgba(255,255,255,0.85)' }}>{parseFloat(entry.fat).toFixed(2)}</td>
+                  <td className="px-4 py-[9px] text-right" style={{ color: 'rgba(255,255,255,0.85)' }}>{parseFloat(entry.snf || entry.clr || 0).toFixed(2)}</td>
+                  <td className="px-4 py-[9px] text-right" style={{ color: 'rgba(255,255,255,0.85)' }}>₹{parseFloat(entry.rate).toFixed(2)}</td>
+                  <td className="px-4 py-[9px] text-right" style={{ fontWeight: 'bold', color: '#4ade80' }}>
                     {formatIndianCurrency(entry.amount)}
                   </td>
                 </tr>

@@ -284,34 +284,34 @@ const Reports: React.FC = () => {
       <div className="page-wrapper animate-fadeIn">
         <h1 className="page-title"><BarChart3 color="#f59e0b" /> Reports Module</h1>
         
-        <div className="grid grid-cols-3 gap-4 mt-8">
-          <div onClick={() => handleOpenFilter('collection')} className="stat-card-3d cursor-pointer hover:translate-y-[-4px] hover:shadow-[0_0_20px_rgba(59,130,246,0.3)]" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2563eb)', height: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', borderRadius: '14px', padding: '24px' }}>
-            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Calendar className="text-white" size={24} />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 option-cards-grid">
+          <div onClick={() => handleOpenFilter('collection')} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2563eb)', height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
+            <div style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Calendar className="text-white" size={20} />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <h3 className="text-lg font-bold text-white">Collection Shift Wise</h3>
-              <p className="text-slate-300 text-xs opacity-70">Daily and shift-wise summary</p>
+              <h3 style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>Collection Shift Wise</h3>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Daily and shift-wise summary</p>
             </div>
           </div>
 
-          <div onClick={() => handleOpenFilter('farmer')} className="stat-card-3d cursor-pointer hover:translate-y-[-4px] hover:shadow-[0_0_20px_rgba(34,197,94,0.3)]" style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)', height: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', borderRadius: '14px', padding: '24px' }}>
-            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Users className="text-white" size={24} />
+          <div onClick={() => handleOpenFilter('farmer')} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)', height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
+            <div style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Users className="text-white" size={20} />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <h3 className="text-lg font-bold text-white">Farmer Wise Report</h3>
-              <p className="text-slate-300 text-xs opacity-70">Detailed history for farmers</p>
+              <h3 style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>Farmer Wise</h3>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Farmer-wise collection details</p>
             </div>
           </div>
 
-          <div onClick={() => handleOpenFilter('payment')} className="stat-card-3d cursor-pointer hover:translate-y-[-4px] hover:shadow-[0_0_20px_rgba(245,158,11,0.3)]" style={{ background: 'linear-gradient(135deg, #7c2d12, #ea580c)', height: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', borderRadius: '14px', padding: '24px' }}>
-            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Wallet className="text-white" size={24} />
+          <div onClick={() => handleOpenFilter('payment')} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ background: 'linear-gradient(135deg, #7c2d12, #ea580c)', height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
+            <div style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Wallet className="text-white" size={20} />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <h3 className="text-lg font-bold text-white">Payment Register</h3>
-              <p className="text-slate-300 text-xs opacity-70">Monthly payment summary</p>
+              <h3 style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>Payment Register</h3>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Monthly payment summary</p>
             </div>
           </div>
         </div>

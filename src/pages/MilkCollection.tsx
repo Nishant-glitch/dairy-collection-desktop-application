@@ -421,21 +421,21 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
 
               <div>
                 <label className="label-text">{sessionMode} %</label>
-                <input ref={snfClrRef} type="number" value={snfClr} onChange={(e) => setSnfClr(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSaveOrUpdate()} className="input-3d" style={{ padding: '8px 12px' }} placeholder="0.0" />
+                <input ref={snfClrRef} type="number" value={snfClr} onChange={(e) => setSnfClr(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSaveOrUpdate()} className="input-3d" style={{ padding: '9px 12px' }} placeholder="0.0" />
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mt-4">
-                <div style={{ background: 'linear-gradient(135deg, #1e3a5f, #1e40af)', borderRadius: 14, padding: 16, border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(30,64,175,0.4)' }}>
-                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>Rate / L</p>
-                  <p style={{ color: '#4ade80', fontSize: 20, fontWeight: 800 }}>₹{rate.toFixed(2)}</p>
+              <div className="grid grid-cols-2 gap-2 mt-3">
+                <div style={{ background: 'linear-gradient(135deg, #1e3a5f, #1e40af)', borderRadius: 10, padding: 12, border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(30,64,175,0.4)' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 9, fontWeight: 700, textTransform: 'uppercase' }}>Rate / L</p>
+                  <p style={{ color: '#4ade80', fontSize: 16, fontWeight: 800 }}>₹{rate.toFixed(2)}</p>
                 </div>
-                <div style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)', borderRadius: 14, padding: 16, border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(22,163,74,0.3)' }}>
-                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase' }}>Total Amount</p>
-                  <p style={{ color: '#4ade80', fontSize: 20, fontWeight: 800 }}>₹{amount.toFixed(2)}</p>
+                <div style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)', borderRadius: 10, padding: 12, border: '1px solid rgba(255,255,255,0.15)', boxShadow: '0 8px 32px rgba(22,163,74,0.3)' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 9, fontWeight: 700, textTransform: 'uppercase' }}>Total Amount</p>
+                  <p style={{ color: '#4ade80', fontSize: 16, fontWeight: 800 }}>₹{amount.toFixed(2)}</p>
                 </div>
               </div>
 
-              <button onClick={handleSaveOrUpdate} className="btn-3d w-full" style={{ fontSize: 18, padding: 16, marginTop: 12, background: 'linear-gradient(135deg, #4ade80, #16a34a)', boxShadow: '0 8px 24px rgba(74,222,128,0.5)', color: '#0a1f0f', fontWeight: 800 }}>
+              <button onClick={handleSaveOrUpdate} className="btn-3d w-full" style={{ fontSize: 14, padding: '10px 16px', marginTop: 8, background: 'linear-gradient(135deg, #4ade80, #16a34a)', boxShadow: '0 8px 24px rgba(74,222,128,0.5)', color: '#0a1f0f', fontWeight: 700 }}>
                 {isModifying ? 'Update Entry' : 'Save Collection'}
               </button>
               
@@ -445,8 +445,8 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
             </div>
           </div>
 
-          <div className="glass-card" style={{ padding: '14px 16px', background: 'linear-gradient(135deg, #1a5c2e, #16a34a)' }}>
-            <h3 style={{ color: 'white', fontWeight: 800, fontSize: 15, marginBottom: 12 }}>Session Summary</h3>
+          <div className="glass-card" style={{ padding: '12px 14px', background: 'linear-gradient(135deg, #1a5c2e, #16a34a)' }}>
+            <h3 style={{ color: 'white', fontWeight: 700, fontSize: 13, marginBottom: 8 }}>Session Summary</h3>
             <div className="grid grid-cols-2 gap-x-4 gap-y-3">
               <div>
                 <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>Total Liters</p>

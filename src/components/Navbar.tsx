@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, Globe } from 'lucide-react';
+import { LogOut, Globe, Menu } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { signOut } from 'firebase/auth';
 import { auth, database } from '../firebase/config';
@@ -7,10 +7,10 @@ import { isAdmin, up } from '../utils/userDb';
 import { ref, onValue } from 'firebase/database';
 
 interface NavbarProps {
-  dcsName?: string;
+  onMenuToggle: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = () => {
+const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
   const { language, setLanguage, t } = useLanguage();
   const [currentTime, setCurrentTime] = useState(new Date());
   const user = auth.currentUser;
@@ -50,28 +50,38 @@ const Navbar: React.FC<NavbarProps> = () => {
       backdropFilter: 'blur(20px)',
       position: 'sticky', top: 0, zIndex: 100,
       padding: '0 24px',
-      height: '60px',
+      height: '56px',
       display: 'flex', alignItems: 'center', justifyContent: 'space-between'
     }}>
-      {/* Logo */}
+      {/* Logo & Hamburger */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <button 
+          onClick={onMenuToggle}
+          className="hamburger hidden"
+          style={{ 
+            background: 'transparent', border: 'none', color: 'white', 
+            cursor: 'pointer', padding: '4px', marginRight: '8px' 
+          }}
+        >
+          <Menu size={24} />
+        </button>
         <div style={{
-          width: 36, height: 36,
+          width: 32, height: 32,
           background: 'linear-gradient(135deg, #4ade80, #1a5c2e)',
-          borderRadius: 10,
+          borderRadius: 8,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxShadow: '0 4px 16px rgba(74,222,128,0.4), inset 0 1px 0 rgba(255,255,255,0.3)',
-          fontSize: 18
+          fontSize: 16
         }}>🥛</div>
         <span style={{
-          color: 'white', fontWeight: 800, fontSize: 18,
+          color: 'white', fontWeight: 800, fontSize: 16,
           letterSpacing: '-0.5px',
           textShadow: '0 0 20px rgba(74,222,128,0.3)'
-        }}>DCS Pro</span>
+        }} className="hidden md:block">DCS Pro</span>
       </div>
 
       {/* DCS Info in Center */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+      <div className="navbar-center" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
         <span style={{ color: 'white', fontSize: '14px', fontWeight: 700 }}>{dcsInfo.name || 'Dairy Collection System'}</span>
         <div style={{ display: 'flex', gap: '12px', color: 'rgba(255,255,255,0.6)', fontSize: '11px' }}>
           <span>Code: {dcsInfo.code || '---'}</span>
@@ -105,7 +115,7 @@ const Navbar: React.FC<NavbarProps> = () => {
           )}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
             <span style={{ color: 'white', fontSize: 13, fontWeight: 700 }}>{user?.displayName || 'User'}</span>
-            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</span>
+            <span className="navbar-email" style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</span>
           </div>
           <button className="btn-3d" style={{ padding: '8px 16px', fontSize: 13 }}
             onClick={handleLogout}>

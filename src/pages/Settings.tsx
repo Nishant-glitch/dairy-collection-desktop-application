@@ -164,20 +164,21 @@ const Settings: React.FC = () => {
               </div>
             </div>
             
-            <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '20px 0' }}></div>
+            <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '16px 0' }}></div>
             
-            <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+            <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
               <Lock size={14} /> Change Password
             </h3>
-            <div className="space-y-3">
+            <div className="space-y-2">
               <input 
                 type="password" 
                 placeholder="New Password" 
                 value={passwordData.new}
                 onChange={e => setPasswordData({...passwordData, new: e.target.value})}
                 className="input-3d" 
+                style={{ padding: '9px 12px' }}
               />
-              <button onClick={handleChangePassword} className="btn-secondary w-full">
+              <button onClick={handleChangePassword} className="btn-secondary w-full" style={{ padding: '10px 16px', fontSize: '14px' }}>
                 Update Password
               </button>
             </div>
@@ -185,22 +186,22 @@ const Settings: React.FC = () => {
         </div>
 
         {/* SECTION 2 — App Preferences */}
-        <div className="lg:col-span-3 glass-card" style={{ padding: 24 }}>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-green-500/20 rounded-xl flex items-center justify-center">
-              <SettingsIcon className="text-green-400" size={20} />
+        <div className="lg:col-span-3 glass-card" style={{ padding: 20, marginTop: 16 }}>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-9 h-9 bg-green-500/20 rounded-lg flex items-center justify-center">
+              <SettingsIcon className="text-green-400" size={18} />
             </div>
-            <h2 className="text-lg font-bold text-white">App Preferences</h2>
+            <h2 className="text-base font-bold text-white">App Preferences</h2>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="label-text">Language</label>
               <select 
-                value={preferences.language} 
+                value={preferences.language}
                 onChange={e => setPreferences({...preferences, language: e.target.value})}
                 className="input-3d"
-                style={{ appearance: 'none' }}
+                style={{ padding: '9px 12px', appearance: 'none' }}
               >
                 <option value="en">English</option>
                 <option value="hi">Hindi</option>
@@ -239,9 +240,9 @@ const Settings: React.FC = () => {
             </div>
           </div>
           
-          <div className="mt-8 flex justify-end">
-            <button onClick={savePreferences} className="btn-3d" style={{ padding: '10px 24px' }}>
-              <Save size={18} /> Save Preferences
+          <div className="mt-6 flex justify-end">
+            <button onClick={savePreferences} className="btn-3d" style={{ padding: '10px 20px', fontSize: '14px' }}>
+              <Save size={16} /> Save
             </button>
           </div>
         </div>

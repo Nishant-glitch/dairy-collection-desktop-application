@@ -20,6 +20,7 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -79,10 +80,21 @@ function App() {
   return (
     <LanguageProvider>
       <div className="min-h-screen flex flex-col">
-        <Navbar />
-        <div className="flex flex-1">
-          <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} />
-          <main className="flex-1 overflow-x-hidden">
+        <Navbar onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
+        <div className="flex flex-1 relative">
+          <Sidebar 
+            currentPage={currentPage} 
+            onNavigate={setCurrentPage} 
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+          />
+          {sidebarOpen && (
+            <div 
+              className="md:hidden fixed inset-0 bg-black/50 z-40"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+          <main className="flex-1 overflow-x-hidden main-content">
             {renderPage()}
           </main>
         </div>

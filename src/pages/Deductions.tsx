@@ -248,42 +248,34 @@ const Deductions: React.FC = () => {
       <div className="page-wrapper animate-fadeIn">
         <h1 className="page-title">Deductions & Gross Entries</h1>
 
-        <div className="grid grid-cols-3 gap-4">
-          <div onClick={handleNewEntryClick} className="stat-card-3d cursor-pointer hover:translate-y-[-4px] hover:shadow-[0_0_20px_rgba(74,222,128,0.3)]" style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)', height: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', borderRadius: '14px', padding: '24px' }}>
-            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Plus size={24} color="white" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 option-cards-grid">
+          <div onClick={handleNewEntryClick} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)', height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
+            <div style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Plus size={20} color="white" />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <h2 style={{ color: 'white', fontSize: 18, fontWeight: 700 }}>New Entry</h2>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>Add Farmer Gross Entry</p>
+              <h2 style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>New Entry</h2>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Add Farmer Gross Entry</p>
             </div>
           </div>
 
-          <div onClick={handleGrossReportClick} className="stat-card-3d cursor-pointer hover:translate-y-[-4px] hover:shadow-[0_0_20px_rgba(37,99,235,0.3)]" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2563eb)', height: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', borderRadius: '14px', padding: '24px' }}>
-            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <FileText size={24} color="white" />
+          <div onClick={handleGrossReportClick} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2563eb)', height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
+            <div style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <FileText size={20} color="white" />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <h2 style={{ color: 'white', fontSize: 18, fontWeight: 700 }}>Farmer Gross</h2>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>Detailed Report</p>
+              <h2 style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>Farmer Gross</h2>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Detailed Report</p>
             </div>
           </div>
 
-          <div onClick={handleDeductionReportClick} className="stat-card-3d cursor-pointer hover:translate-y-[-4px] hover:shadow-[0_0_20px_rgba(234,88,12,0.3)]" style={{ background: 'linear-gradient(135deg, #7c2d12, #ea580c)', height: '160px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', borderRadius: '14px', padding: '24px' }}>
-            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <BarChart2 size={24} color="white" />
+          <div onClick={handleDeductionReportClick} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ background: 'linear-gradient(135deg, #7c2d12, #ea580c)', height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
+            <div style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <BarChart2 size={20} color="white" />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <h2 style={{ color: 'white', fontSize: 18, fontWeight: 700 }}>Deduction Report</h2>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>Monthly Summary</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }n</h2>
-                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, marginTop: 4 }}>Monthly Summary</p>
-              </div>
+              <h2 style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>Deduction Report</h2>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Monthly Summary</p>
             </div>
           </div>
         </div>
@@ -295,21 +287,21 @@ const Deductions: React.FC = () => {
     if (step === 1) {
       return (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div className="modal-3d animate-fadeIn" style={{ padding: 32, maxWidth: 450, width: '90%' }}>
+          <div className="modal-3d animate-fadeIn" style={{ padding: 24, maxWidth: 400, width: '90%' }}>
             <div className="flex justify-between items-center mb-8">
               <h2 style={{ color: 'white', fontWeight: 800, fontSize: 22 }}>New Gross Entry - Step 1</h2>
               <button onClick={() => setActiveSection(null)} className="p-2 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition"><X size={24} /></button>
             </div>
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div>
                 <label style={labelStyle}>Farmer Code</label>
-                <input type="number" value={selectedFarmerCode} onChange={(e) => setSelectedFarmerCode(e.target.value)} className="input-3d w-full" placeholder="Enter Farmer ID" />
+                <input type="number" value={selectedFarmerCode} onChange={(e) => setSelectedFarmerCode(e.target.value)} className="input-3d w-full" placeholder="Enter Farmer ID" style={{ padding: '9px 12px' }} />
               </div>
               <div>
                 <label style={labelStyle}>Entry Date</label>
-                <input type="date" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} className="input-3d w-full" />
+                <input type="date" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} className="input-3d w-full" style={{ padding: '9px 12px' }} />
               </div>
-              <button onClick={handleNextStep} className="btn-3d w-full" style={{ padding: 16, fontSize: 16 }}>Next Step</button>
+              <button onClick={handleNextStep} className="btn-3d w-full" style={{ padding: '10px 16px', fontSize: 14 }}>Next Step</button>
             </div>
           </div>
         </div>

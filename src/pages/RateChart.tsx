@@ -233,11 +233,11 @@ const RateChart: React.FC = () => {
           <RateTable config={currentConfig} />
         </div>
       ) : (
-        <div className="glass-card" style={{ height: '200px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.15)', padding: '24px' }}>
-          <div style={{ width: 48, height: 48, background: 'rgba(74,222,128,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '12px' }}>
-            <FileSpreadsheet color="#4ade80" size={24} />
+        <div className="glass-card" style={{ height: '180px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.15)', padding: '20px' }}>
+          <div style={{ width: 40, height: 40, background: 'rgba(74,222,128,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
+            <FileSpreadsheet color="#4ade80" size={20} />
           </div>
-          <h3 style={{ color: 'white', fontSize: 18, fontWeight: 800, marginBottom: 4 }}>No Rate Chart Found</h3>
+          <h3 style={{ color: 'white', fontSize: 14, fontWeight: 800, marginBottom: 4 }}>No Rate Chart Found</h3>
           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', maxWidth: 400 }}>
             {userIsAdmin ? 'Please import an Excel file to publish the rate chart for all users.' : 'No rate chart uploaded yet. Please contact your administrator.'}
           </p>
@@ -247,7 +247,7 @@ const RateChart: React.FC = () => {
       {/* Import Popup */}
       {showImportPopup && userIsAdmin && (
         <div className="modal-overlay">
-          <div className="modal-3d animate-fadeIn" style={{ maxWidth: 450, padding: 32, width: '90%' }}>
+          <div className="modal-3d animate-fadeIn" style={{ maxWidth: 400, padding: 28, width: '90%' }}>
             <div className="flex justify-between items-center mb-8" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16 }}>
               <h2 style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>Import & Publish Chart</h2>
               <button onClick={() => setShowImportPopup(false)} style={{ color: 'rgba(255,255,255,0.6)', cursor: 'pointer', background: 'none', border: 'none' }}>
@@ -292,7 +292,7 @@ const RateChart: React.FC = () => {
       {/* History Modal */}
       {showHistoryModal && (
         <div className="modal-overlay">
-          <div className="modal-3d animate-fadeIn" style={{ maxWidth: 600, padding: 32, width: '90%' }}>
+          <div className="modal-3d animate-fadeIn" style={{ maxWidth: 500, padding: 28, width: '90%' }}>
             <div className="flex justify-between items-center mb-8" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16 }}>
               <h2 style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>Rate Chart History</h2>
               <button onClick={() => setShowHistoryModal(false)} style={{ color: 'rgba(255,255,255,0.6)', cursor: 'pointer', background: 'none', border: 'none' }}>
