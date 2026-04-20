@@ -248,7 +248,7 @@ const RateChart: React.FC = () => {
       {showImportPopup && userIsAdmin && (
         <div className="modal-overlay">
           <div className="modal-3d animate-fadeIn" style={{ maxWidth: 400, padding: 28, width: '90%' }}>
-            <div className="flex justify-between items-center mb-8" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16 }}>
+            <div className="flex justify-between items-center" style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
               <h2 style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>Import & Publish Chart</h2>
               <button onClick={() => setShowImportPopup(false)} style={{ color: 'rgba(255,255,255,0.6)', cursor: 'pointer', background: 'none', border: 'none' }}>
                 <X size={24} />
@@ -257,11 +257,11 @@ const RateChart: React.FC = () => {
             
             <div className="space-y-6">
               <div>
-                <label className="label-text">Effective From Date</label>
-                <input type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} className="input-3d" />
+                <label className="label-text" style={{ marginBottom: '8px', fontSize: '12px' }}>Effective From Date</label>
+                <input type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} className="input-3d" style={{ padding: '10px 14px', marginBottom: '20px' }} />
               </div>
 
-              <div className="p-8 border-2 border-dashed border-slate-700 rounded-2xl text-center hover:border-green-500/50 transition-colors cursor-pointer relative" style={{ borderColor: 'rgba(255,255,255,0.15)' }}>
+              <div className="border-2 border-dashed border-slate-700 text-center hover:border-green-500/50 transition-colors cursor-pointer relative" style={{ borderColor: 'rgba(255,255,255,0.15)', padding: '32px 20px', marginBottom: 0, borderRadius: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
                 <input
                   type="file"
                   accept=".xlsx, .xls"
@@ -271,18 +271,9 @@ const RateChart: React.FC = () => {
                   }}
                   className="absolute inset-0 opacity-0 cursor-pointer"
                 />
-                <FileSpreadsheet className="mx-auto mb-4" color="#4ade80" size={48} />
-                <p style={{ color: 'white', fontWeight: 'bold' }}>Click to Upload Excel</p>
-                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 8 }}>Supports .xlsx and .xls formats</p>
-              </div>
-
-              <div className="p-4 glass-card">
-                <h4 style={{ color: '#4ade80', fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: 8 }}>Required Format</h4>
-                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, lineHeight: 1.6 }}>
-                  First row: SNF values (starting from 2nd column)<br/>
-                  First column: FAT values (starting from 2nd row)<br/>
-                  Cells: Rate per liter
-                </p>
+                <FileSpreadsheet color="#4ade80" size={48} />
+                <p style={{ color: 'white', fontWeight: 700, fontSize: '16px' }}>Click to Upload Excel</p>
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', opacity: 0.6 }}>Supports .xlsx and .xls formats</p>
               </div>
             </div>
           </div>

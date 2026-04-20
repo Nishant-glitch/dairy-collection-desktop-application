@@ -134,9 +134,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </div>
 
         {/* Auth Card */}
-        <div className="glass-card" style={{ padding: 40 }}>
+        <div className="glass-card" style={{ padding: '28px 32px' }}>
           {/* Toggle Buttons */}
-          <div className="flex mb-8 p-1 glass-card" style={{ background: 'rgba(0,0,0,0.3)', borderRadius: 14 }}>
+          <div className="flex p-1 glass-card" style={{ background: 'rgba(0,0,0,0.3)', borderRadius: 14, marginBottom: '24px' }}>
             <button
               type="button"
               onClick={() => { setIsCreateAccount(false); setError(''); setSuccess(''); }}
@@ -153,10 +153,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </button>
           </div>
 
-          <form onSubmit={isCreateAccount ? handleCreateAccount : handleLogin} className="space-y-6">
+          <form onSubmit={isCreateAccount ? handleCreateAccount : handleLogin}>
             {isCreateAccount && (
-              <div>
-                <label className="label-text">Full Name</label>
+              <div style={{ marginBottom: '18px' }}>
+                <label className="label-text" style={{ marginBottom: '8px', fontSize: '12px' }}>Full Name</label>
                 <div className="relative">
                   <User size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                   <input
@@ -164,7 +164,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     className="input-field"
-                    style={{ paddingLeft: 44 }}
+                    style={{ padding: '12px 14px', paddingLeft: 44, fontSize: '14px' }}
                     placeholder="Enter your name"
                     required
                   />
@@ -172,8 +172,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               </div>
             )}
 
-            <div>
-              <label className="label-text">Mobile Number / Admin ID</label>
+            <div style={{ marginBottom: '18px' }}>
+              <label className="label-text" style={{ marginBottom: '8px', fontSize: '12px' }}>Mobile Number / Admin ID</label>
               <div className="relative">
                 <Phone size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                 <input
@@ -181,15 +181,15 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   value={mobileNumber}
                   onChange={(e) => setMobileNumber(e.target.value)}
                   className="input-field"
-                  style={{ paddingLeft: 44 }}
+                  style={{ padding: '12px 14px', paddingLeft: 44, fontSize: '14px' }}
                   placeholder="9876543210"
                   required
                 />
               </div>
             </div>
 
-            <div>
-              <label className="label-text">Password</label>
+            <div style={{ marginBottom: '18px' }}>
+              <label className="label-text" style={{ marginBottom: '8px', fontSize: '12px' }}>Password</label>
               <div className="relative">
                 <Lock size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
                 <input
@@ -197,7 +197,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="input-field"
-                  style={{ paddingLeft: 44 }}
+                  style={{ padding: '12px 14px', paddingLeft: 44, fontSize: '14px' }}
                   placeholder="••••••••"
                   required
                 />
@@ -205,7 +205,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
 
             {!isCreateAccount && (
-              <div className="flex items-center">
+              <div className="flex items-center" style={{ marginTop: '4px', marginBottom: '20px' }}>
                 <input
                   type="checkbox"
                   id="rememberMe"
@@ -219,14 +219,14 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               </div>
             )}
 
-            {error && <div className="error-box">{error}</div>}
-            {success && <div className="farmer-found-box" style={{ color: '#4ade80', fontSize: 13, whiteSpace: 'pre-line' }}>{success}</div>}
+            {error && <div className="error-box" style={{ marginBottom: '18px' }}>{error}</div>}
+            {success && <div className="farmer-found-box" style={{ color: '#4ade80', fontSize: 13, whiteSpace: 'pre-line', marginBottom: '18px' }}>{success}</div>}
 
             <button
               type="submit"
               disabled={loading}
               className="btn-primary w-full"
-              style={{ padding: 16, fontSize: 16 }}
+              style={{ marginTop: '8px', padding: '13px', width: '100%', fontSize: 16 }}
             >
               {loading ? (
                 <div className="flex items-center justify-center gap-3">
@@ -244,7 +244,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-10 text-slate-600 text-xs">
+        <div className="text-center text-slate-600 text-xs" style={{ marginTop: '24px' }}>
           <p>© 2026 DCS Pro - Premium Dairy Solutions</p>
           <p className="mt-1">Encrypted & Secure Session</p>
         </div>
