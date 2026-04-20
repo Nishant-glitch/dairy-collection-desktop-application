@@ -4,6 +4,7 @@ import { database } from '../firebase/config';
 import { isAdmin } from '../utils/userDb';
 import { FileSpreadsheet, History, X, Table as TableIcon, ShieldCheck } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { parseDairyExcel } from '../utils/excelParser';
 
 export const getRateFromMap = (fat: number, snf: number, config: any): number => {
   if (!config || !config.rateMap) return 0;
@@ -67,55 +68,8 @@ const RateChart: React.FC = () => {
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
-          const data = new Uint8Array(e.target?.result as ArrayBuffer);
-          const workbook = XLSX.read(data, { type: 'array' });
-          const sheetName = workbook.SheetNames[0];
-          const sheet = workbook.Sheets[sheetName];
-          const json = XLSX.utils.sheet_to_json(sheet, { 
-            header: 1, 
-            defval: 0,
-            raw: false 
-          }) as any[][];
-
-          if (!json || json.length < 2) {
-            alert('Excel file is empty or has insufficient data!');
-            return;
-          }
-
-          // Parse SNF values from row 0 (skip first cell and last cell if it's "AVG")
-          const snfValues: number[] = [];
-          const headerRow = json[0];
-          for (let i = 1; i < headerRow.length; i++) {
-            const valStr = String(headerRow[i]).trim();
-            if (valStr.toUpperCase() === 'AVG') continue;
-            const val = parseFloat(valStr);
-            if (!isNaN(val)) snfValues.push(val);
-          }
-
-          // Parse FAT rows
-          const fatValues: number[] = [];
-          const rateMap: any = {};
-
-          for (let i = 1; i < json.length; i++) {
-            const row = json[i];
-            const fatStr = String(row[0]).trim();
-            if (fatStr.toUpperCase() === 'AVG') continue;
-            const fat = parseFloat(fatStr);
-            if (isNaN(fat)) continue;
-            
-            fatValues.push(fat);
-            rateMap[fat] = {};
-            snfValues.forEach((snf, idx) => {
-              const rateStr = String(row[idx + 1]).trim();
-              const rate = parseFloat(rateStr);
-              rateMap[fat][snf] = isNaN(rate) ? 0 : rate;
-            });
-          }
-
-          if (fatValues.length === 0 || snfValues.length === 0) {
-            alert('Could not parse FAT or SNF values from Excel. Please check file format.');
-            return;
-          }
+          const data = e.target?.result as ArrayBuffer;
+          const { rateMap, snfValues, fatValues } = parseDairyExcel(data);
 
           const config = {
             rateMap,
