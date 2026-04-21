@@ -8,9 +8,12 @@ import { getRawExcelData, formatTo2Decimal, parseCSVData } from '../utils/excelP
 
 export const getRateFromMap = (fat: number, snf: number, config: any): number => {
   if (!config || !config.rateMap) return 0;
+
+  const toKey = (num: number): string => 
+    num.toFixed(1).replace('.', '_');
   
-  const fatValues = config.fatValues.map(Number).sort((a: number, b: number) => a - b);
-  const snfValues = config.snfValues.map(Number).sort((a: number, b: number) => a - b);
+  const fatValues = (config.fatValues || []).map(Number).sort((a: number, b: number) => a - b);
+  const snfValues = (config.snfValues || []).map(Number).sort((a: number, b: number) => a - b);
   
   if (fatValues.length === 0 || snfValues.length === 0) return 0;
 
@@ -24,8 +27,18 @@ export const getRateFromMap = (fat: number, snf: number, config: any): number =>
     Math.abs(curr - cappedSnf) < Math.abs(prev - cappedSnf) ? curr : prev
   );
   
-  return config.rateMap[closestFat]?.[closestSnf] || 0;
+  const fatKey = toKey(closestFat);
+  const snfKey = toKey(closestSnf);
+
+  return config.rateMap[fatKey]?.[snfKey] || 0;
 };
+
+// Helper functions to convert keys
+const toKey = (num: number): string => 
+  num.toFixed(1).replace('.', '_');
+
+const fromKey = (key: string): number => 
+  parseFloat(key.replace('_', '.'));
 
 const RateChart: React.FC = () => {
   const [currentConfig, setCurrentConfig] = useState<any>(null);
@@ -238,10 +251,12 @@ const RateChart: React.FC = () => {
       const validFats = [...new Set(result.map(r => r.fat))].sort((a, b) => a - b);
       const validSnfs = [...new Set(result.map(r => r.snf))].sort((a, b) => a - b);
       
-      const rateMap: Record<number, Record<number, number>> = {};
+      const rateMap: Record<string, Record<string, number>> = {};
       result.forEach(item => {
-        if (!rateMap[item.fat]) rateMap[item.fat] = {};
-        rateMap[item.fat][item.snf] = item.rate;
+        const fatKey = toKey(item.fat);
+        const snfKey = toKey(item.snf);
+        if (!rateMap[fatKey]) rateMap[fatKey] = {};
+        rateMap[fatKey][snfKey] = item.rate;
       });
 
       const config = {
@@ -406,7 +421,9 @@ const RateChart: React.FC = () => {
                 <tr key={fat} className="table-row">
                   <th style={{ padding: 12, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(0,0,0,0.3)', color: 'white', position: 'sticky', left: 0, zIndex: 10, textAlign: 'center' }}>{fat.toFixed(2)}</th>
                   {config.snfValues.map((snf: number) => {
-                    const rate = config.rateMap[fat]?.[snf] || 0;
+                    const fatKey = toKey(fat);
+                    const snfKey = toKey(snf);
+                    const rate = config.rateMap[fatKey]?.[snfKey] || 0;
                     return (
                       <td key={`${fat}-${snf}`} style={{ padding: 12, border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center', color: 'rgba(255,255,255,0.85)' }}>
                         {rate > 0 ? rate.toFixed(2) : '-'}

@@ -77,6 +77,43 @@ export const formatDate = (date: Date | string): string => {
   return `${day}-${month}-${year}`;
 };
 
+export const getRateFromMap = (
+  fat: number, 
+  snf: number, 
+  config: any
+): number => {
+  if (!config || !config.rateMap) return 0;
+
+  const toKey = (num: number): string => 
+    num.toFixed(1).replace('.', '_');
+
+  const fatValues = (config.fatValues || []).map(Number).sort((a: number, b: number) => a - b);
+  const snfValues = (config.snfValues || []).map(Number).sort((a: number, b: number) => a - b);
+
+  if (fatValues.length === 0 || snfValues.length === 0) return 0;
+
+  // Cap FAT at max
+  const cappedFat = Math.min(fat, fatValues[fatValues.length - 1]);
+  // Cap SNF at max
+  const cappedSnf = Math.min(snf, snfValues[snfValues.length - 1]);
+
+  // Find closest FAT
+  const closestFat = fatValues.reduce((prev: number, curr: number) =>
+    Math.abs(curr - cappedFat) < Math.abs(prev - cappedFat) ? curr : prev
+  );
+
+  // Find closest SNF
+  const closestSnf = snfValues.reduce((prev: number, curr: number) =>
+    Math.abs(curr - cappedSnf) < Math.abs(prev - cappedSnf) ? curr : prev
+  );
+
+  // Lookup using underscore keys
+  const fatKey = toKey(closestFat);
+  const snfKey = toKey(closestSnf);
+
+  return config.rateMap[fatKey]?.[snfKey] || 0;
+};
+
 export const calcCowRate = (fat: number, snf: number, config: any): number => {
   if (!config) return 0;
   const cappedSnf = Math.min(snf, config.snfTo ?? 8.5);
