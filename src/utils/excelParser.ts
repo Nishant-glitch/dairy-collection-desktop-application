@@ -23,6 +23,25 @@ export const formatTo2Decimal = (value: any): number => {
 };
 
 /**
+ * CSV Parser
+ */
+export const parseCSVData = (csvText: string): any[][] => {
+  const lines = csvText.split(/\r?\n/);
+  return lines
+    .map(line => {
+      const row = line.split(',').map(cell => {
+        let value = cell.trim().replace(/\u00a0/g, ' ');
+        if (value !== "" && !isNaN(Number(value))) {
+          return Number(Number(value).toFixed(2));
+        }
+        return value;
+      });
+      return row;
+    })
+    .filter(row => row.some(cell => cell !== ""));
+};
+
+/**
  * Raw Excel Parser - Kept as fallback but manual entry is primary
  */
 export const getRawExcelData = (fileBuffer: ArrayBuffer): any[][] => {

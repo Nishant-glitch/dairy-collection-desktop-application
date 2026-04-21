@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ref, get, set, push, remove } from 'firebase/database';
 import { database } from '../firebase/config';
 import { isAdmin } from '../utils/userDb';
-import { FileSpreadsheet, History, X, Table as TableIcon, ShieldCheck, Plus, Trash2, Save, RotateCcw } from 'lucide-react';
+import { FileSpreadsheet, History, X, Table as TableIcon, ShieldCheck, Plus, Trash2, Save, RotateCcw, FileText } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { getRawExcelData, formatTo2Decimal } from '../utils/excelParser';
+import { getRawExcelData, formatTo2Decimal, parseCSVData } from '../utils/excelParser';
 
 export const getRateFromMap = (fat: number, snf: number, config: any): number => {
   if (!config || !config.rateMap) return 0;
@@ -125,11 +125,11 @@ const RateChart: React.FC = () => {
     setSnfList(snfList.filter((_, i) => i !== index));
   };
 
-  const handleExcelImport = async (file: File) => {
+  const handleCSVImport = async (file: File) => {
     const reader = new FileReader();
     reader.onload = (e) => {
-      const data = e.target?.result as ArrayBuffer;
-      const raw = getRawExcelData(data);
+      const text = e.target?.result as string;
+      const raw = parseCSVData(text);
       if (raw.length > 1) {
         const newSnfs = raw[0].slice(1).map(String);
         const newFats = raw.slice(1).map(row => String(row[0]));
@@ -157,7 +157,7 @@ const RateChart: React.FC = () => {
         setShowImportPopup(false);
       }
     };
-    reader.readAsArrayBuffer(file);
+    reader.readAsText(file);
   };
 
   const handleDeleteChart = async () => {
@@ -405,7 +405,7 @@ const RateChart: React.FC = () => {
         {userIsAdmin && (
           <div className="flex gap-3">
             <button onClick={() => setEditMode(true)} className="btn-3d"><Plus size={20} /> New Manual Entry</button>
-            <button onClick={() => setShowImportPopup(true)} className="btn-secondary"><FileSpreadsheet size={20} /> Import Excel</button>
+            <button onClick={() => setShowImportPopup(true)} className="btn-secondary"><FileText size={20} /> Import CSV</button>
             <button onClick={loadHistory} className="btn-secondary"><History size={20} /> History</button>
           </div>
         )}
@@ -438,16 +438,16 @@ const RateChart: React.FC = () => {
         <div className="modal-overlay">
           <div className="modal-3d animate-fadeIn" style={{ maxWidth: 400, padding: 28, width: '90%' }}>
             <div className="flex justify-between items-center mb-6">
-              <h2 style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>Import Excel (Legacy)</h2>
+              <h2 style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>Import CSV</h2>
               <button onClick={() => setShowImportPopup(false)} style={{ color: 'rgba(255,255,255,0.6)', background: 'none', border: 'none' }}><X size={24} /></button>
             </div>
             <div onClick={() => fileInputRef.current?.click()} style={{ border: '2px dashed rgba(74,222,128,0.4)', borderRadius: 12, padding: 32, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, cursor: 'pointer' }}>
-              <FileSpreadsheet style={{ width: 48, height: 48, color: '#4ade80' }} />
-              <div style={{ fontSize: 16, fontWeight: 700, color: '#f1f5f9' }}>Click to Upload Excel</div>
+              <FileText style={{ width: 48, height: 48, color: '#4ade80' }} />
+              <div style={{ fontSize: 16, fontWeight: 700, color: '#f1f5f9' }}>Click to Upload CSV</div>
             </div>
-            <input ref={fileInputRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={(e) => {
+            <input ref={fileInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={(e) => {
               const file = e.target.files?.[0];
-              if (file) handleExcelImport(file);
+              if (file) handleCSVImport(file);
               e.target.value = '';
             }} />
           </div>
