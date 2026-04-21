@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ref, get, set, push } from 'firebase/database';
+import { ref, get, set, push, remove } from 'firebase/database';
 import { database } from '../firebase/config';
 import { isAdmin } from '../utils/userDb';
 import { FileSpreadsheet, History, X, Table as TableIcon, ShieldCheck, Plus, Trash2, Save, RotateCcw } from 'lucide-react';
@@ -53,6 +53,8 @@ const RateChart: React.FC = () => {
     if (snap.exists()) {
       const config = snap.val();
       setCurrentConfig(config);
+    } else {
+      setCurrentConfig(null);
     }
   };
 
@@ -156,6 +158,19 @@ const RateChart: React.FC = () => {
       }
     };
     reader.readAsArrayBuffer(file);
+  };
+
+  const handleDeleteChart = async () => {
+    if (!window.confirm("Are you sure you want to delete the current active rate chart? This action cannot be undone.")) return;
+    
+    try {
+      await remove(ref(database, 'globalRateConfig/current'));
+      setCurrentConfig(null);
+      alert("Rate chart deleted successfully.");
+    } catch (err) {
+      console.error("Delete error:", err);
+      alert("Failed to delete rate chart.");
+    }
   };
 
   const handleSaveAndPublish = async () => {
@@ -339,6 +354,15 @@ const RateChart: React.FC = () => {
           <div>
             <h3 style={{ color: 'white', fontWeight: 800, fontSize: 18 }}>Rate Chart — Effective {config.effectiveFrom}</h3>
           </div>
+          {userIsAdmin && (
+            <button 
+              onClick={handleDeleteChart} 
+              className="btn-secondary" 
+              style={{ padding: '8px 12px', fontSize: 12, background: 'rgba(248,113,113,0.1)', color: '#f87171' }}
+            >
+              <Trash2 size={14} /> Delete Active Chart
+            </button>
+          )}
         </div>
         <div style={{ overflow: 'auto', maxHeight: 600 }}>
           <table className="w-full text-sm border-collapse table-3d">
