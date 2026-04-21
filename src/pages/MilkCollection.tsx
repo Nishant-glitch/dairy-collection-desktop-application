@@ -592,31 +592,31 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
             <p className="text-white/40" style={{ marginBottom: '16px', fontSize: '12px' }}>{sessionDate} | {sessionShift} Shift</p>
 
             <div className="flex-1 overflow-auto">
-              <table className="w-full table-3d" style={{ tableLayout: 'fixed' }}>
+              <table className="w-full table-3d" style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
                 <thead className="table-header sticky top-0 z-10">
                   <tr>
-                    <th className="text-left" style={{ padding: '11px 14px', fontSize: '13px', fontWeight: 700, width: '180px' }}>Farmer</th>
-                    <th className="text-right" style={{ padding: '11px 14px', fontSize: '13px', fontWeight: 700, width: '80px' }}>Qty</th>
-                    <th className="text-right" style={{ padding: '11px 14px', fontSize: '13px', fontWeight: 700, width: '80px' }}>FAT</th>
-                    <th className="text-right" style={{ padding: '11px 14px', fontSize: '13px', fontWeight: 700, width: '80px' }}>{sessionMode}</th>
-                    <th className="text-right" style={{ padding: '11px 14px', fontSize: '13px', fontWeight: 700, width: '100px' }}>Rate</th>
-                    <th className="text-right" style={{ padding: '11px 14px', fontSize: '13px', fontWeight: 700, width: '110px' }}>Amount</th>
-                    <th className="text-center" style={{ padding: '11px 14px', fontSize: '13px', fontWeight: 700, width: '80px' }}>Actions</th>
+                    <th style={{ width: '22%', textAlign: 'left', padding: '10px 12px', fontSize: '14px', fontWeight: 700, whiteSpace: 'nowrap' }}>Farmer</th>
+                    <th style={{ width: '10%', textAlign: 'right', padding: '10px 12px', fontSize: '14px', fontWeight: 700, whiteSpace: 'nowrap' }}>Qty</th>
+                    <th style={{ width: '10%', textAlign: 'right', padding: '10px 12px', fontSize: '14px', fontWeight: 700, whiteSpace: 'nowrap' }}>FAT</th>
+                    <th style={{ width: '10%', textAlign: 'right', padding: '10px 12px', fontSize: '14px', fontWeight: 700, whiteSpace: 'nowrap' }}>{sessionMode}</th>
+                    <th style={{ width: '14%', textAlign: 'right', padding: '10px 12px', fontSize: '14px', fontWeight: 700, whiteSpace: 'nowrap' }}>Rate</th>
+                    <th style={{ width: '18%', textAlign: 'right', padding: '10px 12px', fontSize: '14px', fontWeight: 700, whiteSpace: 'nowrap' }}>Amount</th>
+                    <th style={{ width: '16%', textAlign: 'center', padding: '10px 12px', fontSize: '14px', fontWeight: 700, whiteSpace: 'nowrap' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {todayEntries.sort((a, b) => b.timestamp - a.timestamp).map((entry) => (
                     <tr key={entry.farmerCode} className="table-row group">
-                      <td style={{ padding: '11px 14px', fontSize: '13px', verticalAlign: 'middle', width: '180px' }}>
-                        <div style={{ fontWeight: 700, fontSize: 14 }}>{entry.farmerCode}</div>
-                        <div style={{ fontSize: 11, opacity: 0.6 }}>{entry.farmerName}</div>
+                      <td style={{ width: '22%', padding: '10px 12px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontWeight: 700, fontSize: 15 }}>{entry.farmerCode}</div>
+                        <div style={{ fontSize: 12, opacity: 0.6, marginTop: 2 }}>{entry.farmerName}</div>
                       </td>
-                      <td className="text-right font-bold text-white" style={{ padding: '11px 14px', fontSize: '13px', verticalAlign: 'middle', width: '80px', textAlign: 'right' }}>{entry.qty.toFixed(2)}</td>
-                      <td className="text-right text-blue-400" style={{ padding: '11px 14px', fontSize: '13px', verticalAlign: 'middle', width: '80px', textAlign: 'right' }}>{entry.fat.toFixed(1)}</td>
-                      <td className="text-right text-purple-400" style={{ padding: '11px 14px', fontSize: '13px', verticalAlign: 'middle', width: '80px', textAlign: 'right' }}>{(entry.snf || entry.clr || 0).toFixed(1)}</td>
-                      <td className="text-right text-white/60" style={{ padding: '11px 14px', fontSize: '13px', verticalAlign: 'middle', width: '100px', textAlign: 'right' }}>₹{entry.rate.toFixed(2)}</td>
-                      <td className="text-right font-bold text-green-400" style={{ padding: '11px 14px', fontSize: '13px', verticalAlign: 'middle', width: '110px', textAlign: 'right', color: 'rgb(74, 222, 128)', fontWeight: 700 }}>₹{entry.amount.toFixed(2)}</td>
-                      <td style={{ padding: '11px 14px', fontSize: '13px', verticalAlign: 'middle', width: '80px', textAlign: 'center' }}>
+                      <td style={{ width: '10%', textAlign: 'right', padding: '10px 12px', fontSize: '15px', verticalAlign: 'middle', whiteSpace: 'nowrap', color: 'white', fontWeight: 'bold' }}>{entry.qty.toFixed(2)}</td>
+                      <td style={{ width: '10%', textAlign: 'right', padding: '10px 12px', fontSize: '15px', verticalAlign: 'middle', whiteSpace: 'nowrap', color: '#60a5fa' }}>{entry.fat.toFixed(1)}</td>
+                      <td style={{ width: '10%', textAlign: 'right', padding: '10px 12px', fontSize: '15px', verticalAlign: 'middle', whiteSpace: 'nowrap', color: '#c084fc' }}>{(entry.snf || entry.clr || 0).toFixed(1)}</td>
+                      <td style={{ width: '14%', textAlign: 'right', padding: '10px 12px', fontSize: '15px', verticalAlign: 'middle', whiteSpace: 'nowrap', color: '#f1f5f9' }}>₹{entry.rate.toFixed(2)}</td>
+                      <td style={{ width: '18%', textAlign: 'right', padding: '10px 12px', fontSize: '15px', verticalAlign: 'middle', whiteSpace: 'nowrap', color: '#4ade80', fontWeight: 700 }}>₹{entry.amount.toFixed(2)}</td>
+                      <td style={{ width: '16%', textAlign: 'center', padding: '10px 12px', fontSize: '15px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
                         <div className="flex items-center justify-center" style={{ gap: '8px' }}>
                           <button
                             onClick={() => handleModify(entry)}
