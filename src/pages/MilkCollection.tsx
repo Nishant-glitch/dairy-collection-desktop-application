@@ -44,11 +44,16 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   const [isModifying, setIsModifying] = useState(false);
   const [warningMessage, setWarningMessage] = useState('');
   const [showSavedMessage, setShowSavedMessage] = useState(false);
+  const [duplicateWarning, setDuplicateWarning] = useState<{show: boolean, message: string}>({show: false, message: ''});
 
   const [todayEntries, setTodayEntries] = useState<Entry[]>([]);
   const [activeRateConfig, setActiveRateConfig] = useState<any>(null);
   const [dcsInfo, setDcsInfo] = useState<any>({});
   const [farmers, setFarmers] = useState<any>({});
+  const [fatMin, setFatMin] = useState<number>(2.5);
+  const [fatMax, setFatMax] = useState<number>(15.0);
+  const [snfMin, setSnfMin] = useState<number>(7.5);
+  const [snfMax, setSnfMax] = useState<number>(15.0);
 
   const farmerCodeRef = useRef<HTMLInputElement>(null);
   const qtyRef = useRef<HTMLInputElement>(null);
@@ -127,6 +132,17 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
       return;
     }
     setActiveRateConfig(config);
+
+    // Extract min/max from config
+    if (config) {
+      const fatVals = config.fatValues.map(Number).sort((a,b) => a-b);
+      const snfVals = config.snfValues.map(Number).sort((a,b) => a-b);
+      setFatMin(fatVals[0]);
+      setFatMax(fatVals[fatVals.length-1]);
+      setSnfMin(snfVals[0]);
+      setSnfMax(snfVals[snfVals.length-1]);
+    }
+
     setShowSessionSetup(false);
     setTimeout(() => {
       farmerCodeRef.current?.focus();
@@ -142,6 +158,29 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     if (!farmerFound) {
       alert('Farmer not found! Please enter a valid farmer code.');
       farmerCodeRef.current?.focus();
+      return;
+    }
+
+    const fatVal = parseFloat(fat);
+    const snfVal = parseFloat(snfClr);
+
+    // FAT range check
+    if (fatVal < fatMin || fatVal > fatMax) {
+      alert(`❌ Invalid FAT value!\nAllowed range: ${fatMin} to ${fatMax}\nEntered: ${fatVal}`);
+      fatRef.current?.focus();
+      return;
+    }
+
+    // SNF range check
+    if (snfVal < snfMin || snfVal > snfMax) {
+      alert(`❌ Invalid ${sessionMode} value!\nAllowed range: ${snfMin} to ${snfMax}\nEntered: ${snfVal}`);
+      snfClrRef.current?.focus();
+      return;
+    }
+
+    // Prevent duplicate entry if not modifying
+    if (!isModifying && todayEntries.find(e => e.farmerCode === farmerCode)) {
+      alert('⚠️ Entry already exists! Use Modify button from the table.');
       return;
     }
 
@@ -229,6 +268,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     setAmount(0);
     setIsModifying(false);
     setWarningMessage('');
+    setDuplicateWarning({show: false, message: ''});
   };
 
   const handleModify = (entry: Entry) => {
@@ -247,11 +287,13 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     if (confirm('Are you sure you want to delete this entry?')) {
       const entryRef = ref(database, up(`milkCollection/${sessionDate}/${sessionShift}/${code}`));
       await remove(entryRef);
+      setDuplicateWarning({show: false, message: ''});
     }
   };
 
   const handleFarmerCodeChange = (code: string) => {
     setFarmerCode(code);
+    setDuplicateWarning({show: false, message: ''});
     if (code.length >= 1) {
       if (fetchTimerRef.current) clearTimeout(fetchTimerRef.current);
       fetchTimerRef.current = setTimeout(async () => {
@@ -273,9 +315,31 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     }
   };
 
-  const handleFarmerCodeKeyDown = (e: React.KeyboardEvent) => {
+  const handleFarmerCodeKeyDown = async (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       if (farmerFound) {
+        // Check if entry already exists
+        const existingEntrySnap = await get(
+          ref(database, up(`milkCollection/${sessionDate}/${sessionShift}/${farmerCode}`))
+        );
+
+        if (existingEntrySnap.exists()) {
+          const existing = existingEntrySnap.val();
+          // Show warning - do NOT allow fresh save
+          setDuplicateWarning({
+            show: true,
+            message: `\u26a0\ufe0f Entry already exists for ${existing.farmerName}!\nQty: ${existing.qty}L | FAT: ${existing.fat}% | SNF: ${existing.snf}% | Amount: \u20b9${existing.amount}\n\nUse Modify (\u270f\ufe0f) or Delete (\ud83d\uddd1\ufe0f) from the table.`
+          });
+          setFarmerName(existing.farmerName);
+          setIsModifying(true);
+          // Pre-fill form with existing data
+          setQty(String(existing.qty));
+          setFat(String(existing.fat));
+          setSnfClr(String(existing.snf || existing.clr || ''));
+          setRate(existing.rate);
+          setAmount(existing.amount);
+          return; // don't focus qty
+        }
         qtyRef.current?.focus();
       } else if (farmerCode.length > 0) {
         alert('Farmer not found!');
@@ -389,6 +453,19 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                 />
               </div>
 
+              {duplicateWarning.show && (
+                <div style={{
+                  background: 'rgba(245,158,11,0.15)',
+                  border: '1px solid rgba(245,158,11,0.4)',
+                  borderRadius: 10, padding: '12px 14px',
+                  marginBottom: 12,
+                  fontSize: 13, color: '#fcd34d',
+                  whiteSpace: 'pre-line'
+                }}>
+                  {duplicateWarning.message}
+                </div>
+              )}
+
               <div className="grid grid-cols-2" style={{ gap: '12px', marginBottom: '16px' }}>
                 <div>
                   <label className="label-text" style={{ marginBottom: '8px', fontSize: '12px' }}>Quantity (L)</label>
@@ -415,6 +492,9 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                     style={{ padding: '11px 14px' }}
                     placeholder="0.0"
                   />
+                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
+                    Range: {fatMin} - {fatMax}
+                  </div>
                 </div>
               </div>
 
@@ -430,6 +510,9 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                   style={{ padding: '11px 14px' }}
                   placeholder="0.0"
                 />
+                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
+                  Range: {snfMin} - {snfMax}
+                </div>
               </div>
 
               <div className="rounded-xl bg-white/5 border border-white/10">
@@ -509,33 +592,31 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
             <p className="text-white/40" style={{ marginBottom: '16px', fontSize: '12px' }}>{sessionDate} | {sessionShift} Shift</p>
 
             <div className="flex-1 overflow-auto">
-              <table className="w-full table-3d">
+              <table className="w-full table-3d" style={{ tableLayout: 'fixed' }}>
                 <thead className="table-header sticky top-0 z-10">
                   <tr>
-                    <th className="text-left" style={{ padding: '11px 14px', fontSize: '12px', fontWeight: 700 }}>Farmer</th>
-                    <th className="text-right" style={{ padding: '11px 14px', fontSize: '12px', fontWeight: 700 }}>Qty</th>
-                    <th className="text-right" style={{ padding: '11px 14px', fontSize: '12px', fontWeight: 700 }}>FAT</th>
-                    <th className="text-right" style={{ padding: '11px 14px', fontSize: '12px', fontWeight: 700 }}>{sessionMode}</th>
-                    <th className="text-right" style={{ padding: '11px 14px', fontSize: '12px', fontWeight: 700 }}>Rate</th>
-                    <th className="text-right" style={{ padding: '11px 14px', fontSize: '12px', fontWeight: 700 }}>Amount</th>
-                    <th className="text-center" style={{ padding: '11px 14px', fontSize: '12px', fontWeight: 700 }}>Actions</th>
+                    <th className="text-left" style={{ padding: '11px 14px', fontSize: '13px', fontWeight: 700, width: '180px' }}>Farmer</th>
+                    <th className="text-right" style={{ padding: '11px 14px', fontSize: '13px', fontWeight: 700, width: '80px' }}>Qty</th>
+                    <th className="text-right" style={{ padding: '11px 14px', fontSize: '13px', fontWeight: 700, width: '80px' }}>FAT</th>
+                    <th className="text-right" style={{ padding: '11px 14px', fontSize: '13px', fontWeight: 700, width: '80px' }}>{sessionMode}</th>
+                    <th className="text-right" style={{ padding: '11px 14px', fontSize: '13px', fontWeight: 700, width: '100px' }}>Rate</th>
+                    <th className="text-right" style={{ padding: '11px 14px', fontSize: '13px', fontWeight: 700, width: '110px' }}>Amount</th>
+                    <th className="text-center" style={{ padding: '11px 14px', fontSize: '13px', fontWeight: 700, width: '80px' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {todayEntries.sort((a, b) => b.timestamp - a.timestamp).map((entry) => (
                     <tr key={entry.farmerCode} className="table-row group">
-                      <td style={{ padding: '11px 14px', fontSize: '14px' }}>
-                        <div className="flex flex-col">
-                          <span className="text-white font-bold">{entry.farmerCode}</span>
-                          <span className="text-[10px] text-white/40 truncate max-w-[120px]">{entry.farmerName}</span>
-                        </div>
+                      <td style={{ padding: '11px 14px', fontSize: '13px', verticalAlign: 'middle', width: '180px' }}>
+                        <div style={{ fontWeight: 700, fontSize: 14 }}>{entry.farmerCode}</div>
+                        <div style={{ fontSize: 11, opacity: 0.6 }}>{entry.farmerName}</div>
                       </td>
-                      <td className="text-right font-bold text-white" style={{ padding: '11px 14px', fontSize: '14px' }}>{entry.qty.toFixed(2)}</td>
-                      <td className="text-right text-blue-400" style={{ padding: '11px 14px', fontSize: '14px' }}>{entry.fat.toFixed(1)}</td>
-                      <td className="text-right text-purple-400" style={{ padding: '11px 14px', fontSize: '14px' }}>{(entry.snf || entry.clr || 0).toFixed(1)}</td>
-                      <td className="text-right text-white/60" style={{ padding: '11px 14px', fontSize: '14px' }}>₹{entry.rate.toFixed(2)}</td>
-                      <td className="text-right font-bold text-green-400" style={{ padding: '11px 14px', fontSize: '14px' }}>₹{entry.amount.toFixed(2)}</td>
-                      <td style={{ padding: '11px 14px', fontSize: '14px' }}>
+                      <td className="text-right font-bold text-white" style={{ padding: '11px 14px', fontSize: '13px', verticalAlign: 'middle', width: '80px', textAlign: 'right' }}>{entry.qty.toFixed(2)}</td>
+                      <td className="text-right text-blue-400" style={{ padding: '11px 14px', fontSize: '13px', verticalAlign: 'middle', width: '80px', textAlign: 'right' }}>{entry.fat.toFixed(1)}</td>
+                      <td className="text-right text-purple-400" style={{ padding: '11px 14px', fontSize: '13px', verticalAlign: 'middle', width: '80px', textAlign: 'right' }}>{(entry.snf || entry.clr || 0).toFixed(1)}</td>
+                      <td className="text-right text-white/60" style={{ padding: '11px 14px', fontSize: '13px', verticalAlign: 'middle', width: '100px', textAlign: 'right' }}>₹{entry.rate.toFixed(2)}</td>
+                      <td className="text-right font-bold text-green-400" style={{ padding: '11px 14px', fontSize: '13px', verticalAlign: 'middle', width: '110px', textAlign: 'right', color: 'rgb(74, 222, 128)', fontWeight: 700 }}>₹{entry.amount.toFixed(2)}</td>
+                      <td style={{ padding: '11px 14px', fontSize: '13px', verticalAlign: 'middle', width: '80px', textAlign: 'center' }}>
                         <div className="flex items-center justify-center" style={{ gap: '8px' }}>
                           <button
                             onClick={() => handleModify(entry)}
