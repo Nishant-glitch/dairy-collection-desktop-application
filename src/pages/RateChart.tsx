@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ref, get, set, push, remove } from 'firebase/database';
 import { database } from '../firebase/config';
-import { isAdmin } from '../utils/userDb';
+import { isAdmin, up } from '../utils/userDb';
 import { FileSpreadsheet, History, X, Table as TableIcon, ShieldCheck, Plus, Trash2, Save, RotateCcw, FileText } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { getRawExcelData, formatTo2Decimal, parseCSVData } from '../utils/excelParser';
@@ -173,6 +173,32 @@ const RateChart: React.FC = () => {
     }
   };
 
+  const saveRateChart = async (config: any) => {
+    try {
+      // Try 1: Save to globalRateConfig (for all users)
+      const globalCurrentRef = ref(database, 'globalRateConfig/current');
+      const globalHistoryRef = ref(database, 'globalRateConfig/history');
+      
+      await set(globalCurrentRef, config);
+      await push(globalHistoryRef, config);
+      
+      return true;
+    } catch (err1: any) {
+      console.error('Global save failed:', err1.code, err1.message);
+      
+      try {
+        // Try 2: Fallback to user path
+        await set(ref(database, up('rateConfig/current')), config);
+        await push(ref(database, up('rateConfig/history')), config);
+        console.warn('Saved to user path as fallback');
+        return true;
+      } catch (err2: any) {
+        console.error('User path save also failed:', err2.code, err2.message);
+        throw err2;
+      }
+    }
+  };
+
   const handleSaveAndPublish = async () => {
     try {
       const result: any[] = [];
@@ -227,16 +253,17 @@ const RateChart: React.FC = () => {
         type: 'manual',
       };
 
-      await set(ref(database, 'globalRateConfig/current'), config);
-      await push(ref(database, 'globalRateConfig/history'), config);
+      await saveRateChart(config);
 
       setCurrentConfig(config);
       setEditMode(false);
       alert(`✓ Rate chart published successfully!`);
 
-    } catch (err) {
-      console.error('Save error:', err);
-      alert('Failed to publish rate chart.');
+    } catch (error: any) {
+      console.error('Save error:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+      alert('Error: ' + error.code + ' — ' + error.message);
     }
   };
 
