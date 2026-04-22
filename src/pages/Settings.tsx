@@ -94,12 +94,16 @@ const Settings: React.FC = () => {
     setTestingSMS(true);
 
     try {
-      const response = await fetch('https://www.fast2sms.com/dev/bulkV2', {
-        method: 'POST',
-        headers: {
-          'authorization': apiKey,
-          'Content-Type': 'application/json',
-        },
+      const response = await fetch('/api/send-sms', {
+  method: 'POST',
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    number: testNumber,
+    message: message
+  })
+});
         body: JSON.stringify({
           route: 'q',
           message: 'Test SMS from DCS Pro Dairy Collection System. Your SMS is working correctly!',
