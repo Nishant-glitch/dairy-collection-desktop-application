@@ -11,11 +11,10 @@ const Settings: React.FC = () => {
   const user = auth.currentUser;
   
   // SMS Settings
-  const [smsSettings, setSmsSettings] = useState({
-    apiKey: '',
-    senderId: '',
-    testNumber: '',
-  });
+  const [smsApiKey, setSmsApiKey] = useState('');
+  const [smsSenderId, setSmsSenderId] = useState('');
+  const [testMobile, setTestMobile] = useState('');
+  const [testingSMS, setTestingSMS] = useState(false);
 
   // App Preferences
   const [preferences, setPreferences] = useState({
@@ -41,14 +40,19 @@ const Settings: React.FC = () => {
     
     const [smsSnap, prefSnap] = await Promise.all([get(smsRef), get(prefRef)]);
     
-    if (smsSnap.exists()) setSmsSettings(prev => ({ ...prev, ...smsSnap.val() }));
+    if (smsSnap.exists()) {
+      const data = smsSnap.val();
+      setSmsApiKey(data.apiKey || '');
+      setSmsSenderId(data.senderId || '');
+    }
     if (prefSnap.exists()) setPreferences(prev => ({ ...prev, ...prefSnap.val() }));
   };
 
   const saveSmsSettings = async () => {
     await set(ref(database, up('settings/sms')), {
-      apiKey: smsSettings.apiKey,
-      senderId: smsSettings.senderId,
+      apiKey: smsApiKey.trim(),
+      senderId: smsSenderId.trim(),
+      updatedAt: Date.now(),
     });
     alert('SMS settings saved!');
   };
@@ -72,8 +76,52 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleSendTestSms = () => {
-    alert('Test SMS functionality would be triggered here for: ' + smsSettings.testNumber);
+  const handleTestSMS = async () => {
+    const apiKey = smsApiKey.trim();
+    const mobile = testMobile.trim();
+    const senderId = smsSenderId.trim() || 'DAIRYS';
+
+    if (!apiKey) {
+      alert('Please enter SMS API Key first!');
+      return;
+    }
+
+    if (!/^\d{10}$/.test(mobile)) {
+      alert('Please enter a valid 10-digit mobile number!');
+      return;
+    }
+
+    setTestingSMS(true);
+
+    try {
+      const response = await fetch('https://www.fast2sms.com/dev/bulkV2', {
+        method: 'POST',
+        headers: {
+          'authorization': apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          route: 'q',
+          message: 'Test SMS from DCS Pro Dairy Collection System. Your SMS is working correctly!',
+          language: 'english',
+          flash: 0,
+          numbers: mobile,
+        }),
+      });
+
+      const result = await response.json();
+      console.log('SMS result:', result);
+
+      if (result.return === true) {
+        alert('✅ Test SMS sent successfully to ' + mobile + '!');
+      } else {
+        alert('❌ SMS failed: ' + (result.message?.[0] || JSON.stringify(result)));
+      }
+    } catch (err: any) {
+      alert('❌ Error sending SMS: ' + err.message);
+    } finally {
+      setTestingSMS(false);
+    }
   };
 
   return (
@@ -95,8 +143,8 @@ const Settings: React.FC = () => {
               <label className="label-text" style={{ marginBottom: '6px' }}>SMS API Key</label>
               <input 
                 type="password" 
-                value={smsSettings.apiKey} 
-                onChange={e => setSmsSettings({...smsSettings, apiKey: e.target.value})}
+                value={smsApiKey} 
+                onChange={e => setSmsApiKey(e.target.value)}
                 className="input-3d" 
                 style={{ padding: '10px 14px', fontSize: '14px' }}
                 placeholder="Enter your API Key"
@@ -106,11 +154,11 @@ const Settings: React.FC = () => {
               <label className="label-text" style={{ marginBottom: '6px' }}>SMS Sender ID</label>
               <input 
                 type="text" 
-                value={smsSettings.senderId} 
-                onChange={e => setSmsSettings({...smsSettings, senderId: e.target.value})}
+                value={smsSenderId} 
+                onChange={e => setSmsSenderId(e.target.value)}
                 className="input-3d" 
                 style={{ padding: '10px 14px', fontSize: '14px' }}
-                placeholder="e.g. DAIRYP"
+                placeholder="e.g. DAIRYS"
               />
             </div>
             <div style={{ marginBottom: '16px' }}>
@@ -118,14 +166,25 @@ const Settings: React.FC = () => {
               <div className="flex" style={{ gap: '16px' }}>
                 <input 
                   type="text" 
-                  value={smsSettings.testNumber} 
-                  onChange={e => setSmsSettings({...smsSettings, testNumber: e.target.value})}
+                  value={testMobile} 
+                  onChange={e => setTestMobile(e.target.value)}
                   className="input-3d" 
                   style={{ padding: '10px 14px', fontSize: '14px' }}
                   placeholder="Mobile Number"
                 />
-                <button onClick={handleSendTestSms} className="btn-secondary" style={{ padding: '0 12px', alignSelf: 'flex-end' }}>
-                  <Send size={16} />
+                <button
+                  onClick={handleTestSMS}
+                  disabled={testingSMS}
+                  title="Send Test SMS"
+                  style={{
+                    background: testingSMS ? 'rgba(148,163,184,0.2)' : 'rgba(74,222,128,0.2)',
+                    border: '1px solid rgba(74,222,128,0.4)',
+                    borderRadius: 8, padding: '10px 14px',
+                    color: '#4ade80', cursor: testingSMS ? 'not-allowed' : 'pointer',
+                    fontSize: 20, display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}
+                >
+                  {testingSMS ? '⏳' : '📤'}
                 </button>
               </div>
             </div>
