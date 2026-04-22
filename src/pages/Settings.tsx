@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../db/db';
 import { Settings as SettingsIcon, Save, RefreshCw, MessageSquare, Shield, Bell, Database } from 'lucide-react';
+import axios from 'axios';
 
 const Settings: React.FC = () => {
   const { user } = useAuth();
@@ -89,41 +90,24 @@ const Settings: React.FC = () => {
     setTestingSMS(true);
 
     try {
-      // Use dynamic import for axios to avoid build-time resolution issues if it's not pre-installed
-      const axiosModule = await import('axios');
-      const axios = axiosModule.default;
-      
-      const response = await axios.post(
-        'https://www.fast2sms.com/dev/bulkV2',
-        {
-          route: 'q',
-          message: 'Test SMS from DCS Pro Dairy Collection System. Your SMS configuration is working correctly!',
-          language: 'english',
-          flash: 0,
-          numbers: mobile,
-        },
-        {
-          headers: {
-            'authorization': apiKey,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      // Use the serverless proxy to avoid CORS issues
+      const response = await axios.post('/api/send-sms', {
+        apiKey,
+        mobile,
+        message: 'Test SMS from DCS Pro. Your SMS is working!'
+      });
 
       console.log('SMS response:', response.data);
 
       if (response.data?.return === true) {
-        alert('✅ Test SMS sent successfully to ' + mobile + '!');
+        alert('✅ Test SMS sent successfully!');
       } else {
-        alert('❌ SMS failed: ' + JSON.stringify(response.data?.message || response.data));
+        alert('❌ Failed: ' + JSON.stringify(response.data?.message || response.data));
       }
     } catch (err: any) {
       console.error('SMS Error:', err);
-      const errMsg = err?.response?.data?.message 
-        || err?.response?.data 
-        || err?.message 
-        || 'Unknown error';
-      alert('❌ SMS Error: ' + JSON.stringify(errMsg));
+      const errMsg = err?.response?.data?.error || err?.message || 'Unknown error';
+      alert('❌ SMS Error: ' + errMsg);
     } finally {
       setTestingSMS(false);
     }

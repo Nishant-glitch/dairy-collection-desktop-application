@@ -3,7 +3,6 @@ import { ref, push, get } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
 
-const FAST2SMS_ENDPOINT = 'https://www.fast2sms.com/dev/bulkV2';
 const DEFAULT_API_KEY = 'pljS6DHLkMGf1nqXeaTQJVuwg0di3sYrOE5NtvoWKU79CPcbhR4jTr9MAEeFKpwZBg2O3htxLmQqbXyY';
 
 export interface SMSParams {
@@ -36,22 +35,12 @@ export const sendSMS = async ({ farmerId, mobile, message }: SMSParams): Promise
       throw new Error('Invalid mobile number format');
     }
 
-    const response = await axios.post(
-      FAST2SMS_ENDPOINT,
-      {
-        route: 'q',
-        message: message,
-        language: 'unicode',
-        flash: 0,
-        numbers: cleanMobile,
-      },
-      {
-        headers: {
-          authorization: apiKey,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    // Use the serverless proxy to avoid CORS issues
+    const response = await axios.post('/api/send-sms', {
+      apiKey: apiKey,
+      mobile: cleanMobile,
+      message: message,
+    });
 
     // Log SMS to Firebase
     const smsLogRef = ref(database, up('smsLog'));
