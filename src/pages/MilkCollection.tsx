@@ -6,7 +6,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { formatIndianCurrency } from '../utils/rateCalculator';
 import { sendCollectionSMS } from '../services/sms';
 import { X, Edit2, Trash2, CheckCircle, Droplet, Clock, Calendar, Zap, Printer, MessageSquare } from 'lucide-react';
-import { getRateFromMap } from './RateChart';
+import { getRateFromMap } from '../utils/rateCalculator';
 
 interface Entry {
   farmerCode: string;
