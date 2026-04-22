@@ -70,24 +70,27 @@ const Settings: React.FC = () => {
       return;
     }
     if (!/^\d{10}$/.test(testMobile.trim())) {
-      alert('Please enter a valid 10-digit mobile number!');
+      alert('Please enter valid 10-digit number!');
       return;
     }
+
     setTestingSMS(true);
     try {
-      const response = await axios.post('/api/send-sms', {
-        apiKey: smsApiKey.trim(),
-        mobile: testMobile.trim(),
-        message: 'Test SMS from DCS Pro Dairy Collection System. Your SMS is working correctly!',
-      });
-      if (response.data?.return === true) {
-        alert('✅ Test SMS sent successfully to ' + testMobile + '!');
+      const msg = encodeURIComponent(
+        'Test SMS from DCS Pro. Your SMS is working!'
+      );
+      const url = `https://www.fast2sms.com/dev/bulkV2?authorization=${smsApiKey.trim()}&route=q&message=${msg}&language=english&flash=0&numbers=${testMobile.trim()}`;
+      
+      const res = await fetch(url, { method: 'GET' });
+      const data = await res.json();
+      
+      if (data?.return === true) {
+        alert('✅ Test SMS sent to ' + testMobile + '!');
       } else {
-        alert('❌ SMS Failed: ' + JSON.stringify(response.data?.message || response.data));
+        alert('❌ Failed: ' + JSON.stringify(data?.message || data));
       }
     } catch (err: any) {
-      const errMsg = err?.response?.data?.error || err?.message || 'Unknown error';
-      alert('❌ Error: ' + errMsg);
+      alert('❌ Error: ' + (err.message || 'Unknown'));
     } finally {
       setTestingSMS(false);
     }

@@ -13,65 +13,45 @@ export interface SMSParams {
 
 export const sendSMS = async ({ farmerId, mobile, message }: SMSParams): Promise<boolean> => {
   try {
-    // Load API key from Firebase settings
-    const settingsRef = ref(database, up('settings'));
-    const settingsSnap = await get(settingsRef);
-    
-    let apiKey = DEFAULT_API_KEY;
-    if (settingsSnap.exists()) {
-      const settings = settingsSnap.val();
-      // Look for the first settings object since it's an array/object in Firebase
-      const settingsData = Object.values(settings)[0] as any;
-      if (settingsData && settingsData.smsApiKey) {
-        apiKey = settingsData.smsApiKey;
-      }
-    }
+    // Load API key from Firebase
+    const settingsSnap = await get(ref(database, up('settings/sms')));
+    const apiKey = settingsSnap.exists() && settingsSnap.val().apiKey
+      ? settingsSnap.val().apiKey
+      : DEFAULT_API_KEY;
 
-    // Clean mobile number (remove +91 if present)
     const cleanMobile = mobile.replace(/^\+91/, '').replace(/\s/g, '');
-    
-    // Validate mobile number (10 digits)
     if (!/^\d{10}$/.test(cleanMobile)) {
-      throw new Error('Invalid mobile number format');
+      throw new Error('Invalid mobile number');
     }
 
-    // Use the serverless proxy to avoid CORS issues
-    const response = await axios.post('/api/send-sms', {
-      apiKey: apiKey,
-      mobile: cleanMobile,
-      message: message,
-    });
+    // Use GET to avoid CORS
+    const encodedMsg = encodeURIComponent(message);
+    const url = `https://www.fast2sms.com/dev/bulkV2?authorization=${apiKey}&route=q&message=${encodedMsg}&language=unicode&flash=0&numbers=${cleanMobile}`;
+    
+    const res = await fetch(url, { method: 'GET' });
+    const data = await res.json();
 
-    // Log SMS to Firebase
-    const smsLogRef = ref(database, up('smsLog'));
-    await push(smsLogRef, {
+    // Log to Firebase
+    await push(ref(database, up('smsLog')), {
       farmerId,
       mobile: cleanMobile,
       message,
-      status: response.data?.return === true ? 'success' : 'failed',
-      response: JSON.stringify(response.data),
+      status: data?.return === true ? 'success' : 'failed',
+      response: JSON.stringify(data),
       timestamp: Date.now(),
     });
 
-    return response.data?.return === true;
+    return data?.return === true;
   } catch (error: any) {
-    console.error('SMS sending failed:', error);
-    
-    // Log failure to Firebase
+    console.error('SMS failed:', error);
     try {
-      const smsLogRef = ref(database, up('smsLog'));
-      await push(smsLogRef, {
-        farmerId,
-        mobile,
-        message,
+      await push(ref(database, up('smsLog')), {
+        farmerId, mobile, message,
         status: 'failed',
-        response: error.response?.data ? JSON.stringify(error.response.data) : (error.message || 'Unknown error'),
+        response: error.message || 'Unknown error',
         timestamp: Date.now(),
       });
-    } catch (logError) {
-      console.error('Failed to log SMS error:', logError);
-    }
-
+    } catch (e) {}
     return false;
   }
 };
