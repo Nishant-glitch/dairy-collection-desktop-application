@@ -103,14 +103,14 @@ const Settings: React.FC = () => {
     number: testNumber,
     message: message
   })
-});
+}),
         body: JSON.stringify({
           route: 'q',
           message: 'Test SMS from DCS Pro Dairy Collection System. Your SMS is working correctly!',
           language: 'english',
           flash: 0,
           numbers: mobile,
-        })
+        }),
       });
 
       const result = await response.json();
