@@ -75,22 +75,23 @@ const Settings: React.FC = () => {
     }
 
     setTestingSMS(true);
+
     try {
-      const msg = encodeURIComponent(
+      const encodedMsg = encodeURIComponent(
         'Test SMS from DCS Pro. Your SMS is working!'
       );
-      const url = `https://www.fast2sms.com/dev/bulkV2?authorization=${smsApiKey.trim()}&route=q&message=${msg}&language=english&flash=0&numbers=${testMobile.trim()}`;
-      
+      const url = `https://www.fast2sms.com/dev/bulkV2?authorization=${smsApiKey.trim()}&route=q&message=${encodedMsg}&language=english&flash=0&numbers=${testMobile.trim()}`;
+
       const res = await fetch(url, { method: 'GET' });
       const data = await res.json();
-      
+
       if (data?.return === true) {
         alert('✅ Test SMS sent to ' + testMobile + '!');
       } else {
         alert('❌ Failed: ' + JSON.stringify(data?.message || data));
       }
     } catch (err: any) {
-      alert('❌ Error: ' + (err.message || 'Unknown'));
+      alert('❌ Error: ' + (err.message || 'Unknown error'));
     } finally {
       setTestingSMS(false);
     }
