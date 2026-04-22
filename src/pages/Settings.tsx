@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../db/db';
 import { Settings as SettingsIcon, Save, RefreshCw, MessageSquare, Shield, Bell, Database } from 'lucide-react';
-import axios from 'axios';
 
 const Settings: React.FC = () => {
   const { user } = useAuth();
@@ -90,12 +89,15 @@ const Settings: React.FC = () => {
     setTestingSMS(true);
 
     try {
-      // Direct call to Fast2SMS from frontend to match existing app behavior
+      // Use dynamic import for axios to avoid build-time resolution issues if it's not pre-installed
+      const axiosModule = await import('axios');
+      const axios = axiosModule.default;
+      
       const response = await axios.post(
         'https://www.fast2sms.com/dev/bulkV2',
         {
           route: 'q',
-          message: 'Test SMS from DCS Pro Dairy Collection System. Your SMS is working correctly!',
+          message: 'Test SMS from DCS Pro Dairy Collection System. Your SMS configuration is working correctly!',
           language: 'english',
           flash: 0,
           numbers: mobile,
@@ -108,18 +110,20 @@ const Settings: React.FC = () => {
         }
       );
 
-      const result = response.data;
-      console.log('SMS result:', result);
+      console.log('SMS response:', response.data);
 
-      if (result.return === true) {
+      if (response.data?.return === true) {
         alert('✅ Test SMS sent successfully to ' + mobile + '!');
       } else {
-        alert('❌ SMS failed: ' + (result.message?.[0] || JSON.stringify(result)));
+        alert('❌ SMS failed: ' + JSON.stringify(response.data?.message || response.data));
       }
     } catch (err: any) {
       console.error('SMS Error:', err);
-      const errorMessage = err.response?.data?.message?.[0] || err.message || 'Unknown error';
-      alert('❌ Error sending SMS: ' + errorMessage);
+      const errMsg = err?.response?.data?.message 
+        || err?.response?.data 
+        || err?.message 
+        || 'Unknown error';
+      alert('❌ SMS Error: ' + JSON.stringify(errMsg));
     } finally {
       setTestingSMS(false);
     }

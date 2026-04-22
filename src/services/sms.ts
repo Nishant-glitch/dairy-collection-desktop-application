@@ -1,10 +1,10 @@
 import axios from 'axios';
-import { ref, push } from 'firebase/database';
+import { ref, push, get } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
 
 const FAST2SMS_ENDPOINT = 'https://www.fast2sms.com/dev/bulkV2';
-const API_KEY = 'pljS6DHLkMGf1nqXeaTQJVuwg0di3sYrOE5NtvoWKU79CPcbhR4jTr9MAEeFKpwZBg2O3htxLmQqbXyY';
+const DEFAULT_API_KEY = 'pljS6DHLkMGf1nqXeaTQJVuwg0di3sYrOE5NtvoWKU79CPcbhR4jTr9MAEeFKpwZBg2O3htxLmQqbXyY';
 
 export interface SMSParams {
   farmerId: string;
@@ -14,6 +14,20 @@ export interface SMSParams {
 
 export const sendSMS = async ({ farmerId, mobile, message }: SMSParams): Promise<boolean> => {
   try {
+    // Load API key from Firebase settings
+    const settingsRef = ref(database, up('settings'));
+    const settingsSnap = await get(settingsRef);
+    
+    let apiKey = DEFAULT_API_KEY;
+    if (settingsSnap.exists()) {
+      const settings = settingsSnap.val();
+      // Look for the first settings object since it's an array/object in Firebase
+      const settingsData = Object.values(settings)[0] as any;
+      if (settingsData && settingsData.smsApiKey) {
+        apiKey = settingsData.smsApiKey;
+      }
+    }
+
     // Clean mobile number (remove +91 if present)
     const cleanMobile = mobile.replace(/^\+91/, '').replace(/\s/g, '');
     
@@ -33,7 +47,7 @@ export const sendSMS = async ({ farmerId, mobile, message }: SMSParams): Promise
       },
       {
         headers: {
-          authorization: API_KEY,
+          authorization: apiKey,
           'Content-Type': 'application/json',
         },
       }
@@ -45,12 +59,12 @@ export const sendSMS = async ({ farmerId, mobile, message }: SMSParams): Promise
       farmerId,
       mobile: cleanMobile,
       message,
-      status: 'success',
+      status: response.data?.return === true ? 'success' : 'failed',
       response: JSON.stringify(response.data),
       timestamp: Date.now(),
     });
 
-    return true;
+    return response.data?.return === true;
   } catch (error: any) {
     console.error('SMS sending failed:', error);
     
@@ -62,7 +76,7 @@ export const sendSMS = async ({ farmerId, mobile, message }: SMSParams): Promise
         mobile,
         message,
         status: 'failed',
-        response: error.message || 'Unknown error',
+        response: error.response?.data ? JSON.stringify(error.response.data) : (error.message || 'Unknown error'),
         timestamp: Date.now(),
       });
     } catch (logError) {
