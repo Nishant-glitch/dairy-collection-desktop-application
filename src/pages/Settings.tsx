@@ -110,7 +110,7 @@ const Settings: React.FC = () => {
           language: 'english',
           flash: 0,
           numbers: mobile,
-        }),
+        })
       });
 
       const result = await response.json();
