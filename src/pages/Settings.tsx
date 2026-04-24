@@ -6,8 +6,8 @@ import { MessageSquare, Save, RefreshCw, Bell, Shield, Send } from 'lucide-react
 import axios from 'axios';
 
 const Settings: React.FC = () => {
-  const [smsApiKey, setSmsApiKey] = useState('');
-  const [smsSenderId, setSmsSenderId] = useState('');
+  const [smsApiKey, setSmsApiKey] = useState('511304ApFLOfqq69eafe97P1');
+  const [smsTemplateId, setSmsTemplateId] = useState('69eafce28acc315c3a09beb2');
   const [testMobile, setTestMobile] = useState('');
   const [testingSMS, setTestingSMS] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -22,8 +22,8 @@ const Settings: React.FC = () => {
     try {
       const snap = await get(ref(database, up('settings/sms')));
       if (snap.exists()) {
-        setSmsApiKey(snap.val().apiKey || '');
-        setSmsSenderId(snap.val().senderId || '');
+        setSmsApiKey(snap.val().apiKey || '511304ApFLOfqq69eafe97P1');
+        setSmsTemplateId(snap.val().templateId || '69eafce28acc315c3a09beb2');
       }
       const prefSnap = await get(ref(database, up('settings/preferences')));
       if (prefSnap.exists()) {
@@ -40,7 +40,7 @@ const Settings: React.FC = () => {
     try {
       await set(ref(database, up('settings/sms')), {
         apiKey: smsApiKey,
-        senderId: smsSenderId,
+        templateId: smsTemplateId,
         updatedAt: Date.now(),
       });
       alert('✅ SMS Settings saved!');
@@ -65,33 +65,44 @@ const Settings: React.FC = () => {
   };
 
   const handleTestSMS = async () => {
-    if (!smsApiKey.trim()) {
-      alert('Please enter SMS API Key first!');
-      return;
-    }
-    if (!/^\d{10}$/.test(testMobile.trim())) {
-      alert('Please enter valid 10-digit number!');
+    if (!testMobile.trim() || !/^\d{10}$/.test(testMobile.trim())) {
+      alert('Please enter valid 10-digit mobile number!');
       return;
     }
 
     setTestingSMS(true);
-
     try {
-      const encodedMsg = encodeURIComponent(
-        'Test SMS from DCS Pro. Your SMS is working!'
-      );
-      const url = `https://www.fast2sms.com/dev/bulkV2?authorization=${smsApiKey.trim()}&route=q&message=${encodedMsg}&language=english&flash=0&numbers=${testMobile.trim()}`;
+      const authKey = smsApiKey.trim() || '511304ApFLOfqq69eafe97P1';
+      const templateId = smsTemplateId.trim() || '69eafce28acc315c3a09beb2';
 
-      const res = await fetch(url, { method: 'GET' });
-      const data = await res.json();
+      const response = await fetch('https://api.msg91.com/api/v5/flow/', {
+        method: 'POST',
+        headers: {
+          'authkey': authKey,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          template_id: templateId,
+          short_url: '0',
+          mobiles: '91' + testMobile.trim(),
+          name: 'Test Farmer',
+          qty: '5.00',
+          fat: '4.5',
+          amount: '100.00',
+        }),
+      });
 
-      if (data?.return === true) {
+      const data = await response.json();
+      console.log('Test SMS response:', data);
+
+      if (data?.type === 'success') {
         alert('✅ Test SMS sent to ' + testMobile + '!');
       } else {
         alert('❌ Failed: ' + JSON.stringify(data?.message || data));
       }
     } catch (err: any) {
-      alert('❌ Error: ' + (err.message || 'Unknown error'));
+      alert('❌ Error: ' + (err.message || 'Unknown'));
     } finally {
       setTestingSMS(false);
     }
@@ -123,12 +134,12 @@ const Settings: React.FC = () => {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
           <div>
-            <label className="label-text">SMS SENDER ID</label>
+            <label className="label-text">SMS TEMPLATE ID</label>
             <input
               type="text"
-              value={smsSenderId}
-              onChange={(e) => setSmsSenderId(e.target.value)}
-              placeholder="e.g. DAIRYS"
+              value={smsTemplateId}
+              onChange={(e) => setSmsTemplateId(e.target.value)}
+              placeholder="Paste your MSG91 Template ID"
               className="input-field"
             />
           </div>

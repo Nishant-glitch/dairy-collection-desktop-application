@@ -4,7 +4,7 @@ import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatIndianCurrency } from '../utils/rateCalculator';
-import { sendCollectionSMS } from '../services/sms';
+import { sendSMS } from '../services/sms';
 import { X, Edit2, Trash2, CheckCircle, Droplet, Clock, Calendar, Zap, Printer, MessageSquare } from 'lucide-react';
 import { getRateFromMap } from '../utils/rateCalculator';
 
@@ -206,20 +206,21 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
       printSlip();
     }
 
-    if (smsEnabled && farmers[farmerCode]?.mobileNo) {
-      await sendCollectionSMS(
-        farmerName,
-        farmerCode,
-        farmers[farmerCode].mobileNo,
-        sessionDate,
-        sessionShift,
-        parseFloat(qty),
-        parseFloat(fat),
-        parseFloat(snfClr),
-        rate,
-        amount,
-        dcsInfo.name || 'DCS'
-      );
+    if (smsEnabled) {
+      // Fetch farmer mobile from Firebase
+      const farmerSnap = await get(ref(database, up(`farmers/${farmerCode}`)));
+      const farmerMobile = farmerSnap.exists() ? farmerSnap.val().mobileNo : '';
+      
+      if (farmerMobile) {
+        await sendSMS({
+          farmerId: farmerCode,
+          mobile: farmerMobile,
+          farmerName: farmerName,
+          qty: qty,
+          fat: fat,
+          amount: amount.toFixed(2),
+        });
+      }
     }
 
     clearForm();

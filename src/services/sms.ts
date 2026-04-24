@@ -1,57 +1,77 @@
-import axios from 'axios';
-import { ref, push, get } from 'firebase/database';
+import { ref, get, push } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
 
-const DEFAULT_API_KEY = 'pljS6DHLkMGf1nqXeaTQJVuwg0di3sYrOE5NtvoWKU79CPcbhR4jTr9MAEeFKpwZBg2O3htxLmQqbXyY';
+const DEFAULT_AUTH_KEY = '511304ApFLOfqq69eafe97P1';
+const DEFAULT_TEMPLATE_ID = '69eafce28acc315c3a09beb2';
 
-export interface SMSParams {
+export const sendSMS = async ({
+  farmerId,
+  mobile,
+  farmerName,
+  qty,
+  fat,
+  amount,
+}: {
   farmerId: string;
   mobile: string;
-  message: string;
-}
-
-export const sendSMS = async ({ farmerId, mobile, message }: SMSParams): Promise<boolean> => {
+  farmerName: string;
+  qty: string | number;
+  fat: string | number;
+  amount: string | number;
+}): Promise<boolean> => {
   try {
-    // Load API key from Firebase
     const settingsSnap = await get(ref(database, up('settings/sms')));
-    const apiKey = settingsSnap.exists() && settingsSnap.val().apiKey
+    const authKey = settingsSnap.exists() && settingsSnap.val().apiKey
       ? settingsSnap.val().apiKey
-      : DEFAULT_API_KEY;
+      : DEFAULT_AUTH_KEY;
+    const templateId = settingsSnap.exists() && settingsSnap.val().templateId
+      ? settingsSnap.val().templateId
+      : DEFAULT_TEMPLATE_ID;
 
     const cleanMobile = mobile.replace(/^\+91/, '').replace(/\s/g, '');
     if (!/^\d{10}$/.test(cleanMobile)) {
-      throw new Error('Invalid mobile number');
+      throw new Error('Invalid mobile: ' + mobile);
     }
 
-    // Use GET to avoid CORS
-    const encodedMsg = encodeURIComponent(message);
-    const url = `https://www.fast2sms.com/dev/bulkV2?authorization=${apiKey}&route=q&message=${encodedMsg}&language=unicode&flash=0&numbers=${cleanMobile}`;
-    
-    const res = await fetch(url, { method: 'GET' });
-    const data = await res.json();
+    const response = await fetch('https://api.msg91.com/api/v5/flow/', {
+      method: 'POST',
+      headers: {
+        'authkey': authKey,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        template_id: templateId,
+        short_url: '0',
+        mobiles: '91' + cleanMobile,
+        name: farmerName,
+        qty: String(qty),
+        fat: String(fat),
+        amount: String(amount),
+      }),
+    });
 
-    // Log to Firebase
+    const data = await response.json();
+    console.log('MSG91 response:', data);
+
+    const success = data?.type === 'success';
+
     await push(ref(database, up('smsLog')), {
       farmerId,
       mobile: cleanMobile,
-      message,
-      status: data?.return === true ? 'success' : 'failed',
+      farmerName,
+      qty: String(qty),
+      fat: String(fat),
+      amount: String(amount),
+      status: success ? 'success' : 'failed',
       response: JSON.stringify(data),
       timestamp: Date.now(),
     });
 
-    return data?.return === true;
+    return success;
   } catch (error: any) {
-    console.error('SMS failed:', error);
-    try {
-      await push(ref(database, up('smsLog')), {
-        farmerId, mobile, message,
-        status: 'failed',
-        response: error.message || 'Unknown error',
-        timestamp: Date.now(),
-      });
-    } catch (e) {}
+    console.error('SMS Error:', error);
     return false;
   }
 };
@@ -69,12 +89,15 @@ export const sendCollectionSMS = async (
   amount: number,
   dcsName: string
 ) => {
-  const message = `प्रिय ${farmerName}, आज ${date} ${shift} पाली में आपका दूध जमा हुआ:
-दूध: ${qty.toFixed(2)} लीटर | FAT: ${fat.toFixed(2)}% | SNF: ${snf.toFixed(2)}%
-दर: ₹${rate.toFixed(2)}/लीटर | राशि: ₹${amount.toFixed(2)}
-- ${dcsName}`;
-
-  return sendSMS({ farmerId, mobile, message });
+  // This function is kept for compatibility but now calls the new sendSMS
+  return sendSMS({
+    farmerId,
+    mobile,
+    farmerName,
+    qty,
+    fat,
+    amount: amount.toFixed(2),
+  });
 };
 
 export const sendPaymentSMS = async (
@@ -85,7 +108,8 @@ export const sendPaymentSMS = async (
   amount: number,
   dcsName: string
 ) => {
-  const message = `प्रिय ${farmerName}, आपका ${month} दूध भुगतान ₹${amount.toFixed(2)} प्राप्त हुआ। - ${dcsName}`;
-
-  return sendSMS({ farmerId, mobile, message });
+  // Payment SMS would need a different template in MSG91 flow
+  // For now, we'll use the same sendSMS or handle it differently
+  console.warn('sendPaymentSMS not yet updated for MSG91 flow templates');
+  return false;
 };
