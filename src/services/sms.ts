@@ -47,7 +47,15 @@ export const sendSMS = async ({
         amount: String(amount),
       }),
     });
-    const data = await res.json();
+
+    let data;
+    const contentType = res.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      data = await res.json();
+    } else {
+      const text = await res.text();
+      data = { type: 'error', message: text.substring(0, 100) };
+    }
     const success = data?.type === 'success';
 
     await push(ref(database, up('smsLog')), {

@@ -84,11 +84,20 @@ const Settings: React.FC = () => {
           amount: '100.00',
         }),
       });
-      const data = await res.json();
+
+      let data;
+      const contentType = res.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await res.json();
+      } else {
+        const text = await res.text();
+        throw new Error(`Server returned non-JSON response: ${text.substring(0, 50)}...`);
+      }
+
       if (data?.type === 'success') {
         alert('✅ SMS sent to ' + testMobile + '!');
       } else {
-        alert('❌ Failed: ' + JSON.stringify(data?.message || data));
+        alert('❌ Failed: ' + (data?.message || JSON.stringify(data)));
       }
     } catch (err: any) {
       alert('❌ Error: ' + err.message);

@@ -33,9 +33,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }),
     });
 
-    const data = await response.json();
+    const contentType = response.headers.get('content-type');
+    let data;
+    
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      data = { 
+        type: 'error', 
+        message: `Non-JSON response from MSG91 (Status ${response.status}): ${text.substring(0, 100)}...` 
+      };
+    }
+
     return res.status(200).json(data);
   } catch (error: any) {
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ 
+      type: 'error', 
+      message: error.message || 'Internal Server Error' 
+    });
   }
 }
