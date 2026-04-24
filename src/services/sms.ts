@@ -34,27 +34,20 @@ export const sendSMS = async ({
       throw new Error('Invalid mobile: ' + mobile);
     }
 
-    const response = await fetch('https://api.msg91.com/api/v5/flow/', {
+    const res = await fetch('/api/send-sms', {
       method: 'POST',
-      headers: {
-        'authkey': authKey,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        template_id: templateId,
-        short_url: '0',
-        mobiles: '91' + cleanMobile,
+        authKey,
+        templateId,
+        mobile: cleanMobile,
         name: farmerName,
         qty: String(qty),
         fat: String(fat),
         amount: String(amount),
       }),
     });
-
-    const data = await response.json();
-    console.log('MSG91 response:', data);
-
+    const data = await res.json();
     const success = data?.type === 'success';
 
     await push(ref(database, up('smsLog')), {

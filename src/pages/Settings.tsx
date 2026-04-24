@@ -66,43 +66,32 @@ const Settings: React.FC = () => {
 
   const handleTestSMS = async () => {
     if (!testMobile.trim() || !/^\d{10}$/.test(testMobile.trim())) {
-      alert('Please enter valid 10-digit mobile number!');
+      alert('Please enter valid 10-digit number!');
       return;
     }
-
     setTestingSMS(true);
     try {
-      const authKey = smsApiKey.trim() || '511304ApFLOfqq69eafe97P1';
-      const templateId = smsTemplateId.trim() || '69eafce28acc315c3a09beb2';
-
-      const response = await fetch('https://api.msg91.com/api/v5/flow/', {
+      const res = await fetch('/api/send-sms', {
         method: 'POST',
-        headers: {
-          'authkey': authKey,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          template_id: templateId,
-          short_url: '0',
-          mobiles: '91' + testMobile.trim(),
+          authKey: smsApiKey.trim() || '511304ApFLOfqq69eafe97P1',
+          templateId: smsTemplateId.trim() || '69eafce28acc315c3a09beb2',
+          mobile: testMobile.trim(),
           name: 'Test Farmer',
           qty: '5.00',
           fat: '4.5',
           amount: '100.00',
         }),
       });
-
-      const data = await response.json();
-      console.log('Test SMS response:', data);
-
+      const data = await res.json();
       if (data?.type === 'success') {
-        alert('✅ Test SMS sent to ' + testMobile + '!');
+        alert('✅ SMS sent to ' + testMobile + '!');
       } else {
         alert('❌ Failed: ' + JSON.stringify(data?.message || data));
       }
     } catch (err: any) {
-      alert('❌ Error: ' + (err.message || 'Unknown'));
+      alert('❌ Error: ' + err.message);
     } finally {
       setTestingSMS(false);
     }
