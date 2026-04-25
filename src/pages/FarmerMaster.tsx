@@ -321,7 +321,7 @@ const FarmerMaster: React.FC = () => {
       {showViewModal && viewFarmer && (
         <div className="modal-overlay">
           <div className="modal-3d animate-fadeIn" style={{ padding: '28px', width: '90%', maxWidth: '600px' }}>
-            <div className="flex justify-between items-center" style={{ marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '16px' }}>
+            <div className="flex justify-between items-center" style={{ marginBottom: '20px' }}>
               <h2 style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>Farmer Details</h2>
               <button onClick={() => setShowViewModal(false)} style={{ color: 'rgba(255,255,255,0.6)', cursor: 'pointer', background: 'none', border: 'none' }}>
                 <X size={24} />
@@ -329,45 +329,46 @@ const FarmerMaster: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div className="flex items-center gap-4 p-4 glass-card">
-                <div style={{ width: 64, height: 64, background: 'linear-gradient(135deg, #4ade80, #1a5c2e)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 'bold', color: '#0a1f0f' }}>
-                  {viewFarmer.farmerCode}
+              <div className="flex items-center glass-card" style={{ padding: '16px 20px', gap: '12px', marginBottom: '20px' }}>
+                <div style={{ width: 44, height: 44, background: 'linear-gradient(135deg, #4ade80, #1a5c2e)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 'bold', color: '#0a1f0f' }}>
+                  {viewFarmer.farmerCode.substring(0, 2)}
                 </div>
                 <div>
-                  <h3 style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>{viewFarmer.farmerName}</h3>
-                  <p style={{ color: 'rgba(255,255,255,0.6)' }}>{viewFarmer.mobileNo}</p>
+                  <h3 style={{ fontSize: 18, fontWeight: 'bold', color: 'white' }}>{viewFarmer.farmerName}</h3>
+                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>Code: {viewFarmer.farmerCode} • {viewFarmer.mobileNo}</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2" style={{ gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
                 <div>
-                  <p className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Aadhar Number</p>
-                  <p style={{ color: 'white', fontWeight: '500', fontSize: '14px' }}>{viewFarmer.aadharNo || '—'}</p>
+                  <p className="label-text" style={{ marginBottom: '6px', fontSize: '11px' }}>Aadhar Number</p>
+                  <p style={{ color: 'white', fontWeight: '600', fontSize: '14px' }}>{viewFarmer.aadharNo || '—'}</p>
                 </div>
                 <div>
-                  <p className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>UPI ID</p>
-                  <p style={{ color: 'white', fontWeight: '500', fontSize: '14px' }}>{viewFarmer.upiId || '—'}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Address</p>
-                  <p style={{ color: 'white', fontWeight: '500', fontSize: '14px' }}>{viewFarmer.address || '—'}</p>
+                  <p className="label-text" style={{ marginBottom: '6px', fontSize: '11px' }}>UPI ID</p>
+                  <p style={{ color: 'white', fontWeight: '600', fontSize: '14px' }}>{viewFarmer.upiId || '—'}</p>
                 </div>
               </div>
 
-              <div className="p-4 glass-card">
-                <h4 style={{ color: '#4ade80', fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '16px' }}>Bank Information</h4>
-                <div className="grid grid-cols-2" style={{ gap: '16px' }}>
+              <div style={{ marginBottom: '16px' }}>
+                <p className="label-text" style={{ marginBottom: '6px', fontSize: '11px' }}>Address</p>
+                <p style={{ color: 'white', fontWeight: '400', fontSize: '14px' }}>{viewFarmer.address || '—'}</p>
+              </div>
+
+              <div className="glass-card" style={{ padding: '16px 20px', marginTop: '4px' }}>
+                <h4 style={{ color: '#4ade80', fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '14px' }}>Bank Information</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <div>
-                    <p className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Bank Name</p>
-                    <p style={{ color: 'white', fontWeight: '500', fontSize: '14px' }}>{viewFarmer.bankName || '—'}</p>
+                    <p className="label-text" style={{ marginBottom: '6px', fontSize: '11px' }}>Bank Name</p>
+                    <p style={{ color: 'white', fontWeight: '600', fontSize: '14px' }}>{viewFarmer.bankName || '—'}</p>
                   </div>
                   <div>
-                    <p className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Account No</p>
-                    <p style={{ color: 'white', fontWeight: '500', fontSize: '14px' }}>{viewFarmer.bankAC || '—'}</p>
+                    <p className="label-text" style={{ marginBottom: '6px', fontSize: '11px' }}>Account No</p>
+                    <p style={{ color: 'white', fontWeight: '600', fontSize: '14px' }}>{viewFarmer.bankAC || '—'}</p>
                   </div>
-                  <div>
-                    <p className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>IFSC Code</p>
-                    <p style={{ color: 'white', fontWeight: '500', fontSize: '14px' }}>{viewFarmer.ifscCode || '—'}</p>
+                  <div className="col-span-2">
+                    <p className="label-text" style={{ marginBottom: '6px', fontSize: '11px' }}>IFSC Code</p>
+                    <p style={{ color: 'white', fontWeight: '600', fontSize: '14px' }}>{viewFarmer.ifscCode || '—'}</p>
                   </div>
                 </div>
               </div>
