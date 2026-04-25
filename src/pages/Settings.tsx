@@ -73,31 +73,24 @@ const Settings: React.FC = () => {
     try {
       const authKey = smsApiKey.trim() || '511304ApFLOfqq69eafe97P1';
       const templateId = smsTemplateId.trim() || '69eafce28acc315c3a09beb2';
-      
-      // MSG91 using no-cors mode
-      await fetch(
-        `https://api.msg91.com/api/v5/flow/`,
-        {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: {
-            'authkey': authKey,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            template_id: templateId,
-            short_url: '0',
-            mobiles: '91' + testMobile.trim(),
-            name: 'Test Farmer',
-            qty: '5.00',
-            fat: '4.5',
-            amount: '100.00',
-          }),
-        }
-      );
-
-      // no-cors returns opaque response — assume success
-      alert('✅ SMS request sent to ' + testMobile + '!\nCheck your phone in a few seconds.');
+      await fetch('https://api.msg91.com/api/v5/flow/', {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'authkey': authKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          template_id: templateId,
+          short_url: '0',
+          mobiles: '91' + testMobile.trim(),
+          name: 'Test Farmer',
+          qty: '5.00',
+          fat: '4.5',
+          amount: '100.00',
+        }),
+      });
+      alert('✅ SMS request sent! Check your phone.');
     } catch (err: any) {
       alert('❌ Error: ' + err.message);
     } finally {
