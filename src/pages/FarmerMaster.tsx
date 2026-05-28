@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ref, onValue, set, remove } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
@@ -27,6 +27,8 @@ const FarmerMaster: React.FC = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewFarmer, setViewFarmer] = useState<Farmer | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const farmerImportRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<Farmer>({
     farmerCode: '',
     farmerName: '',
@@ -132,19 +134,174 @@ const FarmerMaster: React.FC = () => {
     }
   };
 
+  const handleFarmerImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setImporting(true);
+    
+    try {
+      const XLSX = await import('xlsx');
+      const reader = new FileReader();
+      
+      reader.onload = async (event) => {
+        try {
+          const data = new Uint8Array(event.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          const json = XLSX.utils.sheet_to_json(sheet, {
+            header: 1,
+            defval: '',
+            raw: false,
+          }) as any[][];
+
+          const farmersToImport: any[] = [];
+
+          for (let i = 0; i < json.length; i++) {
+            const row = json[i];
+            const codeRaw = String(row[0] || '').trim();
+            const name = String(row[5] || '').trim();
+            const address = String(row[9] || '').trim();
+
+            if (!codeRaw || !name) continue;
+
+            // Parse code as integer
+            const codeNum = parseInt(parseFloat(codeRaw).toString());
+            if (isNaN(codeNum) || codeNum <= 0) continue;
+            if (name.toLowerCase().includes('member') || 
+                name.toLowerCase().includes('total')) continue;
+
+            farmersToImport.push({
+              code: String(codeNum),
+              farmerName: name,
+              address: address,
+            });
+          }
+
+          if (farmersToImport.length === 0) {
+            alert('No farmers found in file!');
+            setImporting(false);
+            return;
+          }
+
+          // Confirm before import
+          const confirm_import = window.confirm(
+            `Found ${farmersToImport.length} farmers.\nImport all to Firebase?\n\nNote: Existing farmers with same code will be updated.`
+          );
+          
+          if (!confirm_import) {
+            setImporting(false);
+            return;
+          }
+
+          // Save all farmers to Firebase
+          let saved = 0;
+          let failed = 0;
+
+          for (const farmer of farmersToImport) {
+            try {
+              await set(ref(database, up(`farmers/${farmer.code}`)), {
+                farmerName: farmer.farmerName,
+                address: farmer.address,
+                aadharNo: '',
+                bankName: '',
+                bankAC: '',
+                ifscCode: '',
+                branchAddress: '',
+                mobileNo: '',
+                upiId: '',
+              });
+              saved++;
+            } catch (err) {
+              failed++;
+              console.error(`Failed to save farmer ${farmer.code}:`, err);
+            }
+          }
+
+          alert(`✅ Import complete!\n${saved} farmers imported successfully.${failed > 0 ? `\n${failed} failed.` : ''}`);
+          
+        } catch (err: any) {
+          console.error('Parse error:', err);
+          alert('Error reading file: ' + err.message);
+        } finally {
+          setImporting(false);
+          e.target.value = '';
+        }
+      };
+
+      reader.onerror = () => {
+        alert('Failed to read file!');
+        setImporting(false);
+      };
+
+      reader.readAsArrayBuffer(file);
+
+    } catch (err: any) {
+      alert('Import error: ' + err.message);
+      setImporting(false);
+    }
+  };
+
   return (
     <div className="page-wrapper animate-fadeIn">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
         <h1 className="page-title" style={{ marginBottom: 0 }}>{t('farmerMaster')}</h1>
-        <button
-          onClick={handleAdd}
-          className="btn-3d"
-          style={{ padding: '10px 20px' }}
-        >
-          <Plus size={16} />
-          Add Farmer
-        </button>
+        <div className="flex items-center">
+          <button
+            onClick={() => farmerImportRef.current?.click()}
+            style={{
+              background: 'rgba(56,189,248,0.15)',
+              border: '1px solid rgba(56,189,248,0.3)',
+              borderRadius: 10, padding: '9px 18px',
+              color: '#38bdf8', fontWeight: 600,
+              fontSize: 13, cursor: 'pointer',
+              marginRight: 8,
+              display: 'flex', alignItems: 'center', gap: 8
+            }}
+          >
+            📂 Import Excel
+          </button>
+          <input
+            ref={farmerImportRef}
+            type="file"
+            accept=".xls,.xlsx"
+            style={{ display: 'none' }}
+            onChange={handleFarmerImport}
+          />
+          <button
+            onClick={handleAdd}
+            className="btn-3d"
+            style={{ padding: '10px 20px' }}
+          >
+            <Plus size={16} />
+            Add Farmer
+          </button>
+        </div>
       </div>
+
+      {importing && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.7)',
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          gap: 16
+        }}>
+          <div style={{
+            background: '#1e293b', borderRadius: 16,
+            padding: '32px 40px', textAlign: 'center',
+            border: '1px solid rgba(148,163,184,0.2)'
+          }}>
+            <div style={{ fontSize: 40, marginBottom: 16 }}>⏳</div>
+            <div style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700 }}>
+              Importing farmers...
+            </div>
+            <div style={{ color: '#94a3b8', fontSize: 13, marginTop: 8 }}>
+              Please wait, do not close the page
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="glass-card" style={{ padding: '20px 24px', marginBottom: '20px' }}>
         <div className="flex justify-between items-center gap-4" style={{ marginBottom: '16px' }}>
@@ -321,62 +478,66 @@ const FarmerMaster: React.FC = () => {
       {showViewModal && viewFarmer && (
         <div className="modal-overlay">
           <div className="modal-3d animate-fadeIn" style={{ padding: '28px', width: '90%', maxWidth: '600px' }}>
-            <div className="flex justify-between items-center" style={{ marginBottom: '20px' }}>
+            <div className="flex justify-between items-center" style={{ marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '16px' }}>
               <h2 style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>Farmer Details</h2>
               <button onClick={() => setShowViewModal(false)} style={{ color: 'rgba(255,255,255,0.6)', cursor: 'pointer', background: 'none', border: 'none' }}>
                 <X size={24} />
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div className="flex items-center glass-card" style={{ padding: '16px 20px', gap: '12px', marginBottom: '20px' }}>
-                <div style={{ width: 44, height: 44, background: 'linear-gradient(135deg, #4ade80, #1a5c2e)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 'bold', color: '#0a1f0f' }}>
-                  {viewFarmer.farmerCode.substring(0, 2)}
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, textTransform: 'uppercase' }}>Farmer Code</p>
+                  <p style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>{viewFarmer.farmerCode}</p>
                 </div>
                 <div>
-                  <h3 style={{ fontSize: 18, fontWeight: 'bold', color: 'white' }}>{viewFarmer.farmerName}</h3>
-                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px' }}>Code: {viewFarmer.farmerCode} • {viewFarmer.mobileNo}</p>
+                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, textTransform: 'uppercase' }}>Farmer Name</p>
+                  <p style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>{viewFarmer.farmerName}</p>
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+              <div>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, textTransform: 'uppercase' }}>Address</p>
+                <p style={{ color: 'white', fontSize: 14 }}>{viewFarmer.address || 'N/A'}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="label-text" style={{ marginBottom: '6px', fontSize: '11px' }}>Aadhar Number</p>
-                  <p style={{ color: 'white', fontWeight: '600', fontSize: '14px' }}>{viewFarmer.aadharNo || '—'}</p>
+                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, textTransform: 'uppercase' }}>Aadhar No</p>
+                  <p style={{ color: 'white', fontSize: 14 }}>{viewFarmer.aadharNo || 'N/A'}</p>
                 </div>
                 <div>
-                  <p className="label-text" style={{ marginBottom: '6px', fontSize: '11px' }}>UPI ID</p>
-                  <p style={{ color: 'white', fontWeight: '600', fontSize: '14px' }}>{viewFarmer.upiId || '—'}</p>
+                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, textTransform: 'uppercase' }}>Mobile No</p>
+                  <p style={{ color: 'white', fontSize: 14 }}>{viewFarmer.mobileNo || 'N/A'}</p>
                 </div>
               </div>
 
-              <div style={{ marginBottom: '16px' }}>
-                <p className="label-text" style={{ marginBottom: '6px', fontSize: '11px' }}>Address</p>
-                <p style={{ color: 'white', fontWeight: '400', fontSize: '14px' }}>{viewFarmer.address || '—'}</p>
-              </div>
-
-              <div className="glass-card" style={{ padding: '16px 20px', marginTop: '4px' }}>
-                <h4 style={{ color: '#4ade80', fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '14px' }}>Bank Information</h4>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <div style={{ paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                <h3 style={{ color: '#4ade80', fontSize: 13, fontWeight: 800, marginBottom: '12px' }}>BANK INFORMATION</h3>
+                <div className="grid grid-cols-2 gap-y-4 gap-x-4">
                   <div>
-                    <p className="label-text" style={{ marginBottom: '6px', fontSize: '11px' }}>Bank Name</p>
-                    <p style={{ color: 'white', fontWeight: '600', fontSize: '14px' }}>{viewFarmer.bankName || '—'}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>BANK NAME</p>
+                    <p style={{ color: 'white', fontSize: 14 }}>{viewFarmer.bankName || 'N/A'}</p>
                   </div>
                   <div>
-                    <p className="label-text" style={{ marginBottom: '6px', fontSize: '11px' }}>Account No</p>
-                    <p style={{ color: 'white', fontWeight: '600', fontSize: '14px' }}>{viewFarmer.bankAC || '—'}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>ACCOUNT NO</p>
+                    <p style={{ color: 'white', fontSize: 14 }}>{viewFarmer.bankAC || 'N/A'}</p>
                   </div>
-                  <div className="col-span-2">
-                    <p className="label-text" style={{ marginBottom: '6px', fontSize: '11px' }}>IFSC Code</p>
-                    <p style={{ color: 'white', fontWeight: '600', fontSize: '14px' }}>{viewFarmer.ifscCode || '—'}</p>
+                  <div>
+                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>IFSC CODE</p>
+                    <p style={{ color: 'white', fontSize: 14 }}>{viewFarmer.ifscCode || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>UPI ID</p>
+                    <p style={{ color: 'white', fontSize: 14 }}>{viewFarmer.upiId || 'N/A'}</p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div style={{ marginTop: '24px', display: 'flex', gap: '12px' }}>
-              <button onClick={() => setShowViewModal(false)} className="btn-secondary" style={{ flex: 1, padding: '12px', minHeight: '40px', fontSize: '14px', fontWeight: 600 }}>Close</button>
-              <button onClick={() => { setShowViewModal(false); handleEdit(viewFarmer); }} className="btn-3d" style={{ flex: 2, padding: '12px', minHeight: '40px', fontSize: '14px', fontWeight: 600 }}>Edit Farmer</button>
+            <div style={{ marginTop: '24px' }}>
+              <button onClick={() => setShowViewModal(false)} className="btn-secondary w-full" style={{ padding: '12px' }}>Close</button>
             </div>
           </div>
         </div>
