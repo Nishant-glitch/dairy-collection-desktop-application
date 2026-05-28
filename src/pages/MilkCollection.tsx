@@ -84,13 +84,21 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   }, [qty, fat, snfClr, activeRateConfig]);
 
   const getConfigForDate = async (collectionDate: string) => {
-    const snap = await get(ref(database, 'globalRateConfig/history'));
-    if (!snap.exists()) return null;
-    const configs = Object.values(snap.val()) as any[];
-    configs.sort((a, b) =>
+    // First try: load from current (always the latest uploaded rate chart)
+    const currentSnap = await get(ref(database, 'globalRateConfig/current'));
+    if (currentSnap.exists()) {
+      return currentSnap.val();
+    }
+
+    // Fallback: search history by date
+    const historySnap = await get(ref(database, 'globalRateConfig/history'));
+    if (!historySnap.exists()) return null;
+
+    const configs = Object.values(historySnap.val()) as any[];
+    configs.sort((a: any, b: any) =>
       new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime()
     );
-    return configs.find(c => c.effectiveFrom <= collectionDate)
+    return configs.find((c: any) => c.effectiveFrom <= collectionDate)
       || configs[configs.length - 1];
   };
 
