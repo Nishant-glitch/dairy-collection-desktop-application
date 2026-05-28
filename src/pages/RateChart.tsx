@@ -89,10 +89,6 @@ const RateChart: React.FC = () => {
           }) as any[][];
         }
 
-        console.log('Total rows parsed:', json.length);
-        console.log('First row sample:', json[0]?.slice(0, 5));
-        console.log('Second row sample:', json[1]?.slice(0, 5));
-
         if (!json || json.length < 2) {
           alert('File is empty or invalid format!');
           return;
@@ -121,9 +117,6 @@ const RateChart: React.FC = () => {
             rateMap[fatKey][snfKey] = isNaN(rate) ? 0 : rate;
           });
         }
-
-        console.log('FAT values count:', fatValues.length);
-        console.log('SNF values count:', snfValues.length);
 
         if (fatValues.length === 0 || snfValues.length === 0) {
           alert('Could not parse FAT or SNF values!');
@@ -175,7 +168,7 @@ const RateChart: React.FC = () => {
     
     return (
       <div className="glass-card overflow-hidden">
-        <div style={{ padding: 20, background: 'rgba(148,163,184,0.05)', borderBottom: '1px solid rgba(148,163,184,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ padding: '20px 24px', background: 'rgba(148,163,184,0.05)', borderBottom: '1px solid rgba(148,163,184,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h3 style={{ color: '#f1f5f9', fontWeight: 800, fontSize: 16, marginBottom: 4 }}>
               Rate Chart — Effective from {config.effectiveFrom}
@@ -245,6 +238,7 @@ const RateChart: React.FC = () => {
             <button
               onClick={() => setShowImportPopup(true)}
               className="btn-primary"
+              style={{ gap: 12 }}
             >
               <FileSpreadsheet size={20} />
               Import & Publish
@@ -252,6 +246,7 @@ const RateChart: React.FC = () => {
             <button
               onClick={loadHistory}
               className="btn-secondary"
+              style={{ gap: 12 }}
             >
               <History size={20} />
               History
@@ -273,7 +268,7 @@ const RateChart: React.FC = () => {
             <TableIcon size={18} />
             Current Active Rate Chart
           </div>
-          <div style={{ marginTop: 20, padding: '20px 24px' }}>
+          <div style={{ marginTop: 20 }}>
             <RateTable config={currentConfig} />
           </div>
         </div>
@@ -305,8 +300,8 @@ const RateChart: React.FC = () => {
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
               <div>
-                <label className="label-text" style={{ marginBottom: 8, fontSize: 12, display: 'block' }}>Effective From Date</label>
-                <input type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} className="input-field" style={{ padding: '10px 14px', marginBottom: 0 }} />
+                <label className="label-text" style={{ marginBottom: 8, fontSize: 12, display: 'block' }}>EFFECTIVE FROM DATE</label>
+                <input type="date" value={effectiveDate} onChange={(e) => setEffectiveDate(e.target.value)} className="input-field" style={{ padding: '10px 14px', marginBottom: 20 }} />
               </div>
 
               <div 
@@ -328,25 +323,25 @@ const RateChart: React.FC = () => {
                   <>
                     <FileSpreadsheet className="text-amber-500" size={40} />
                     <p className="text-white font-bold" style={{ fontSize: 15, fontWeight: 600 }}>{selectedFile.name}</p>
-                    <p className="text-slate-400" style={{ fontSize: 12, opacity: 0.6 }}>File selected. Click to change.</p>
+                    <p className="text-slate-400" style={{ fontSize: 12, opacity: 0.6 }}>Ready to publish</p>
                   </>
                 ) : (
                   <>
-                    <Upload className="text-slate-500" size={40} />
-                    <p className="text-white font-bold" style={{ fontSize: 15, fontWeight: 600 }}>Click to Upload Excel or CSV</p>
-                    <p className="text-slate-400" style={{ fontSize: 12, opacity: 0.6 }}>Supports .xlsx, .xls and .csv formats</p>
+                    <Upload className="text-slate-400" size={40} />
+                    <div style={{ fontSize: 15, fontWeight: 600, color: '#f1f5f9' }}>Click to Upload</div>
+                    <p style={{ fontSize: 12, opacity: 0.6, color: '#94a3b8' }}>Supports Excel (.xlsx) or CSV files</p>
                   </>
                 )}
               </div>
 
-              {selectedFile && (
-                <button 
-                  onClick={() => handleFileImport(selectedFile!, effectiveDate)}
-                  className="btn-primary w-full py-3"
-                >
-                  Publish Rate Chart
-                </button>
-              )}
+              <button
+                disabled={!selectedFile}
+                onClick={() => selectedFile && handleFileImport(selectedFile, effectiveDate)}
+                className={`btn-primary w-full ${!selectedFile ? 'opacity-50 cursor-not-allowed' : ''}`}
+                style={{ padding: 14, fontSize: 15 }}
+              >
+                Publish Rate Chart
+              </button>
             </div>
           </div>
         </div>
@@ -355,14 +350,13 @@ const RateChart: React.FC = () => {
       {/* History Modal */}
       {showHistoryModal && (
         <div className="modal-overlay">
-          <div className="modal-box animate-fadeUp" style={{ maxWidth: 600 }}>
-            <div className="flex justify-between items-center mb-8 border-b border-slate-700 pb-4">
+          <div className="modal-box animate-fadeUp" style={{ maxWidth: 500, padding: 28 }}>
+            <div className="flex justify-between items-center mb-8" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16 }}>
               <h2 className="text-xl font-bold text-white">Rate Chart History</h2>
               <button onClick={() => setShowHistoryModal(false)} className="text-slate-400 hover:text-white transition">
                 <X size={24} />
               </button>
             </div>
-
             <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
               {history.map((config, idx) => (
                 <div 
@@ -375,9 +369,9 @@ const RateChart: React.FC = () => {
                 >
                   <div>
                     <p className="text-white font-bold">Effective: {config.effectiveFrom}</p>
-                    <p className="text-slate-400 text-xs">Imported: {new Date(config.importedAt).toLocaleDateString()} {config.fileName ? `(${config.fileName})` : ''}</p>
+                    <p className="text-slate-400 text-xs">Imported: {new Date(config.importedAt).toLocaleDateString()}</p>
                   </div>
-                  <button className="btn-info">View Chart</button>
+                  <button className="text-amber-500 text-sm font-bold">View Chart</button>
                 </div>
               ))}
             </div>
@@ -385,20 +379,17 @@ const RateChart: React.FC = () => {
         </div>
       )}
 
-      {/* View History Config Modal */}
+      {/* View Modal */}
       {viewingConfig && (
         <div className="modal-overlay">
-          <div className="modal-box animate-fadeUp" style={{ maxWidth: '90%', width: 1000 }}>
-            <div className="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
+          <div className="modal-box animate-fadeUp" style={{ maxWidth: '90%', width: 1000, padding: 32 }}>
+            <div className="flex justify-between items-center mb-6" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16 }}>
               <h2 className="text-xl font-bold text-white">Historical Rate Chart</h2>
               <button onClick={() => setViewingConfig(null)} className="text-slate-400 hover:text-white transition">
                 <X size={24} />
               </button>
             </div>
             <RateTable config={viewingConfig} />
-            <div className="mt-6 flex justify-end">
-              <button onClick={() => setViewingConfig(null)} className="btn-secondary">Close View</button>
-            </div>
           </div>
         </div>
       )}

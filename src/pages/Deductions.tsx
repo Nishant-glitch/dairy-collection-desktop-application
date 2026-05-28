@@ -320,13 +320,32 @@ const Deductions: React.FC = () => {
                     style={{ padding: '10px 14px', fontSize: '14px' }}
                   />
                 </div>
-                <button
-                  onClick={handleNextStep}
-                  className="btn-3d"
-                  style={{ marginTop: '24px', padding: '12px', width: '100%', minHeight: '40px', fontSize: '14px', fontWeight: 600 }}
-                >
-                  Next Step
-                </button>
+                <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
+                  <button
+                    onClick={() => setActiveSection(null)}
+                    style={{
+                      flex: 1, padding: '12px',
+                      background: 'rgba(148,163,184,0.1)',
+                      border: '1px solid rgba(148,163,184,0.2)',
+                      borderRadius: 10, color: '#94a3b8',
+                      fontWeight: 600, fontSize: 14, cursor: 'pointer'
+                    }}
+                  >
+                    ✕ Close
+                  </button>
+                  <button
+                    onClick={handleNextStep}
+                    style={{
+                      flex: 2, padding: '12px',
+                      background: 'linear-gradient(135deg, #4ade80, #16a34a)',
+                      border: 'none', borderRadius: 10,
+                      color: '#0f172a', fontWeight: 700,
+                      fontSize: 14, cursor: 'pointer'
+                    }}
+                  >
+                    Next Step →
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -385,76 +404,62 @@ const Deductions: React.FC = () => {
                       />
                     </div>
                   </div>
-                  <div className="p-4 rounded-xl bg-white/5 border border-white/10" style={{ marginTop: '4px', marginBottom: '20px', padding: '12px 16px' }}>
+                  <div style={{ padding: '14px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px', marginBottom: '16px' }}>
                     <div className="flex justify-between items-center">
-                      <span className="text-white/50 text-sm">Total Amount</span>
-                      <span className="text-xl font-black text-green-400">
-                        {formatIndianCurrency(parseFloat(pcs || '0') * parseFloat(entryRate || '0'))}
-                      </span>
+                      <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Total Amount:</span>
+                      <span style={{ color: '#4ade80', fontWeight: 800, fontSize: '18px' }}>₹{(parseFloat(pcs || '0') * parseFloat(entryRate || '0')).toFixed(2)}</span>
                     </div>
                   </div>
-                  <button
-                    onClick={handleSaveEntry}
-                    className="btn-3d"
-                    style={{ padding: '12px', width: '100%', minHeight: '40px', fontSize: '14px', fontWeight: 600 }}
-                  >
-                    {isModifyingEntry ? 'Update Entry' : 'Add Entry'}
-                  </button>
-
-                  <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                    <h3 style={{ color: '#4ade80', fontSize: 12, fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '12px' }}>Farmer Summary</h3>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-white/50">Farmer:</span>
-                        <span className="text-white font-bold">{selectedFarmerCode} - {selectedFarmerName}</span>
-                      </div>
-                      <div className="flex justify-between" style={{ fontSize: '16px' }}>
-                        <span className="text-white/50">Total Deductions:</span>
-                        <span className="text-green-400 font-black">{formatIndianCurrency(totalEntryAmount)}</span>
-                      </div>
-                    </div>
+                  <div className="flex gap-2">
+                    <button onClick={clearEntryForm} className="btn-secondary" style={{ flex: 1, padding: '10px' }}>Clear</button>
+                    <button onClick={handleSaveEntry} className="btn-3d" style={{ flex: 2, padding: '10px' }}>{isModifyingEntry ? 'Update' : 'Add Entry'}</button>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="w-full lg:w-2/3">
-              <div className="glass-card h-full" style={{ padding: '20px' }}>
-                <h2 style={{ fontSize: 18, fontWeight: 'bold', color: 'white', marginBottom: '16px' }}>Entries List</h2>
-                <div className="table-container overflow-x-auto">
-                  <table className="w-full table-3d" style={{ tableLayout: 'fixed' }}>
-                    <thead className="table-header">
-                      <tr>
-                        <th className="px-4 py-3 text-left" style={{ width: '120px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Date</th>
-                        <th className="px-4 py-3 text-left" style={{ width: 'auto', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Item</th>
-                        <th className="px-4 py-3 text-left" style={{ width: '120px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Category</th>
-                        <th className="px-4 py-3 text-right" style={{ width: '70px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Pcs</th>
-                        <th className="px-4 py-3 text-right" style={{ width: '100px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Rate</th>
-                        <th className="px-4 py-3 text-right" style={{ width: '100px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Amount</th>
-                        <th className="px-4 py-3 text-center" style={{ width: '80px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Actions</th>
+              <div className="glass-card overflow-hidden">
+                <div className="p-4 border-b border-white/5 flex justify-between items-center bg-white/5">
+                  <div>
+                    <h3 className="text-white font-bold">{selectedFarmerName} ({selectedFarmerCode})</h3>
+                    <p className="text-slate-400 text-xs">Entries for {entryDate}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-slate-400 text-[10px] uppercase font-bold">Total</p>
+                    <p className="text-lg font-black text-green-400">₹{totalEntryAmount.toFixed(2)}</p>
+                  </div>
+                </div>
+                <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-white/5">
+                        <th className="p-4">Item</th>
+                        <th className="p-4">Category</th>
+                        <th className="p-4">Qty</th>
+                        <th className="p-4">Rate</th>
+                        <th className="p-4">Amount</th>
+                        <th className="p-4 text-center">Actions</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      {grossEntries.map((entry) => (
-                        <tr key={entry.id} className="table-row">
-                          <td className="px-4 py-3 text-white/70" style={{ padding: '12px 16px', fontSize: '14px' }}>{entry.date}</td>
-                          <td className="px-4 py-3 text-white font-bold" style={{ padding: '12px 16px', fontSize: '14px' }}>{entry.item}</td>
-                          <td className="px-4 py-3 text-white/50" style={{ padding: '12px 16px', fontSize: '14px' }}>{entry.category}</td>
-                          <td className="px-4 py-3 text-right text-white" style={{ padding: '12px 16px', fontSize: '14px' }}>{entry.pcs}</td>
-                          <td className="px-4 py-3 text-right text-white/70" style={{ padding: '12px 16px', fontSize: '14px' }}>₹{entry.rate.toFixed(2)}</td>
-                          <td className="px-4 py-3 text-right text-green-400 font-bold" style={{ padding: '12px 16px', fontSize: '14px' }}>₹{entry.amount.toFixed(2)}</td>
-                          <td className="px-4 py-3" style={{ padding: '12px 16px', fontSize: '14px' }}>
+                    <tbody className="divide-y divide-white/5">
+                      {grossEntries.filter(e => e.date === entryDate).map((entry) => (
+                        <tr key={entry.id} className="hover:bg-white/[0.02] transition-colors group">
+                          <td className="p-4 font-bold text-slate-300 text-sm">{entry.item}</td>
+                          <td className="p-4"><span className="bg-white/5 px-2 py-1 rounded text-[10px] text-slate-400">{entry.category}</span></td>
+                          <td className="p-4 text-white text-sm">{entry.pcs}</td>
+                          <td className="p-4 text-slate-400 text-sm">₹{entry.rate.toFixed(2)}</td>
+                          <td className="p-4 font-black text-green-400 text-sm">₹{entry.amount.toFixed(2)}</td>
+                          <td className="p-4">
                             <div className="flex justify-center gap-2">
-                              <button onClick={() => handleModifyEntry(entry)} className="p-1.5 rounded-md bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"><Edit2 size={14} /></button>
-                              <button onClick={() => handleDeleteEntry(entry.id)} className="p-1.5 rounded-md bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"><Trash2 size={14} /></button>
+                              <button onClick={() => handleModifyEntry(entry)} className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all"><Edit2 size={14} /></button>
+                              <button onClick={() => handleDeleteEntry(entry.id)} className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"><Trash2 size={14} /></button>
                             </div>
                           </td>
                         </tr>
                       ))}
-                      {grossEntries.length === 0 && (
-                        <tr>
-                          <td colSpan={7} className="px-4 py-20 text-center text-white/20">No entries found for this farmer.</td>
-                        </tr>
+                      {grossEntries.filter(e => e.date === entryDate).length === 0 && (
+                        <tr><td colSpan={6} className="p-12 text-center text-slate-500 italic">No entries for this date.</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -477,87 +482,62 @@ const Deductions: React.FC = () => {
           <h1 className="page-title" style={{ marginBottom: 0 }}>Farmer Gross Report</h1>
         </div>
 
-        <div className="glass-card" style={{ padding: '20px 24px', marginBottom: '20px' }}>
-          <div className="flex flex-wrap items-end" style={{ gap: '16px' }}>
-            <div className="flex-1 min-w-[200px]">
-              <label className="label-text" style={{ marginBottom: '6px' }}>Farmer Code (Optional)</label>
-              <input
-                type="text"
-                value={reportFarmerCode}
-                onChange={(e) => setReportFarmerCode(e.target.value)}
-                className="input-3d"
-                style={{ padding: '10px 14px', fontSize: '14px' }}
-                placeholder="All Farmers"
-              />
+        <div className="glass-card p-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div>
+              <label className="label-text mb-2">Farmer Code (Optional)</label>
+              <input type="text" value={reportFarmerCode} onChange={(e) => setReportFarmerCode(e.target.value)} className="input-3d" placeholder="All Farmers" />
             </div>
-            <div className="flex-1 min-w-[150px]">
-              <label className="label-text" style={{ marginBottom: '6px' }}>From Date</label>
-              <input
-                type="date"
-                value={fromDate}
-                onChange={(e) => setFromDate(e.target.value)}
-                className="input-3d"
-                style={{ padding: '10px 14px', fontSize: '14px' }}
-              />
+            <div>
+              <label className="label-text mb-2">From Date</label>
+              <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="input-3d" />
             </div>
-            <div className="flex-1 min-w-[150px]">
-              <label className="label-text" style={{ marginBottom: '6px' }}>To Date</label>
-              <input
-                type="date"
-                value={toDate}
-                onChange={(e) => setToDate(e.target.value)}
-                className="input-3d"
-                style={{ padding: '10px 14px', fontSize: '14px' }}
-              />
+            <div>
+              <label className="label-text mb-2">To Date</label>
+              <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="input-3d" />
             </div>
-            <button
-              onClick={handleGenerateGrossReport}
-              className="btn-3d"
-              style={{ alignSelf: 'flex-end', padding: '10px 24px', minHeight: '40px', fontSize: '14px', fontWeight: 600 }}
-            >
-              Generate Report
-            </button>
+            <button onClick={handleGenerateGrossReport} className="btn-3d py-3">Generate Report</button>
           </div>
         </div>
 
-        <div className="glass-card" style={{ padding: '20px 24px' }}>
-          <div className="table-container overflow-x-auto">
-            <table className="w-full table-3d" style={{ tableLayout: 'fixed' }}>
-              <thead className="table-header">
-                <tr>
-                  <th className="px-4 py-3 text-left" style={{ width: '120px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Date</th>
-                  <th className="px-4 py-3 text-left" style={{ width: '200px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Farmer</th>
-                  <th className="px-4 py-3 text-left" style={{ width: 'auto', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Item</th>
-                  <th className="px-4 py-3 text-right" style={{ width: '70px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Pcs</th>
-                  <th className="px-4 py-3 text-right" style={{ width: '100px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Rate</th>
-                  <th className="px-4 py-3 text-right" style={{ width: '110px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reportData.map((entry, idx) => (
-                  <tr key={idx} className="table-row">
-                    <td className="px-4 py-3 text-white/70" style={{ padding: '12px 16px', fontSize: '14px' }}>{entry.date}</td>
-                    <td className="px-4 py-3" style={{ padding: '12px 16px', fontSize: '14px' }}>
-                      <div className="flex flex-col">
-                        <span className="text-white font-bold">{entry.farmerCode}</span>
-                        <span className="text-[10px] text-white/40">{entry.farmerName}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-white font-bold" style={{ padding: '12px 16px', fontSize: '14px' }}>{entry.item}</td>
-                    <td className="px-4 py-3 text-right text-white" style={{ padding: '12px 16px', fontSize: '14px' }}>{entry.pcs}</td>
-                    <td className="px-4 py-3 text-right text-white/70" style={{ padding: '12px 16px', fontSize: '14px' }}>₹{entry.rate.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-right text-green-400 font-bold" style={{ padding: '12px 16px', fontSize: '14px' }}>₹{entry.amount.toFixed(2)}</td>
+        {reportData.length > 0 && (
+          <div className="glass-card overflow-hidden animate-fadeIn">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-white/5 bg-white/5">
+                    <th className="p-4">Date</th>
+                    <th className="p-4">Farmer</th>
+                    <th className="p-4">Item</th>
+                    <th className="p-4">Category</th>
+                    <th className="p-4">Qty</th>
+                    <th className="p-4">Rate</th>
+                    <th className="p-4">Amount</th>
                   </tr>
-                ))}
-                {reportData.length === 0 && (
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {reportData.map((entry, idx) => (
+                    <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="p-4 text-slate-400 text-sm">{entry.date}</td>
+                      <td className="p-4 text-white text-sm font-bold">{entry.farmerName} <span className="text-slate-500 text-xs ml-1">({entry.farmerCode})</span></td>
+                      <td className="p-4 text-slate-300 text-sm">{entry.item}</td>
+                      <td className="p-4"><span className="bg-white/5 px-2 py-1 rounded text-[10px] text-slate-400">{entry.category}</span></td>
+                      <td className="p-4 text-white text-sm">{entry.pcs}</td>
+                      <td className="p-4 text-slate-400 text-sm">₹{entry.rate.toFixed(2)}</td>
+                      <td className="p-4 font-black text-green-400 text-sm">₹{entry.amount.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="bg-white/5">
                   <tr>
-                    <td colSpan={6} className="px-4 py-20 text-center text-white/20">No report data found.</td>
+                    <td colSpan={6} className="p-4 text-right text-slate-400 font-bold uppercase text-[10px]">Total Amount</td>
+                    <td className="p-4 font-black text-green-400 text-lg">₹{reportData.reduce((sum, e) => sum + e.amount, 0).toFixed(2)}</td>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </tfoot>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     );
   }
@@ -572,57 +552,48 @@ const Deductions: React.FC = () => {
           <h1 className="page-title" style={{ marginBottom: 0 }}>Monthly Deduction Summary</h1>
         </div>
 
-        <div className="glass-card" style={{ padding: '20px 24px', marginBottom: '20px' }}>
-          <div className="flex items-end" style={{ gap: '16px' }}>
-            <div style={{ flex: 1 }}>
-              <label className="label-text" style={{ marginBottom: '6px' }}>Select Month</label>
-              <input
-                type="month"
-                value={deductionMonth}
-                onChange={(e) => setDeductionMonth(e.target.value)}
-                className="input-3d"
-                style={{ padding: '10px 14px', fontSize: '14px' }}
-              />
+        <div className="glass-card p-6 mb-8">
+          <div className="flex flex-col md:flex-row gap-4 items-end">
+            <div className="flex-1">
+              <label className="label-text mb-2">Select Month</label>
+              <input type="month" value={deductionMonth} onChange={(e) => setDeductionMonth(e.target.value)} className="input-3d" />
             </div>
-            <button
-              onClick={handleGenerateDeductionReport}
-              className="btn-3d"
-              style={{ padding: '10px 24px', minHeight: '40px', fontSize: '14px', fontWeight: 600 }}
-            >
-              Generate Summary
-            </button>
+            <button onClick={handleGenerateDeductionReport} className="btn-3d py-3 px-8">Generate Summary</button>
           </div>
         </div>
 
-        <div className="glass-card" style={{ padding: '20px 24px' }}>
-          <div className="table-container overflow-x-auto">
-            <table className="w-full table-3d">
-              <thead className="table-header">
-                <tr>
-                  <th className="px-4 py-3 text-left" style={{ width: '150px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Farmer Code</th>
-                  <th className="px-4 py-3 text-left" style={{ width: 'auto', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Farmer Name</th>
-                  <th className="px-4 py-3 text-right" style={{ width: '130px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Total Entries</th>
-                  <th className="px-4 py-3 text-right" style={{ width: '160px', padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Total Deduction</th>
-                </tr>
-              </thead>
-              <tbody>
-                {deductionReportData.map((row, idx) => (
-                  <tr key={idx} className="table-row">
-                    <td className="px-4 py-3 text-white font-bold" style={{ padding: '12px 16px', fontSize: '14px' }}>{row.farmerCode}</td>
-                    <td className="px-4 py-3 text-white/70" style={{ padding: '12px 16px', fontSize: '14px' }}>{row.farmerName}</td>
-                    <td className="px-4 py-3 text-right text-white" style={{ padding: '12px 16px', fontSize: '14px' }}>{row.totalEntries}</td>
-                    <td className="px-4 py-3 text-right text-green-400 font-bold" style={{ padding: '12px 16px', fontSize: '14px' }}>₹{row.totalAmount.toFixed(2)}</td>
+        {deductionReportData.length > 0 && (
+          <div className="glass-card overflow-hidden animate-fadeIn">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-white/5 bg-white/5">
+                    <th className="p-4">Farmer Code</th>
+                    <th className="p-4">Farmer Name</th>
+                    <th className="p-4">Total Entries</th>
+                    <th className="p-4">Total Deduction Amount</th>
                   </tr>
-                ))}
-                {deductionReportData.length === 0 && (
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {deductionReportData.map((row, idx) => (
+                    <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="p-4"><span className="bg-white/5 px-2 py-1 rounded font-mono text-white text-xs">{row.farmerCode}</span></td>
+                      <td className="p-4 text-white text-sm font-bold">{row.farmerName}</td>
+                      <td className="p-4 text-slate-400 text-sm">{row.totalEntries} items</td>
+                      <td className="p-4 font-black text-red-400 text-sm">₹{row.totalAmount.toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="bg-white/5">
                   <tr>
-                    <td colSpan={4} className="px-4 py-20 text-center text-white/20">No deduction data found for this month.</td>
+                    <td colSpan={3} className="p-4 text-right text-slate-400 font-bold uppercase text-[10px]">Grand Total</td>
+                    <td className="p-4 font-black text-red-400 text-lg">₹{deductionReportData.reduce((sum, row) => sum + row.totalAmount, 0).toFixed(2)}</td>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </tfoot>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     );
   }

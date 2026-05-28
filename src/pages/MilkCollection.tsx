@@ -137,10 +137,14 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     if (config) {
       const fatVals = config.fatValues.map(Number).sort((a,b) => a-b);
       const snfVals = config.snfValues.map(Number).sort((a,b) => a-b);
-      setFatMin(fatVals[0]);
-      setFatMax(fatVals[fatVals.length-1]);
-      setSnfMin(snfVals[0]);
-      setSnfMax(snfVals[snfVals.length-1]);
+      if (fatVals.length > 0) {
+        setFatMin(Math.min(...fatVals));
+        setFatMax(Math.max(...fatVals));
+      }
+      if (snfVals.length > 0) {
+        setSnfMin(Math.min(...snfVals));
+        setSnfMax(Math.max(...snfVals));
+      }
     }
 
     setShowSessionSetup(false);
@@ -329,7 +333,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
           // Show warning - do NOT allow fresh save
           setDuplicateWarning({
             show: true,
-            message: `\u26a0\ufe0f Entry already exists for ${existing.farmerName}!\nQty: ${existing.qty}L | FAT: ${existing.fat}% | SNF: ${existing.snf}% | Amount: \u20b9${existing.amount}\n\nUse Modify (\u270f\ufe0f) or Delete (\ud83d\uddd1\ufe0f) from the table.`
+            message: `\u26a0\ufe0f Entry already exists for ${existing.farmerName}!\nQty: ${existing.qty}L | FAT: ${existing.fat}% | SNF: ${existing.snf}% | Amount: \u20b9${existing.amount.toFixed(2)}\n\nUse Modify (\u270f\ufe0f) or Delete (\ud83d\uddd1\ufe0f) from the table.`
           });
           setFarmerName(existing.farmerName);
           setIsModifying(true);
@@ -385,21 +389,18 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
               </div>
             </div>
 
-            <div className="flex items-center gap-6" style={{ marginTop: '4px', marginBottom: '20px', gap: '20px' }}>
-              <label className="flex items-center gap-2 cursor-pointer group" style={{ fontSize: '14px' }}>
-                <input type="checkbox" checked={printEnabled} onChange={(e) => setPrintEnabled(e.target.checked)} className="w-4 h-4 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-blue-500/30" />
-                <span className="text-white/70 group-hover:text-white transition-colors">Print Slips</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer group" style={{ fontSize: '14px' }}>
-                <input type="checkbox" checked={smsEnabled} onChange={(e) => setSmsEnabled(e.target.checked)} className="w-4 h-4 rounded border-white/10 bg-white/5 text-blue-500 focus:ring-blue-500/30" />
-                <span className="text-white/70 group-hover:text-white transition-colors">Send SMS</span>
-              </label>
+            <div className="flex flex-col gap-3" style={{ marginTop: '24px' }}>
+              <button onClick={() => setPrintEnabled(!printEnabled)} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${printEnabled ? 'bg-amber-500/10 border-amber-500/30 text-amber-500' : 'bg-white/5 border-white/10 text-white/40'}`}>
+                <div className="flex items-center gap-3"><Printer size={18} /><span className="text-sm font-bold">Auto-Print Slip</span></div>
+                <div className={`w-10 h-5 rounded-full relative transition-all ${printEnabled ? 'bg-amber-500' : 'bg-white/10'}`}><div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${printEnabled ? 'right-1' : 'left-1'}`}></div></div>
+              </button>
+              <button onClick={() => setSmsEnabled(!smsEnabled)} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${smsEnabled ? 'bg-blue-500/10 border-blue-500/30 text-blue-500' : 'bg-white/5 border-white/10 text-white/40'}`}>
+                <div className="flex items-center gap-3"><MessageSquare size={18} /><span className="text-sm font-bold">Send SMS Alert</span></div>
+                <div className={`w-10 h-5 rounded-full relative transition-all ${smsEnabled ? 'bg-blue-500' : 'bg-white/10'}`}><div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${smsEnabled ? 'right-1' : 'left-1'}`}></div></div>
+              </button>
             </div>
 
-            <div className="flex gap-3" style={{ marginTop: '24px', display: 'flex', gap: '12px' }}>
-              <button onClick={() => onNavigate('dashboard')} className="btn-secondary" style={{ flex: 1, padding: '12px', minHeight: '40px', fontSize: '14px', fontWeight: 600 }}>Cancel</button>
-              <button onClick={handleStartSession} className="btn-3d" style={{ flex: 2, padding: '12px', minHeight: '40px', fontSize: '14px', fontWeight: 600 }}>Start Collection</button>
-            </div>
+            <button onClick={handleStartSession} className="btn-3d w-full" style={{ marginTop: '32px', padding: '14px', fontSize: '16px' }}>Start Collection Session</button>
           </div>
         </div>
       </div>
@@ -407,231 +408,209 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   }
 
   return (
-    <div className="page-wrapper animate-fadeIn" style={{ padding: '20px' }}>
-      <div className="flex flex-col lg:flex-row" style={{ gap: '20px' }}>
-        {/* Left Panel: Entry Form */}
-        <div className="w-full lg:w-1/3">
-          <div className="glass-card" style={{ padding: '20px 24px' }}>
-            <div className="flex items-center justify-between" style={{ marginBottom: '20px' }}>
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Droplet className="text-blue-400" size={20} />
-                New Entry
-              </h2>
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10">
-                <div className={`w-2 h-2 rounded-full ${sessionShift === 'Morning' ? 'bg-blue-400' : 'bg-orange-400'}`} />
-                <span className="text-xs font-bold text-white/70">{sessionShift}</span>
-              </div>
-            </div>
+    <div className="page-wrapper animate-fadeIn">
+      {/* Session Info Header */}
+      <div className="flex items-center justify-between mb-8 glass-card p-4 border-l-4 border-l-amber-500">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2">
+            <Calendar className="text-amber-500" size={20} />
+            <span className="text-white font-bold">{sessionDate}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock className="text-amber-500" size={20} />
+            <span className="text-white font-bold">{sessionShift}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Zap className="text-amber-500" size={20} />
+            <span className="text-white font-bold">{sessionMode} Mode</span>
+          </div>
+        </div>
+        <button onClick={() => setShowSessionSetup(true)} className="btn-secondary py-1 px-4 text-xs">Change Session</button>
+      </div>
 
-            <div className="space-y-0">
-              <div className="relative" style={{ marginBottom: '16px' }}>
-                <label className="label-text" style={{ marginBottom: '8px', fontSize: '12px' }}>Farmer Code</label>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Entry Form */}
+        <div className="lg:col-span-1">
+          <div className="glass-card p-6 sticky top-24">
+            <h2 className="text-xl font-black text-white mb-6 flex items-center gap-2">
+              <Droplet className="text-blue-400" /> New Entry
+            </h2>
+            
+            <div className="space-y-5">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="label-text">Farmer Code</label>
+                  {warningMessage && <span className="text-[10px] text-amber-500 animate-pulse font-bold">{warningMessage}</span>}
+                </div>
                 <input
                   ref={farmerCodeRef}
-                  type="text"
+                  type="number"
                   value={farmerCode}
                   onChange={(e) => handleFarmerCodeChange(e.target.value)}
                   onKeyDown={handleFarmerCodeKeyDown}
-                  className={`input-3d ${warningMessage ? 'border-orange-500/50' : ''}`}
-                  style={{ padding: '11px 14px' }}
+                  className={`input-3d ${farmerFound ? 'border-green-500/50 bg-green-500/5' : ''}`}
                   placeholder="Enter Code"
-                  autoFocus
                 />
-                {warningMessage && (
-                  <p className="absolute -bottom-5 left-0 text-[10px] text-orange-400 font-medium">{warningMessage}</p>
+                {farmerName && (
+                  <div className="mt-2 p-2 rounded-lg bg-white/5 border border-white/10 flex items-center gap-2 animate-fadeIn">
+                    <CheckCircle size={14} className="text-green-500" />
+                    <span className="text-white font-bold text-sm truncate">{farmerName}</span>
+                  </div>
                 )}
               </div>
 
-              <div style={{ marginBottom: '16px' }}>
-                <label className="label-text" style={{ marginBottom: '8px', fontSize: '12px' }}>Farmer Name</label>
-                <input
-                  type="text"
-                  value={farmerName}
-                  readOnly
-                  className="input-3d bg-white/5 text-white/50"
-                  style={{ padding: '11px 14px' }}
-                  placeholder="Farmer Name"
-                />
-              </div>
-
               {duplicateWarning.show && (
-                <div style={{
-                  background: 'rgba(245,158,11,0.15)',
-                  border: '1px solid rgba(245,158,11,0.4)',
-                  borderRadius: 10, padding: '12px 14px',
-                  marginBottom: 12,
-                  fontSize: 13, color: '#fcd34d',
-                  whiteSpace: 'pre-line'
-                }}>
+                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs whitespace-pre-line leading-relaxed animate-bounce">
                   {duplicateWarning.message}
                 </div>
               )}
 
-              <div className="grid grid-cols-2" style={{ gap: '12px', marginBottom: '16px' }}>
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="label-text" style={{ marginBottom: '8px', fontSize: '12px' }}>Quantity (L)</label>
+                  <label className="label-text mb-2">Quantity (L)</label>
                   <input
                     ref={qtyRef}
                     type="number"
+                    step="0.1"
                     value={qty}
                     onChange={(e) => setQty(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && fatRef.current?.focus()}
                     className="input-3d"
-                    style={{ padding: '11px 14px' }}
-                    placeholder="0.00"
+                    placeholder="0.0"
                   />
                 </div>
                 <div>
-                  <label className="label-text" style={{ marginBottom: '8px', fontSize: '12px' }}>FAT %</label>
+                  <label className="label-text mb-2">FAT (%)</label>
                   <input
                     ref={fatRef}
                     type="number"
+                    step="0.1"
                     value={fat}
                     onChange={(e) => setFat(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && snfClrRef.current?.focus()}
                     className="input-3d"
-                    style={{ padding: '11px 14px' }}
                     placeholder="0.0"
                   />
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
-                    Range: {fatMin} - {fatMax}
-                  </div>
                 </div>
               </div>
 
-              <div style={{ marginBottom: '16px' }}>
-                <label className="label-text" style={{ marginBottom: '8px', fontSize: '12px' }}>{sessionMode} %</label>
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="label-text">{sessionMode} (%)</label>
+                  <span className="text-[10px] text-slate-500 font-bold">Range: {snfMin} - {snfMax}</span>
+                </div>
                 <input
                   ref={snfClrRef}
                   type="number"
+                  step="0.1"
                   value={snfClr}
                   onChange={(e) => setSnfClr(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSaveOrUpdate()}
                   className="input-3d"
-                  style={{ padding: '11px 14px' }}
                   placeholder="0.0"
                 />
-                <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 4 }}>
-                  Range: {snfMin} - {snfMax}
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-900/50 border border-white/5 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Rate / Liter</span>
+                  <span className="text-white font-black text-lg">₹{rate.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-white/5">
+                  <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Amount</span>
+                  <span className="text-green-400 font-black text-2xl">₹{amount.toFixed(2)}</span>
                 </div>
               </div>
 
-              <div className="rounded-xl bg-white/5 border border-white/10">
-                <div className="flex justify-between items-center" style={{ padding: '10px 14px', marginBottom: '8px' }}>
-                  <span className="text-white/50 text-sm">Rate per Liter</span>
-                  <span className="text-white font-bold">₹{rate.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between items-center border-t border-white/5" style={{ padding: '10px 14px', marginBottom: '20px' }}>
-                  <span className="text-white/50 text-sm">Total Amount</span>
-                  <span className="text-2xl font-black text-green-400">{formatIndianCurrency(amount)}</span>
-                </div>
-              </div>
-
-              <div className="flex" style={{ gap: '12px', paddingTop: '8px' }}>
-                <button onClick={clearForm} className="btn-secondary" style={{ flex: 1, padding: '12px' }}>Clear</button>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={clearForm}
+                  className="btn-secondary flex-1 py-3"
+                >
+                  Clear
+                </button>
                 <button
                   onClick={handleSaveOrUpdate}
-                  className={`btn-3d relative overflow-hidden ${showSavedMessage ? 'bg-green-500' : ''}`}
-                  style={{ flex: 2, padding: '12px' }}
+                  className={`btn-3d flex-[2] py-3 ${isModifying ? 'from-amber-500 to-orange-600' : ''}`}
                 >
-                  {showSavedMessage ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <CheckCircle size={18} /> Saved
-                    </span>
-                  ) : (
-                    isModifying ? 'Update Entry' : 'Save Entry'
-                  )}
+                  {isModifying ? 'Update Entry' : 'Save Entry'}
                 </button>
-              </div>
-            </div>
-
-            {/* Session Summary section */}
-            <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-              <h3 className="font-bold text-white/40 uppercase tracking-wider" style={{ marginBottom: '14px', fontSize: '13px' }}>Session Summary</h3>
-              <div className="grid grid-cols-2" style={{ gap: '12px' }}>
-                <div className="rounded-xl bg-white/5 border border-white/10" style={{ padding: '14px 16px', borderRadius: '10px' }}>
-                  <p className="text-white/40 uppercase" style={{ fontSize: '11px', marginBottom: '4px' }}>Total Qty</p>
-                  <p className="text-white" style={{ fontSize: '22px', fontWeight: 700 }}>{totalQty.toFixed(2)} <span className="text-xs font-normal text-white/40">L</span></p>
-                </div>
-                <div className="rounded-xl bg-white/5 border border-white/10" style={{ padding: '14px 16px', borderRadius: '10px' }}>
-                  <p className="text-white/40 uppercase" style={{ fontSize: '11px', marginBottom: '4px' }}>Total Amount</p>
-                  <p className="text-green-400" style={{ fontSize: '22px', fontWeight: 700 }}>₹{totalAmount.toFixed(0)}</p>
-                </div>
-                <div className="rounded-xl bg-white/5 border border-white/10" style={{ padding: '14px 16px', borderRadius: '10px' }}>
-                  <p className="text-white/40 uppercase" style={{ fontSize: '11px', marginBottom: '4px' }}>Avg FAT</p>
-                  <p className="text-blue-400" style={{ fontSize: '22px', fontWeight: 700 }}>{avgFat.toFixed(2)}%</p>
-                </div>
-                <div className="rounded-xl bg-white/5 border border-white/10" style={{ padding: '14px 16px', borderRadius: '10px' }}>
-                  <p className="text-white/40 uppercase" style={{ fontSize: '11px', marginBottom: '4px' }}>Avg {sessionMode}</p>
-                  <p className="text-purple-400" style={{ fontSize: '22px', fontWeight: 700 }}>{avgSnfClr.toFixed(2)}%</p>
-                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right Panel: Entries List */}
-        <div className="w-full lg:w-2/3">
-          <div className="glass-card h-full flex flex-col" style={{ padding: '20px 24px' }}>
-            <div className="flex items-center justify-between" style={{ marginBottom: '4px' }}>
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
-                  <Clock size={20} />
-                </div>
-                <div>
-                  <h2 className="font-bold text-white" style={{ fontSize: '20px' }}>Recent Entries</h2>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowSessionSetup(true)}
-                className="p-2 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 transition-colors"
-                title="Change Session"
-              >
-                <Calendar size={20} />
-              </button>
+        {/* Entries Table & Summary */}
+        <div className="lg:col-span-2 space-y-8">
+          {/* Stats Summary */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="glass-card p-4 border-b-4 border-b-blue-500">
+              <p className="text-slate-400 text-[10px] font-bold uppercase mb-1">Total Quantity</p>
+              <p className="text-2xl font-black text-white">{totalQty.toFixed(1)} <span className="text-xs text-slate-500">L</span></p>
             </div>
-            <p className="text-white/40" style={{ marginBottom: '16px', fontSize: '12px' }}>{sessionDate} | {sessionShift} Shift</p>
+            <div className="glass-card p-4 border-b-4 border-b-green-500">
+              <p className="text-slate-400 text-[10px] font-bold uppercase mb-1">Total Amount</p>
+              <p className="text-2xl font-black text-green-400">₹{totalAmount.toFixed(2)}</p>
+            </div>
+            <div className="glass-card p-4 border-b-4 border-b-amber-500">
+              <p className="text-slate-400 text-[10px] font-bold uppercase mb-1">Avg FAT</p>
+              <p className="text-2xl font-black text-white">{avgFat.toFixed(2)} <span className="text-xs text-slate-500">%</span></p>
+            </div>
+            <div className="glass-card p-4 border-b-4 border-b-purple-500">
+              <p className="text-slate-400 text-[10px] font-bold uppercase mb-1">Avg {sessionMode}</p>
+              <p className="text-2xl font-black text-white">{avgSnfClr.toFixed(2)} <span className="text-xs text-slate-500">%</span></p>
+            </div>
+          </div>
 
-            <div className="flex-1 overflow-auto">
-              <table className="w-full table-3d" style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse' }}>
-                <thead className="table-header sticky top-0 z-10">
-                  <tr>
-                    <th style={{ width: '22%', textAlign: 'left', padding: '10px 12px', fontSize: '14px', fontWeight: 700, whiteSpace: 'nowrap' }}>Farmer</th>
-                    <th style={{ width: '10%', textAlign: 'right', padding: '10px 12px', fontSize: '14px', fontWeight: 700, whiteSpace: 'nowrap' }}>Qty</th>
-                    <th style={{ width: '10%', textAlign: 'right', padding: '10px 12px', fontSize: '14px', fontWeight: 700, whiteSpace: 'nowrap' }}>FAT</th>
-                    <th style={{ width: '10%', textAlign: 'right', padding: '10px 12px', fontSize: '14px', fontWeight: 700, whiteSpace: 'nowrap' }}>{sessionMode}</th>
-                    <th style={{ width: '14%', textAlign: 'right', padding: '10px 12px', fontSize: '14px', fontWeight: 700, whiteSpace: 'nowrap' }}>Rate</th>
-                    <th style={{ width: '18%', textAlign: 'right', padding: '10px 12px', fontSize: '14px', fontWeight: 700, whiteSpace: 'nowrap' }}>Amount</th>
-                    <th style={{ width: '16%', textAlign: 'center', padding: '10px 12px', fontSize: '14px', fontWeight: 700, whiteSpace: 'nowrap' }}>Actions</th>
+          {/* Recent Entries Table */}
+          <div className="glass-card overflow-hidden">
+            <div className="p-4 border-b border-white/5 flex justify-between items-center">
+              <h3 className="text-white font-bold flex items-center gap-2">
+                <Clock size={16} className="text-amber-500" /> Recent Entries
+              </h3>
+              <span className="bg-white/5 text-slate-400 px-3 py-1 rounded-full text-[10px] font-bold">
+                {todayEntries.length} Records
+              </span>
+            </div>
+            <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+              <table className="w-full text-left border-collapse">
+                <thead className="sticky top-0 bg-slate-900/95 backdrop-blur-sm z-10">
+                  <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-white/5">
+                    <th className="p-4 font-black">Code</th>
+                    <th className="p-4 font-black">Farmer Name</th>
+                    <th className="p-4 font-black">Qty</th>
+                    <th className="p-4 font-black">FAT</th>
+                    <th className="p-4 font-black">{sessionMode}</th>
+                    <th className="p-4 font-black">Rate</th>
+                    <th className="p-4 font-black">Amount</th>
+                    <th className="p-4 font-black text-center">Actions</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {todayEntries.sort((a, b) => b.timestamp - a.timestamp).map((entry) => (
-                    <tr key={entry.farmerCode} className="table-row group">
-                      <td style={{ width: '22%', padding: '10px 12px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                        <div style={{ fontWeight: 700, fontSize: 15 }}>{entry.farmerCode}</div>
-                        <div style={{ fontSize: 12, opacity: 0.6, marginTop: 2 }}>{entry.farmerName}</div>
-                      </td>
-                      <td style={{ width: '10%', textAlign: 'right', padding: '10px 12px', fontSize: '15px', verticalAlign: 'middle', whiteSpace: 'nowrap', color: 'white', fontWeight: 'bold' }}>{entry.qty.toFixed(2)}</td>
-                      <td style={{ width: '10%', textAlign: 'right', padding: '10px 12px', fontSize: '15px', verticalAlign: 'middle', whiteSpace: 'nowrap', color: '#60a5fa' }}>{entry.fat.toFixed(1)}</td>
-                      <td style={{ width: '10%', textAlign: 'right', padding: '10px 12px', fontSize: '15px', verticalAlign: 'middle', whiteSpace: 'nowrap', color: '#c084fc' }}>{(entry.snf || entry.clr || 0).toFixed(1)}</td>
-                      <td style={{ width: '14%', textAlign: 'right', padding: '10px 12px', fontSize: '15px', verticalAlign: 'middle', whiteSpace: 'nowrap', color: '#f1f5f9' }}>₹{entry.rate.toFixed(2)}</td>
-                      <td style={{ width: '18%', textAlign: 'right', padding: '10px 12px', fontSize: '15px', verticalAlign: 'middle', whiteSpace: 'nowrap', color: '#4ade80', fontWeight: 700 }}>₹{entry.amount.toFixed(2)}</td>
-                      <td style={{ width: '16%', textAlign: 'center', padding: '10px 12px', fontSize: '15px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
-                        <div className="flex items-center justify-center" style={{ gap: '8px' }}>
+                <tbody className="divide-y divide-white/5">
+                  {todayEntries.sort((a,b) => b.timestamp - a.timestamp).map((entry) => (
+                    <tr key={entry.farmerCode} className="hover:bg-white/[0.02] transition-colors group">
+                      <td className="p-4"><span className="bg-white/5 px-2 py-1 rounded font-mono text-white text-xs">{entry.farmerCode}</span></td>
+                      <td className="p-4 font-bold text-slate-300 text-sm">{entry.farmerName}</td>
+                      <td className="p-4 font-black text-white text-sm">{entry.qty.toFixed(1)}</td>
+                      <td className="p-4 text-slate-400 text-sm">{entry.fat.toFixed(1)}</td>
+                      <td className="p-4 text-slate-400 text-sm">{(entry.snf || entry.clr || 0).toFixed(1)}</td>
+                      <td className="p-4 text-slate-400 text-sm">₹{entry.rate.toFixed(2)}</td>
+                      <td className="p-4 font-black text-green-400 text-sm">₹{entry.amount.toFixed(2)}</td>
+                      <td className="p-4">
+                        <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => handleModify(entry)}
-                            className="p-1.5 rounded-md bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
+                            className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all"
                             title="Edit"
                           >
-                            <Edit2 size={16} />
+                            <Edit2 size={14} />
                           </button>
                           <button
                             onClick={() => handleDelete(entry.farmerCode)}
-                            className="p-1.5 rounded-md bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                            className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
                             title="Delete"
                           >
-                            <Trash2 size={16} />
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       </td>
@@ -639,11 +618,8 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                   ))}
                   {todayEntries.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="text-center" style={{ padding: '40px', fontSize: '14px' }}>
-                        <div className="flex flex-col items-center gap-3 text-white/20">
-                          <Zap size={48} strokeWidth={1} />
-                          <p>No entries for this session yet.</p>
-                        </div>
+                      <td colSpan={8} className="p-12 text-center text-slate-500 font-medium italic">
+                        No entries recorded for this session yet.
                       </td>
                     </tr>
                   )}
@@ -653,6 +629,13 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
           </div>
         </div>
       </div>
+
+      {showSavedMessage && (
+        <div className="fixed bottom-8 right-8 bg-green-500 text-white px-6 py-3 rounded-2xl shadow-2xl shadow-green-500/40 flex items-center gap-3 animate-fadeUp z-50">
+          <CheckCircle size={20} />
+          <span className="font-bold">Entry Saved Successfully!</span>
+        </div>
+      )}
     </div>
   );
 };
