@@ -362,8 +362,15 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
 
   if (showSessionSetup) {
     return (
-      <div className="modal-overlay">
-        <div className="modal-3d animate-fadeIn" style={{ padding: '28px', maxWidth: '420px', width: '90%' }}>
+      <div style={{
+        minHeight: 'calc(100vh - 56px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px',
+        background: 'transparent'
+      }}>
+        <div className="modal-3d animate-fadeIn" style={{ padding: '32px', maxWidth: '460px', width: '100%' }}>
           <h2 className="modal-title" style={{ color: 'white', fontWeight: 800, fontSize: 18, marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Start Collection Session</h2>
           
           <div className="space-y-4">
@@ -408,9 +415,9 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   }
 
   return (
-    <div className="page-wrapper animate-fadeIn">
+    <div style={{ padding: '20px 28px', maxWidth: '1400px', margin: '0 auto' }} className="animate-fadeIn">
       {/* Session Info Header */}
-      <div className="flex items-center justify-between mb-8 glass-card p-4 border-l-4 border-l-amber-500">
+      <div className="flex items-center justify-between glass-card p-4 border-l-4 border-l-amber-500" style={{ marginBottom: '20px' }}>
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
             <Calendar className="text-amber-500" size={20} />
@@ -428,9 +435,9 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
         <button onClick={() => setShowSessionSetup(true)} className="btn-secondary py-1 px-4 text-xs">Change Session</button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '24px', alignItems: 'start' }}>
         {/* Entry Form */}
-        <div className="lg:col-span-1">
+        <div>
           <div className="glass-card p-6 sticky top-24">
             <h2 className="text-xl font-black text-white mb-6 flex items-center gap-2">
               <Droplet className="text-blue-400" /> New Entry
@@ -541,7 +548,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
         </div>
 
         {/* Entries Table & Summary */}
-        <div className="lg:col-span-2 space-y-8">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Stats Summary */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="glass-card p-4 border-b-4 border-b-blue-500">
