@@ -67,40 +67,42 @@ const RateChart: React.FC = () => {
   };
 
   const handleFileImport = (file: File, effectiveFrom: string) => {
+    if (!file) return;
+    
     const reader = new FileReader();
     const isCSV = file.name.toLowerCase().endsWith('.csv');
-    
+
     reader.onload = async (e) => {
       try {
-        let json: any[][];
-        
+        let json: any[][] = [];
+
         if (isCSV) {
-          // Handle CSV
           const text = e.target?.result as string;
-          const lines = text.split('\n').filter(line => line.trim());
-          json = lines.map(line => 
-            line.split(',').map(cell => cell.trim())
-          );
+          const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
+          json = lines.map(line => line.split(',').map(c => c.trim()));
         } else {
-          // Handle Excel
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: 'array' });
           const sheet = workbook.Sheets[workbook.SheetNames[0]];
-          json = XLSX.utils.sheet_to_json(sheet, { 
-            header: 1, defval: 0, raw: false 
+          json = XLSX.utils.sheet_to_json(sheet, {
+            header: 1, defval: 0, raw: false,
           }) as any[][];
         }
+
+        console.log('Total rows parsed:', json.length);
+        console.log('First row sample:', json[0]?.slice(0, 5));
+        console.log('Second row sample:', json[1]?.slice(0, 5));
 
         if (!json || json.length < 2) {
           alert('File is empty or invalid format!');
           return;
         }
 
-        // Parse SNF values from row 0 (skip first cell)
+        // Parse SNF from first row (skip col 0)
         const snfValues: number[] = [];
         for (let i = 1; i < json[0].length; i++) {
-          const val = parseFloat(String(json[0][i]));
-          if (!isNaN(val)) snfValues.push(val);
+          const v = parseFloat(String(json[0][i]));
+          if (!isNaN(v)) snfValues.push(v);
         }
 
         // Parse FAT rows
@@ -120,8 +122,11 @@ const RateChart: React.FC = () => {
           });
         }
 
+        console.log('FAT values count:', fatValues.length);
+        console.log('SNF values count:', snfValues.length);
+
         if (fatValues.length === 0 || snfValues.length === 0) {
-          alert('Could not parse values. Check file format.');
+          alert('Could not parse FAT or SNF values!');
           return;
         }
 
@@ -141,13 +146,15 @@ const RateChart: React.FC = () => {
         setCurrentConfig(config);
         setSelectedFile(null);
         setShowImportPopup(false);
-        alert(`✅ Rate chart published!\nFAT: ${fatValues.length} rows | SNF: ${snfValues.length} cols`);
+        alert(`✅ Rate chart published!\nFAT rows: ${fatValues.length} | SNF cols: ${snfValues.length}`);
 
       } catch (err: any) {
-        console.error(err);
-        alert('Error: ' + err.message);
+        console.error('Import error:', err);
+        alert('Import error: ' + err.message);
       }
     };
+
+    reader.onerror = () => alert('Failed to read file!');
 
     if (isCSV) {
       reader.readAsText(file);
@@ -332,21 +339,12 @@ const RateChart: React.FC = () => {
 
               {selectedFile && (
                 <button 
-                  onClick={() => handleFileImport(selectedFile, effectiveDate)}
+                  onClick={() => handleFileImport(selectedFile!, effectiveDate)}
                   className="btn-primary w-full py-3"
                 >
                   Publish Rate Chart
                 </button>
               )}
-
-              <div className="p-4 glass-card" style={{ background: 'rgba(245,158,11,0.05)' }}>
-                <h4 className="text-amber-500 text-xs font-bold uppercase mb-2">Required Format</h4>
-                <p className="text-slate-400 text-xs leading-relaxed">
-                  First row: SNF values (starting from 2nd column)<br/>
-                  First column: FAT values (starting from 2nd row)<br/>
-                  Cells: Rate per liter
-                </p>
-              </div>
             </div>
           </div>
         </div>
