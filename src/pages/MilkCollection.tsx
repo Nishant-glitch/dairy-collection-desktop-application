@@ -200,16 +200,41 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     const fatVal = parseFloat(fat);
     const snfVal = parseFloat(snfClr);
 
-    // FAT range check
-    if (fatVal < fatMin || fatVal > fatMax) {
-      alert(`❌ Invalid FAT value!\nAllowed range: ${fatMin} to ${fatMax}\nEntered: ${fatVal}`);
+    const FIXED_FAT_MIN = 2.5;
+    const FIXED_FAT_MAX = 15.0;
+    const FIXED_SNF_MIN = 7.5;
+    const FIXED_SNF_MAX = 15.0;
+
+    if (fatVal < FIXED_FAT_MIN || fatVal > FIXED_FAT_MAX) {
+      const popup = document.createElement('div');
+      popup.innerHTML = `
+        <div style="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px)">
+          <div style="background:linear-gradient(145deg,#1a0a0a,#2d1010);border:1px solid rgba(248,113,113,0.4);border-radius:16px;padding:32px;max-width:360px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
+            <div style="font-size:40px;margin-bottom:12px">❌</div>
+            <h3 style="color:#f87171;font-size:18px;font-weight:800;margin-bottom:8px">Invalid FAT Value</h3>
+            <p style="color:rgba(255,255,255,0.7);font-size:14px;margin-bottom:6px">Allowed Range: <strong style="color:white">${FIXED_FAT_MIN} – ${FIXED_FAT_MAX}</strong></p>
+            <p style="color:rgba(255,255,255,0.5);font-size:13px;margin-bottom:24px">Entered: <strong style="color:#f87171">${fatVal}</strong></p>
+            <button onclick="this.closest('div[style*=inset]').remove()" style="background:linear-gradient(135deg,#ef4444,#b91c1c);border:none;border-radius:10px;color:white;font-weight:700;font-size:14px;padding:12px 32px;cursor:pointer;width:100%">OK</button>
+          </div>
+        </div>`;
+      document.body.appendChild(popup.firstElementChild!);
       fatRef.current?.focus();
       return;
     }
 
-    // SNF range check
-    if (snfVal < snfMin || snfVal > snfMax) {
-      alert(`❌ Invalid ${sessionMode} value!\nAllowed range: ${snfMin} to ${snfMax}\nEntered: ${snfVal}`);
+    if (snfVal < FIXED_SNF_MIN || snfVal > FIXED_SNF_MAX) {
+      const popup = document.createElement('div');
+      popup.innerHTML = `
+        <div style="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px)">
+          <div style="background:linear-gradient(145deg,#1a0a0a,#2d1010);border:1px solid rgba(248,113,113,0.4);border-radius:16px;padding:32px;max-width:360px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
+            <div style="font-size:40px;margin-bottom:12px">❌</div>
+            <h3 style="color:#f87171;font-size:18px;font-weight:800;margin-bottom:8px">Invalid ${sessionMode} Value</h3>
+            <p style="color:rgba(255,255,255,0.7);font-size:14px;margin-bottom:6px">Allowed Range: <strong style="color:white">${FIXED_SNF_MIN} – ${FIXED_SNF_MAX}</strong></p>
+            <p style="color:rgba(255,255,255,0.5);font-size:13px;margin-bottom:24px">Entered: <strong style="color:#f87171">${snfVal}</strong></p>
+            <button onclick="this.closest('div[style*=inset]').remove()" style="background:linear-gradient(135deg,#ef4444,#b91c1c);border:none;border-radius:10px;color:white;font-weight:700;font-size:14px;padding:12px 32px;cursor:pointer;width:100%">OK</button>
+          </div>
+        </div>`;
+      document.body.appendChild(popup.firstElementChild!);
       snfClrRef.current?.focus();
       return;
     }
