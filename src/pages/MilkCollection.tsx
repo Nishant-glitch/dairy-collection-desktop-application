@@ -396,12 +396,12 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3" style={{ marginTop: '24px' }}>
-              <button onClick={() => setPrintEnabled(!printEnabled)} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${printEnabled ? 'bg-amber-500/10 border-amber-500/30 text-amber-500' : 'bg-white/5 border-white/10 text-white/40'}`}>
+            <div className="flex flex-col gap-3" style={{ marginTop: '24px', padding: '4px 2px' }}>
+              <button onClick={() => setPrintEnabled(!printEnabled)} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${printEnabled ? 'bg-amber-500/10 border-amber-500/30 text-amber-500' : 'bg-white/5 border-white/10 text-white/40'}`} style={{ marginLeft: '2px', marginRight: '2px' }}>
                 <div className="flex items-center gap-3"><Printer size={18} /><span className="text-sm font-bold">Auto-Print Slip</span></div>
                 <div className={`w-10 h-5 rounded-full relative transition-all ${printEnabled ? 'bg-amber-500' : 'bg-white/10'}`}><div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${printEnabled ? 'right-1' : 'left-1'}`}></div></div>
               </button>
-              <button onClick={() => setSmsEnabled(!smsEnabled)} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${smsEnabled ? 'bg-blue-500/10 border-blue-500/30 text-blue-500' : 'bg-white/5 border-white/10 text-white/40'}`}>
+              <button onClick={() => setSmsEnabled(!smsEnabled)} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${smsEnabled ? 'bg-blue-500/10 border-blue-500/30 text-blue-500' : 'bg-white/5 border-white/10 text-white/40'}`} style={{ marginLeft: '2px', marginRight: '2px' }}>
                 <div className="flex items-center gap-3"><MessageSquare size={18} /><span className="text-sm font-bold">Send SMS Alert</span></div>
                 <div className={`w-10 h-5 rounded-full relative transition-all ${smsEnabled ? 'bg-blue-500' : 'bg-white/10'}`}><div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${smsEnabled ? 'right-1' : 'left-1'}`}></div></div>
               </button>
@@ -415,9 +415,9 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   }
 
   return (
-    <div style={{ padding: '20px 28px', maxWidth: '1400px', margin: '0 auto' }} className="animate-fadeIn">
+    <div style={{ padding: '24px 32px', maxWidth: '1400px', margin: '0 auto' }} className="animate-fadeIn">
       {/* Session Info Header */}
-      <div className="flex items-center justify-between glass-card p-4 border-l-4 border-l-amber-500" style={{ marginBottom: '20px' }}>
+      <div className="flex items-center justify-between glass-card border-l-4 border-l-amber-500" style={{ marginBottom: '24px', padding: '14px 20px' }}>
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-2">
             <Calendar className="text-amber-500" size={20} />
@@ -435,18 +435,18 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
         <button onClick={() => setShowSessionSetup(true)} className="btn-secondary py-1 px-4 text-xs">Change Session</button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '24px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '400px 1fr', gap: '28px', alignItems: 'start' }}>
         {/* Entry Form */}
         <div>
-          <div className="glass-card p-6 sticky top-24">
+          <div className="glass-card sticky top-24" style={{ padding: '24px' }}>
             <h2 className="text-xl font-black text-white mb-6 flex items-center gap-2">
               <Droplet className="text-blue-400" /> New Entry
             </h2>
             
-            <div className="space-y-5">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="label-text">Farmer Code</label>
+                  <label className="label-text" style={{ display: 'block', marginBottom: '8px', fontSize: '11px', letterSpacing: '0.5px' }}>Farmer Code</label>
                   {warningMessage && <span className="text-[10px] text-amber-500 animate-pulse font-bold">{warningMessage}</span>}
                 </div>
                 <input
@@ -456,6 +456,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                   onChange={(e) => handleFarmerCodeChange(e.target.value)}
                   onKeyDown={handleFarmerCodeKeyDown}
                   className={`input-3d ${farmerFound ? 'border-green-500/50 bg-green-500/5' : ''}`}
+                  style={{ padding: '11px 14px', fontSize: '14px' }}
                   placeholder="Enter Code"
                 />
                 {farmerName && (
@@ -472,9 +473,9 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div>
-                  <label className="label-text mb-2">Quantity (L)</label>
+                  <label className="label-text" style={{ display: 'block', marginBottom: '8px', fontSize: '11px', letterSpacing: '0.5px' }}>Quantity (L)</label>
                   <input
                     ref={qtyRef}
                     type="number"
@@ -483,11 +484,12 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                     onChange={(e) => setQty(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && fatRef.current?.focus()}
                     className="input-3d"
+                    style={{ padding: '11px 14px', fontSize: '14px' }}
                     placeholder="0.0"
                   />
                 </div>
                 <div>
-                  <label className="label-text mb-2">FAT (%)</label>
+                  <label className="label-text" style={{ display: 'block', marginBottom: '8px', fontSize: '11px', letterSpacing: '0.5px' }}>FAT (%)</label>
                   <input
                     ref={fatRef}
                     type="number"
@@ -496,6 +498,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                     onChange={(e) => setFat(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && snfClrRef.current?.focus()}
                     className="input-3d"
+                    style={{ padding: '11px 14px', fontSize: '14px' }}
                     placeholder="0.0"
                   />
                 </div>
@@ -503,7 +506,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
 
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="label-text">{sessionMode} (%)</label>
+                  <label className="label-text" style={{ display: 'block', marginBottom: '8px', fontSize: '11px', letterSpacing: '0.5px' }}>{sessionMode} (%)</label>
                   <span className="text-[10px] text-slate-500 font-bold">Range: {snfMin} - {snfMax}</span>
                 </div>
                 <input
@@ -514,11 +517,12 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                   onChange={(e) => setSnfClr(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSaveOrUpdate()}
                   className="input-3d"
+                  style={{ padding: '11px 14px', fontSize: '14px' }}
                   placeholder="0.0"
                 />
               </div>
 
-              <div className="p-4 rounded-2xl bg-slate-900/50 border border-white/5 space-y-3">
+              <div style={{ padding: '16px 18px', borderRadius: '14px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Rate / Liter</span>
                   <span className="text-white font-black text-lg">₹{rate.toFixed(2)}</span>
@@ -529,7 +533,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div style={{ display: 'flex', gap: '12px', paddingTop: '6px' }}>
                 <button
                   onClick={clearForm}
                   className="btn-secondary flex-1 py-3"
@@ -550,28 +554,28 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
         {/* Entries Table & Summary */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {/* Stats Summary */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="glass-card p-4 border-b-4 border-b-blue-500">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+            <div className="glass-card border-b-4 border-b-blue-500" style={{ padding: '16px 18px' }}>
               <p className="text-slate-400 text-[10px] font-bold uppercase mb-1">Total Quantity</p>
-              <p className="text-2xl font-black text-white">{totalQty.toFixed(1)} <span className="text-xs text-slate-500">L</span></p>
+              <p style={{ fontSize: '22px', fontWeight: 900, color: 'white', marginTop: '6px' }}>{totalQty.toFixed(1)} <span className="text-xs text-slate-500">L</span></p>
             </div>
-            <div className="glass-card p-4 border-b-4 border-b-green-500">
+            <div className="glass-card border-b-4 border-b-green-500" style={{ padding: '16px 18px' }}>
               <p className="text-slate-400 text-[10px] font-bold uppercase mb-1">Total Amount</p>
-              <p className="text-2xl font-black text-green-400">₹{totalAmount.toFixed(2)}</p>
+              <p style={{ fontSize: '22px', fontWeight: 900, color: 'white', marginTop: '6px' }} className="text-green-400">₹{totalAmount.toFixed(2)}</p>
             </div>
-            <div className="glass-card p-4 border-b-4 border-b-amber-500">
+            <div className="glass-card border-b-4 border-b-amber-500" style={{ padding: '16px 18px' }}>
               <p className="text-slate-400 text-[10px] font-bold uppercase mb-1">Avg FAT</p>
-              <p className="text-2xl font-black text-white">{avgFat.toFixed(2)} <span className="text-xs text-slate-500">%</span></p>
+              <p style={{ fontSize: '22px', fontWeight: 900, color: 'white', marginTop: '6px' }}>{avgFat.toFixed(2)} <span className="text-xs text-slate-500">%</span></p>
             </div>
-            <div className="glass-card p-4 border-b-4 border-b-purple-500">
+            <div className="glass-card border-b-4 border-b-purple-500" style={{ padding: '16px 18px' }}>
               <p className="text-slate-400 text-[10px] font-bold uppercase mb-1">Avg {sessionMode}</p>
-              <p className="text-2xl font-black text-white">{avgSnfClr.toFixed(2)} <span className="text-xs text-slate-500">%</span></p>
+              <p style={{ fontSize: '22px', fontWeight: 900, color: 'white', marginTop: '6px' }}>{avgSnfClr.toFixed(2)} <span className="text-xs text-slate-500">%</span></p>
             </div>
           </div>
 
           {/* Recent Entries Table */}
           <div className="glass-card overflow-hidden">
-            <div className="p-4 border-b border-white/5 flex justify-between items-center">
+            <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 className="text-white font-bold flex items-center gap-2">
                 <Clock size={16} className="text-amber-500" /> Recent Entries
               </h3>
@@ -583,27 +587,27 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
               <table className="w-full text-left border-collapse">
                 <thead className="sticky top-0 bg-slate-900/95 backdrop-blur-sm z-10">
                   <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-white/5">
-                    <th className="p-4 font-black">Code</th>
-                    <th className="p-4 font-black">Farmer Name</th>
-                    <th className="p-4 font-black">Qty</th>
-                    <th className="p-4 font-black">FAT</th>
-                    <th className="p-4 font-black">{sessionMode}</th>
-                    <th className="p-4 font-black">Rate</th>
-                    <th className="p-4 font-black">Amount</th>
-                    <th className="p-4 font-black text-center">Actions</th>
+                    <th style={{ padding: '12px 16px', fontWeight: 900, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }}>Code</th>
+                    <th style={{ padding: '12px 16px', fontWeight: 900, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }}>Farmer Name</th>
+                    <th style={{ padding: '12px 16px', fontWeight: 900, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }}>Qty</th>
+                    <th style={{ padding: '12px 16px', fontWeight: 900, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }}>FAT</th>
+                    <th style={{ padding: '12px 16px', fontWeight: 900, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }}>{sessionMode}</th>
+                    <th style={{ padding: '12px 16px', fontWeight: 900, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }}>Rate</th>
+                    <th style={{ padding: '12px 16px', fontWeight: 900, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }}>Amount</th>
+                    <th style={{ padding: '12px 16px', fontWeight: 900, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }} className="text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {todayEntries.sort((a,b) => b.timestamp - a.timestamp).map((entry) => (
                     <tr key={entry.farmerCode} className="hover:bg-white/[0.02] transition-colors group">
-                      <td className="p-4"><span className="bg-white/5 px-2 py-1 rounded font-mono text-white text-xs">{entry.farmerCode}</span></td>
-                      <td className="p-4 font-bold text-slate-300 text-sm">{entry.farmerName}</td>
-                      <td className="p-4 font-black text-white text-sm">{entry.qty.toFixed(1)}</td>
-                      <td className="p-4 text-slate-400 text-sm">{entry.fat.toFixed(1)}</td>
-                      <td className="p-4 text-slate-400 text-sm">{(entry.snf || entry.clr || 0).toFixed(1)}</td>
-                      <td className="p-4 text-slate-400 text-sm">₹{entry.rate.toFixed(2)}</td>
-                      <td className="p-4 font-black text-green-400 text-sm">₹{entry.amount.toFixed(2)}</td>
-                      <td className="p-4">
+                      <td style={{ padding: '12px 16px' }}><span className="bg-white/5 px-2 py-1 rounded font-mono text-white text-xs">{entry.farmerCode}</span></td>
+                      <td style={{ padding: '12px 16px' }} className="font-bold text-slate-300 text-sm">{entry.farmerName}</td>
+                      <td style={{ padding: '12px 16px' }} className="font-black text-white text-sm">{entry.qty.toFixed(1)}</td>
+                      <td style={{ padding: '12px 16px' }} className="text-slate-400 text-sm">{entry.fat.toFixed(1)}</td>
+                      <td style={{ padding: '12px 16px' }} className="text-slate-400 text-sm">{(entry.snf || entry.clr || 0).toFixed(1)}</td>
+                      <td style={{ padding: '12px 16px' }} className="text-slate-400 text-sm">₹{entry.rate.toFixed(2)}</td>
+                      <td style={{ padding: '12px 16px' }} className="font-black text-green-400 text-sm">₹{entry.amount.toFixed(2)}</td>
+                      <td style={{ padding: '12px 16px' }}>
                         <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
                             onClick={() => handleModify(entry)}
