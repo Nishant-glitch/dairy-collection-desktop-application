@@ -135,16 +135,40 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
 
     // Extract min/max from config
     if (config) {
-      const fatVals = config.fatValues.map(Number).sort((a,b) => a-b);
-      const snfVals = config.snfValues.map(Number).sort((a,b) => a-b);
-      if (fatVals.length > 0) {
-        setFatMin(Math.min(...fatVals));
-        setFatMax(Math.max(...fatVals));
+      try {
+        const fatVals = Array.isArray(config.fatValues) && config.fatValues.length > 0
+          ? config.fatValues.map(Number).filter(n => !isNaN(n) && n > 0).sort((a,b) => a-b)
+          : [];
+        const snfVals = Array.isArray(config.snfValues) && config.snfValues.length > 0
+          ? config.snfValues.map(Number).filter(n => !isNaN(n) && n > 0).sort((a,b) => a-b)
+          : [];
+
+        if (fatVals.length > 0) {
+          setFatMin(Math.min(...fatVals));
+          setFatMax(Math.max(...fatVals));
+        } else {
+          setFatMin(2.5);
+          setFatMax(15.0);
+        }
+
+        if (snfVals.length > 0) {
+          setSnfMin(Math.min(...snfVals));
+          setSnfMax(Math.max(...snfVals));
+        } else {
+          setSnfMin(7.5);
+          setSnfMax(15.0);
+        }
+      } catch {
+        setFatMin(2.5);
+        setFatMax(15.0);
+        setSnfMin(7.5);
+        setSnfMax(15.0);
       }
-      if (snfVals.length > 0) {
-        setSnfMin(Math.min(...snfVals));
-        setSnfMax(Math.max(...snfVals));
-      }
+    } else {
+      setFatMin(2.5);
+      setFatMax(15.0);
+      setSnfMin(7.5);
+      setSnfMax(15.0);
     }
 
     setShowSessionSetup(false);
@@ -460,7 +484,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                   placeholder="Enter Code"
                 />
                 {farmerName && (
-                  <div className="mt-2 p-2 rounded-lg bg-white/5 border border-white/10 flex items-center gap-2 animate-fadeIn">
+                  <div style={{ marginTop: '10px', padding: '8px 12px', borderRadius: '10px', background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.25)', display: 'flex', alignItems: 'center', gap: '8px' }} className="animate-fadeIn">
                     <CheckCircle size={14} className="text-green-500" />
                     <span className="text-white font-bold text-sm truncate">{farmerName}</span>
                   </div>
