@@ -61,6 +61,11 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   const snfClrRef = useRef<HTMLInputElement>(null);
   const fetchTimerRef = useRef<any>(null);
 
+  const safeNum = (val: any): number => {
+    const n = parseFloat(val);
+    return isNaN(n) ? 0 : n;
+  };
+
   useEffect(() => {
     loadDCSInfo();
     loadFarmers();
@@ -73,11 +78,21 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   }, [showSessionSetup, sessionDate, sessionShift]);
 
   useEffect(() => {
-    if (qty && fat && snfClr && activeRateConfig) {
-      const calculatedRate = getRateFromMap(parseFloat(fat), parseFloat(snfClr), activeRateConfig);
-      setRate(calculatedRate);
-      setAmount(calculatedRate * parseFloat(qty));
-    } else {
+    if (!qty || !fat || !snfClr || !activeRateConfig) {
+      setRate(0);
+      setAmount(0);
+      return;
+    }
+    try {
+      const r = getRateFromMap(
+        parseFloat(fat) || 0,
+        parseFloat(snfClr) || 0,
+        activeRateConfig
+      );
+      setRate(r || 0);
+      setAmount(safeNum(r) * (parseFloat(qty) || 0));
+    } catch (err) {
+      console.error('Rate calc error:', err);
       setRate(0);
       setAmount(0);
     }
@@ -137,44 +152,30 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     const config = await getConfigForDate(sessionDate);
     if (!config) {
       alert('No rate chart found for this date. Please contact admin to upload a rate chart.');
+      console.warn('No rate config found for date:', sessionDate);
+      setFatMin(2.5);
+      setFatMax(15.0);
+      setSnfMin(7.5);
+      setSnfMax(15.0);
       return;
     }
     setActiveRateConfig(config);
 
-    // Extract min/max from config
-    if (config) {
-      try {
-        const fatVals = Array.isArray(config.fatValues) && config.fatValues.length > 0
-          ? config.fatValues.map(Number).filter(n => !isNaN(n) && n > 0).sort((a,b) => a-b)
-          : [];
-        const snfVals = Array.isArray(config.snfValues) && config.snfValues.length > 0
-          ? config.snfValues.map(Number).filter(n => !isNaN(n) && n > 0).sort((a,b) => a-b)
-          : [];
+    // Safe extraction with fallback
+    const fatVals = (config.fatValues || []).map(Number).filter((n: any) => !isNaN(n)).sort((a: number, b: number) => a - b);
+    const snfVals = (config.snfValues || []).map(Number).filter((n: any) => !isNaN(n)).sort((a: number, b: number) => a - b);
 
-        if (fatVals.length > 0) {
-          setFatMin(Math.min(...fatVals));
-          setFatMax(Math.max(...fatVals));
-        } else {
-          setFatMin(2.5);
-          setFatMax(15.0);
-        }
-
-        if (snfVals.length > 0) {
-          setSnfMin(Math.min(...snfVals));
-          setSnfMax(Math.max(...snfVals));
-        } else {
-          setSnfMin(7.5);
-          setSnfMax(15.0);
-        }
-      } catch {
-        setFatMin(2.5);
-        setFatMax(15.0);
-        setSnfMin(7.5);
-        setSnfMax(15.0);
-      }
+    if (fatVals.length > 0) {
+      setFatMin(fatVals[0]);
+      setFatMax(fatVals[fatVals.length - 1]);
     } else {
       setFatMin(2.5);
       setFatMax(15.0);
+    }
+    if (snfVals.length > 0) {
+      setSnfMin(snfVals[0]);
+      setSnfMax(snfVals[snfVals.length - 1]);
+    } else {
       setSnfMin(7.5);
       setSnfMax(15.0);
     }
@@ -279,7 +280,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
           farmerName: farmerName,
           qty: qty,
           fat: fat,
-          amount: amount.toFixed(2),
+          amount: (amount || 0).toFixed(2),
         });
       }
     }
@@ -303,8 +304,8 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
         <p><strong>Quantity:</strong> ${qty} Liters</p>
         <p><strong>FAT:</strong> ${fat}%</p>
         <p><strong>${sessionMode}:</strong> ${snfClr}%</p>
-        <p><strong>Rate:</strong> ₹${rate.toFixed(2)}/Liter</p>
-        <p style="font-size: 18px;"><strong>Amount:</strong> ₹${amount.toFixed(2)}</p>
+        <p><strong>Rate:</strong> ₹${(rate || 0).toFixed(2)}/Liter</p>
+        <p style="font-size: 18px;"><strong>Amount:</strong> ₹${(amount || 0).toFixed(2)}</p>
         <hr/>
         <p style="text-align: center; font-size: 12px;">Thank you!</p>
       </div>
@@ -390,81 +391,85 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
           // Show warning - do NOT allow fresh save
           setDuplicateWarning({
             show: true,
-            message: `\u26a0\ufe0f Entry already exists for ${existing.farmerName}!\nQty: ${existing.qty}L | FAT: ${existing.fat}% | SNF: ${existing.snf}% | Amount: \u20b9${existing.amount.toFixed(2)}\n\nUse Modify (\u270f\ufe0f) or Delete (\ud83d\uddd1\ufe0f) from the table.`
+            message: `⚠️ Entry already exists for ${existing.farmerName}!\nQty: ${existing.qty}L | FAT: ${existing.fat}% | Rate: ₹${(existing.rate || 0).toFixed(2)}\n\nPlease use the 'Modify' button in the table below to update this entry.`
           });
-          setFarmerName(existing.farmerName);
-          setIsModifying(true);
-          // Pre-fill form with existing data
-          setQty(String(existing.qty));
-          setFat(String(existing.fat));
-          setSnfClr(String(existing.snf || existing.clr || ''));
-          setRate(existing.rate);
-          setAmount(existing.amount);
-          return; // don't focus qty
+          return;
         }
         qtyRef.current?.focus();
-      } else if (farmerCode.length > 0) {
-        alert('Farmer not found!');
-        farmerCodeRef.current?.focus();
       }
     }
   };
 
-  const totalQty = todayEntries.reduce((sum, e) => sum + e.qty, 0);
-  const totalAmount = todayEntries.reduce((sum, e) => sum + e.amount, 0);
-  const avgFat = todayEntries.length > 0 ? todayEntries.reduce((sum, e) => sum + e.fat, 0) / todayEntries.length : 0;
-  const avgSnfClr = todayEntries.length > 0 
-    ? todayEntries.reduce((sum, e) => sum + (e.snf || e.clr || 0), 0) / todayEntries.length 
+  const totalQty = (todayEntries || []).reduce((sum, e) => sum + safeNum(e?.qty), 0);
+  const totalAmount = (todayEntries || []).reduce((sum, e) => sum + safeNum(e?.amount), 0);
+  const avgFat = (todayEntries || []).length > 0
+    ? (todayEntries || []).reduce((sum, e) => sum + safeNum(e?.fat), 0) / todayEntries.length
+    : 0;
+  const avgSnfClr = (todayEntries || []).length > 0
+    ? (todayEntries || []).reduce((sum, e) => sum + safeNum(e?.snf || e?.clr), 0) / todayEntries.length
     : 0;
 
   if (showSessionSetup) {
     return (
-      <div style={{
-        minHeight: 'calc(100vh - 56px)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px',
-        background: 'transparent'
-      }}>
-        <div className="modal-3d animate-fadeIn" style={{ padding: '32px', maxWidth: '460px', width: '100%' }}>
-          <h2 className="modal-title" style={{ color: 'white', fontWeight: 800, fontSize: 18, marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>Start Collection Session</h2>
-          
-          <div className="space-y-4">
-            <div style={{ marginBottom: '16px' }}>
-              <label className="label-text" style={{ marginBottom: '6px' }}>Date</label>
-              <input type="date" value={sessionDate} onChange={(e) => setSessionDate(e.target.value)} className="input-3d" style={{ padding: '10px 14px', fontSize: '14px' }} />
+      <div className="page-wrapper flex items-center justify-center min-h-[80vh]">
+        <div className="modal-3d animate-fadeIn" style={{ maxWidth: 450, padding: 32, width: '90%' }}>
+          <div className="text-center mb-8">
+            <div style={{ width: 64, height: 64, background: 'rgba(74,222,128,0.1)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <Droplet color="#4ade80" size={32} />
             </div>
+            <h2 style={{ fontSize: 24, fontWeight: 900, color: 'white' }}>Start Collection</h2>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, marginTop: 4 }}>Set up your milk collection session</p>
+          </div>
 
-            <div className="grid grid-cols-2 gap-4" style={{ marginBottom: '16px' }}>
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="label-text" style={{ marginBottom: '8px' }}>Shift</label>
-                <div className="flex gap-2" style={{ gap: '8px' }}>
-                  <button onClick={() => setSessionShift('Morning')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${sessionShift === 'Morning' ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30' : 'bg-white/5 text-white/60 hover:bg-white/10'}`} style={{ padding: '8px 16px', fontSize: '13px' }}>Morning</button>
-                  <button onClick={() => setSessionShift('Evening')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${sessionShift === 'Evening' ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30' : 'bg-white/5 text-white/60 hover:bg-white/10'}`} style={{ padding: '8px 16px', fontSize: '13px' }}>Evening</button>
+                <label className="label-text" style={{ marginBottom: 8, display: 'block', fontSize: 12 }}>Session Date</label>
+                <div className="relative">
+                  <Calendar size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }} />
+                  <input type="date" value={sessionDate} onChange={(e) => setSessionDate(e.target.value)} className="input-3d" style={{ paddingLeft: 40 }} />
                 </div>
               </div>
               <div>
-                <label className="label-text" style={{ marginBottom: '8px' }}>Mode</label>
-                <div className="flex gap-2" style={{ gap: '8px' }}>
-                  <button onClick={() => setSessionMode('SNF')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${sessionMode === 'SNF' ? 'bg-green-500 text-white shadow-lg shadow-green-500/30' : 'bg-white/5 text-white/60 hover:bg-white/10'}`} style={{ padding: '8px 16px', fontSize: '13px' }}>SNF</button>
-                  <button onClick={() => setSessionMode('CLR')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${sessionMode === 'CLR' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30' : 'bg-white/5 text-white/60 hover:bg-white/10'}`} style={{ padding: '8px 16px', fontSize: '13px' }}>CLR</button>
+                <label className="label-text" style={{ marginBottom: 8, display: 'block', fontSize: 12 }}>Shift</label>
+                <div className="relative">
+                  <Clock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }} />
+                  <select value={sessionShift} onChange={(e: any) => setSessionShift(e.target.value)} className="input-3d" style={{ paddingLeft: 40 }}>
+                    <option value="Morning">Morning</option>
+                    <option value="Evening">Evening</option>
+                  </select>
                 </div>
               </div>
             </div>
 
-            <div className="flex flex-col gap-3" style={{ marginTop: '24px', padding: '4px 2px' }}>
-              <button onClick={() => setPrintEnabled(!printEnabled)} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${printEnabled ? 'bg-amber-500/10 border-amber-500/30 text-amber-500' : 'bg-white/5 border-white/10 text-white/40'}`} style={{ marginLeft: '2px', marginRight: '2px' }}>
-                <div className="flex items-center gap-3"><Printer size={18} /><span className="text-sm font-bold">Auto-Print Slip</span></div>
-                <div className={`w-10 h-5 rounded-full relative transition-all ${printEnabled ? 'bg-amber-500' : 'bg-white/10'}`}><div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${printEnabled ? 'right-1' : 'left-1'}`}></div></div>
-              </button>
-              <button onClick={() => setSmsEnabled(!smsEnabled)} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${smsEnabled ? 'bg-blue-500/10 border-blue-500/30 text-blue-500' : 'bg-white/5 border-white/10 text-white/40'}`} style={{ marginLeft: '2px', marginRight: '2px' }}>
-                <div className="flex items-center gap-3"><MessageSquare size={18} /><span className="text-sm font-bold">Send SMS Alert</span></div>
-                <div className={`w-10 h-5 rounded-full relative transition-all ${smsEnabled ? 'bg-blue-500' : 'bg-white/10'}`}><div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${smsEnabled ? 'right-1' : 'left-1'}`}></div></div>
-              </button>
+            <div>
+              <label className="label-text" style={{ marginBottom: 12, display: 'block', fontSize: 12 }}>Collection Mode</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button onClick={() => setSessionMode('SNF')} className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${sessionMode === 'SNF' ? 'bg-green-500/10 border-green-500 text-green-400' : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'}`}>
+                  <Zap size={20} />
+                  <span className="font-bold text-sm">FAT + SNF</span>
+                </button>
+                <button onClick={() => setSessionMode('CLR')} className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${sessionMode === 'CLR' ? 'bg-green-500/10 border-green-500 text-green-400' : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'}`}>
+                  <Droplet size={20} />
+                  <span className="font-bold text-sm">FAT + CLR</span>
+                </button>
+              </div>
             </div>
 
-            <button onClick={handleStartSession} className="btn-3d w-full" style={{ marginTop: '32px', padding: '14px', fontSize: '16px' }}>Start Collection Session</button>
+            <div className="grid grid-cols-2 gap-4">
+              <div onClick={() => setPrintEnabled(!printEnabled)} className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center gap-3 ${printEnabled ? 'bg-blue-500/10 border-blue-500/50 text-blue-400' : 'bg-white/5 border-white/10 text-slate-500'}`}>
+                <Printer size={18} />
+                <span className="font-bold text-xs">Auto Print</span>
+              </div>
+              <div onClick={() => setSmsEnabled(!smsEnabled)} className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center gap-3 ${smsEnabled ? 'bg-purple-500/10 border-purple-500/50 text-purple-400' : 'bg-white/5 border-white/10 text-slate-500'}`}>
+                <MessageSquare size={18} />
+                <span className="font-bold text-xs">Send SMS</span>
+              </div>
+            </div>
+
+            <button onClick={handleStartSession} className="btn-3d w-full py-4 text-lg mt-4">
+              Start Collection Session
+            </button>
           </div>
         </div>
       </div>
@@ -472,33 +477,23 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   }
 
   return (
-    <div style={{ padding: '24px 32px', maxWidth: '1400px', margin: '0 auto' }} className="animate-fadeIn">
-      {/* Session Info Header */}
-      <div className="flex items-center justify-between glass-card border-l-4 border-l-amber-500" style={{ marginBottom: '24px', padding: '14px 20px' }}>
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <Calendar className="text-amber-500" size={20} />
-            <span className="text-white font-bold">{sessionDate}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock className="text-amber-500" size={20} />
-            <span className="text-white font-bold">{sessionShift}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Zap className="text-amber-500" size={20} />
-            <span className="text-white font-bold">{sessionMode} Mode</span>
-          </div>
-        </div>
-        <button onClick={() => setShowSessionSetup(true)} className="btn-secondary py-1 px-4 text-xs">Change Session</button>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '400px 1fr', gap: '28px', alignItems: 'start' }}>
+    <div className="page-wrapper animate-fadeIn">
+      <div className="flex flex-col lg:flex-row gap-6">
         {/* Entry Form */}
-        <div>
-          <div className="glass-card sticky top-24" style={{ padding: '24px' }}>
-            <h2 className="text-xl font-black text-white mb-6 flex items-center gap-2">
-              <Droplet className="text-blue-400" /> New Entry
-            </h2>
+        <div style={{ flex: '0 0 380px' }}>
+          <div className="glass-card sticky top-6" style={{ padding: '24px' }}>
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h2 className="text-white font-black text-xl tracking-tight">Milk Entry</h2>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="bg-green-500/20 text-green-400 text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-widest">{sessionShift}</span>
+                  <span className="text-slate-500 text-[10px] font-bold">{sessionDate}</span>
+                </div>
+              </div>
+              <button onClick={() => setShowSessionSetup(true)} className="p-2 rounded-lg bg-white/5 text-slate-400 hover:bg-white/10 transition-colors">
+                <X size={18} />
+              </button>
+            </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
               <div>
@@ -582,11 +577,11 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
               <div style={{ padding: '16px 18px', borderRadius: '14px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Rate / Liter</span>
-                  <span className="text-white font-black text-lg">₹{rate.toFixed(2)}</span>
+                  <span className="text-white font-black text-lg">₹{safeNum(rate).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-white/5">
                   <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Total Amount</span>
-                  <span className="text-green-400 font-black text-2xl">₹{amount.toFixed(2)}</span>
+                  <span className="text-green-400 font-black text-2xl">₹{safeNum(amount).toFixed(2)}</span>
                 </div>
               </div>
 
@@ -609,24 +604,24 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
         </div>
 
         {/* Entries Table & Summary */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1 }}>
           {/* Stats Summary */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
             <div className="glass-card border-b-4 border-b-blue-500" style={{ padding: '16px 18px' }}>
               <p className="text-slate-400 text-[10px] font-bold uppercase mb-1">Total Quantity</p>
-              <p style={{ fontSize: '22px', fontWeight: 900, color: 'white', marginTop: '6px' }}>{totalQty.toFixed(1)} <span className="text-xs text-slate-500">L</span></p>
+              <p style={{ fontSize: '22px', fontWeight: 900, color: 'white', marginTop: '6px' }}>{safeNum(totalQty).toFixed(1)} <span className="text-xs text-slate-500">L</span></p>
             </div>
             <div className="glass-card border-b-4 border-b-green-500" style={{ padding: '16px 18px' }}>
               <p className="text-slate-400 text-[10px] font-bold uppercase mb-1">Total Amount</p>
-              <p style={{ fontSize: '22px', fontWeight: 900, color: 'white', marginTop: '6px' }} className="text-green-400">₹{totalAmount.toFixed(2)}</p>
+              <p style={{ fontSize: '22px', fontWeight: 900, color: 'white', marginTop: '6px' }} className="text-green-400">₹{safeNum(totalAmount).toFixed(2)}</p>
             </div>
             <div className="glass-card border-b-4 border-b-amber-500" style={{ padding: '16px 18px' }}>
               <p className="text-slate-400 text-[10px] font-bold uppercase mb-1">Avg FAT</p>
-              <p style={{ fontSize: '22px', fontWeight: 900, color: 'white', marginTop: '6px' }}>{avgFat.toFixed(2)} <span className="text-xs text-slate-500">%</span></p>
+              <p style={{ fontSize: '22px', fontWeight: 900, color: 'white', marginTop: '6px' }}>{safeNum(avgFat).toFixed(2)} <span className="text-xs text-slate-500">%</span></p>
             </div>
             <div className="glass-card border-b-4 border-b-purple-500" style={{ padding: '16px 18px' }}>
               <p className="text-slate-400 text-[10px] font-bold uppercase mb-1">Avg {sessionMode}</p>
-              <p style={{ fontSize: '22px', fontWeight: 900, color: 'white', marginTop: '6px' }}>{avgSnfClr.toFixed(2)} <span className="text-xs text-slate-500">%</span></p>
+              <p style={{ fontSize: '22px', fontWeight: 900, color: 'white', marginTop: '6px' }}>{safeNum(avgSnfClr).toFixed(2)} <span className="text-xs text-slate-500">%</span></p>
             </div>
           </div>
 
@@ -637,7 +632,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                 <Clock size={16} className="text-amber-500" /> Recent Entries
               </h3>
               <span className="bg-white/5 text-slate-400 px-3 py-1 rounded-full text-[10px] font-bold">
-                {todayEntries.length} Records
+                {(todayEntries || []).length} Records
               </span>
             </div>
             <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
@@ -655,36 +650,39 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {todayEntries.sort((a,b) => b.timestamp - a.timestamp).map((entry) => (
-                    <tr key={entry.farmerCode} className="hover:bg-white/[0.02] transition-colors group">
-                      <td style={{ padding: '12px 16px' }}><span className="bg-white/5 px-2 py-1 rounded font-mono text-white text-xs">{entry.farmerCode}</span></td>
-                      <td style={{ padding: '12px 16px' }} className="font-bold text-slate-300 text-sm">{entry.farmerName}</td>
-                      <td style={{ padding: '12px 16px' }} className="font-black text-white text-sm">{entry.qty.toFixed(1)}</td>
-                      <td style={{ padding: '12px 16px' }} className="text-slate-400 text-sm">{entry.fat.toFixed(1)}</td>
-                      <td style={{ padding: '12px 16px' }} className="text-slate-400 text-sm">{(entry.snf || entry.clr || 0).toFixed(1)}</td>
-                      <td style={{ padding: '12px 16px' }} className="text-slate-400 text-sm">₹{entry.rate.toFixed(2)}</td>
-                      <td style={{ padding: '12px 16px' }} className="font-black text-green-400 text-sm">₹{entry.amount.toFixed(2)}</td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => handleModify(entry)}
-                            className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all"
-                            title="Edit"
-                          >
-                            <Edit2 size={14} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(entry.farmerCode)}
-                            className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
-                            title="Delete"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {todayEntries.length === 0 && (
+                  {(todayEntries || []).sort((a,b) => b.timestamp - a.timestamp).map((entry) => {
+                    if (!entry) return null;
+                    return (
+                      <tr key={entry.farmerCode} className="hover:bg-white/[0.02] transition-colors group">
+                        <td style={{ padding: '12px 16px' }}><span className="bg-white/5 px-2 py-1 rounded font-mono text-white text-xs">{entry.farmerCode}</span></td>
+                        <td style={{ padding: '12px 16px' }} className="font-bold text-slate-300 text-sm">{entry.farmerName}</td>
+                        <td style={{ padding: '12px 16px' }} className="font-black text-white text-sm">{safeNum(entry.qty).toFixed(1)}</td>
+                        <td style={{ padding: '12px 16px' }} className="text-slate-400 text-sm">{safeNum(entry.fat).toFixed(1)}</td>
+                        <td style={{ padding: '12px 16px' }} className="text-slate-400 text-sm">{safeNum(entry.snf || entry.clr).toFixed(1)}</td>
+                        <td style={{ padding: '12px 16px' }} className="text-slate-400 text-sm">₹{safeNum(entry.rate).toFixed(2)}</td>
+                        <td style={{ padding: '12px 16px' }} className="font-black text-green-400 text-sm">₹{safeNum(entry.amount).toFixed(2)}</td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => handleModify(entry)}
+                              className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all"
+                              title="Edit"
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(entry.farmerCode)}
+                              className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                              title="Delete"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {(todayEntries || []).length === 0 && (
                     <tr>
                       <td colSpan={8} className="p-12 text-center text-slate-500 font-medium italic">
                         No entries recorded for this session yet.
