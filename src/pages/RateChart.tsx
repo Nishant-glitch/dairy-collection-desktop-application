@@ -167,7 +167,7 @@ const RateChart: React.FC = () => {
     if (!config || !config.rateMap) return null;
     
     return (
-      <div className="glass-card overflow-hidden">
+      <div className="glass-card overflow-hidden" style={{ width: '100%', maxWidth: '100%', margin: '16px 0 0 0', padding: '20px 16px', boxSizing: 'border-box' }}>
         <div style={{ padding: '20px 24px', background: 'rgba(148,163,184,0.05)', borderBottom: '1px solid rgba(148,163,184,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h3 style={{ color: '#f1f5f9', fontWeight: 800, fontSize: 16, marginBottom: 4 }}>
@@ -189,7 +189,7 @@ const RateChart: React.FC = () => {
             </div>
           </div>
         </div>
-        <div style={{ overflow: 'auto', maxHeight: 600 }}>
+        <div style={{ overflowX: 'auto', width: '100%', marginLeft: 0, marginRight: 0, maxHeight: 600 }}>
           <table className="w-full text-sm border-collapse">
             <thead style={{ position: 'sticky', top: 0, zIndex: 20, background: '#0f172a' }}>
               <tr className="table-header">
@@ -225,8 +225,8 @@ const RateChart: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto animate-fadeUp" style={{ padding: 24 }}>
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+    <div className="animate-fadeUp" style={{ padding: '20px 20px 20px 20px', width: '100%', boxSizing: 'border-box' }}>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8" style={{ width: '100%' }}>
         <div>
           <h1 className="page-title">Rate Chart Management</h1>
           <p style={{ color: '#94a3b8', marginTop: 4 }}>
@@ -256,24 +256,24 @@ const RateChart: React.FC = () => {
       </div>
 
       {!userIsAdmin && (
-        <div className="glass-card" style={{ background: 'rgba(56,189,248,0.1)', borderColor: 'rgba(56,189,248,0.3)', padding: 16, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="glass-card" style={{ background: 'rgba(56,189,248,0.1)', borderColor: 'rgba(56,189,248,0.3)', padding: 16, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12, width: '100%' }}>
           <ShieldCheck color="#38bdf8" size={24} />
           <p style={{ color: '#38bdf8', fontWeight: 600 }}>Global Rate Chart — Read Only Access</p>
         </div>
       )}
 
       {currentConfig ? (
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#f59e0b', fontWeight: 800, fontSize: 14, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 12 }}>
+        <div style={{ width: '100%', marginLeft: 0, marginRight: 0, boxSizing: 'border-box' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#f59e0b', fontWeight: 800, fontSize: 14, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px', width: '100%' }}>
             <TableIcon size={18} />
             Current Active Rate Chart
           </div>
-          <div style={{ marginTop: 20 }}>
+          <div style={{ marginTop: 20, width: '100%', marginLeft: 0, marginRight: 0 }}>
             <RateTable config={currentConfig} />
           </div>
         </div>
       ) : (
-        <div className="glass-card" style={{ padding: 64, textAlign: 'center', borderStyle: 'dashed' }}>
+        <div className="glass-card" style={{ padding: 64, textAlign: 'center', borderStyle: 'dashed', width: '100%' }}>
           <div style={{ width: 80, height: 80, background: 'rgba(245,158,11,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
             <FileSpreadsheet color="#f59e0b" size={40} />
           </div>
@@ -328,20 +328,28 @@ const RateChart: React.FC = () => {
                 ) : (
                   <>
                     <Upload className="text-slate-400" size={40} />
-                    <div style={{ fontSize: 15, fontWeight: 600, color: '#f1f5f9' }}>Click to Upload</div>
-                    <p style={{ fontSize: 12, opacity: 0.6, color: '#94a3b8' }}>Supports Excel (.xlsx) or CSV files</p>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: '#f1f5f9' }}>Click to Upload Excel</div>
+                    <div style={{ fontSize: 13, opacity: 0.6, color: '#94a3b8' }}>Supports .xlsx and .xls formats</div>
                   </>
                 )}
               </div>
 
-              <button
-                disabled={!selectedFile}
-                onClick={() => selectedFile && handleFileImport(selectedFile, effectiveDate)}
-                className={`btn-primary w-full ${!selectedFile ? 'opacity-50 cursor-not-allowed' : ''}`}
-                style={{ padding: 14, fontSize: 15 }}
-              >
-                Publish Rate Chart
-              </button>
+              {selectedFile && (
+                <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+                  <button 
+                    onClick={() => setSelectedFile(null)}
+                    className="btn-secondary flex-1"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={() => handleFileImport(selectedFile, effectiveDate)}
+                    className="btn-primary flex-[2]"
+                  >
+                    🚀 Upload & Publish Rate Chart
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -350,30 +358,47 @@ const RateChart: React.FC = () => {
       {/* History Modal */}
       {showHistoryModal && (
         <div className="modal-overlay">
-          <div className="modal-box animate-fadeUp" style={{ maxWidth: 500, padding: 28 }}>
-            <div className="flex justify-between items-center mb-8" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16 }}>
-              <h2 className="text-xl font-bold text-white">Rate Chart History</h2>
+          <div className="modal-box animate-fadeUp" style={{ maxWidth: 800, width: '90%' }}>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                <History size={24} className="text-amber-500" /> Rate Chart History
+              </h2>
               <button onClick={() => setShowHistoryModal(false)} className="text-slate-400 hover:text-white transition">
                 <X size={24} />
               </button>
             </div>
-            <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
-              {history.map((config, idx) => (
-                <div 
-                  key={idx} 
-                  className="glass-card p-4 flex items-center justify-between hover:border-amber-500/30 transition-colors cursor-pointer"
-                  onClick={() => {
-                    setViewingConfig(config);
-                    setShowHistoryModal(false);
-                  }}
-                >
-                  <div>
-                    <p className="text-white font-bold">Effective: {config.effectiveFrom}</p>
-                    <p className="text-slate-400 text-xs">Imported: {new Date(config.importedAt).toLocaleDateString()}</p>
-                  </div>
-                  <button className="text-amber-500 text-sm font-bold">View Chart</button>
-                </div>
-              ))}
+            
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="text-slate-500 text-xs uppercase tracking-wider border-b border-white/10">
+                    <th className="p-4">Effective From</th>
+                    <th className="p-4">Imported At</th>
+                    <th className="p-4">File Name</th>
+                    <th className="p-4 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {history.map((config, idx) => (
+                    <tr key={idx} className="hover:bg-white/5 transition-colors">
+                      <td className="p-4 text-white font-bold">{config.effectiveFrom}</td>
+                      <td className="p-4 text-slate-400 text-sm">{new Date(config.importedAt).toLocaleString()}</td>
+                      <td className="p-4 text-slate-400 text-sm">{config.fileName || 'N/A'}</td>
+                      <td className="p-4 text-right">
+                        <button 
+                          onClick={() => {
+                            setViewingConfig(config);
+                            setShowHistoryModal(false);
+                          }}
+                          className="text-amber-500 hover:text-amber-400 font-bold text-sm"
+                        >
+                          View Chart
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -382,14 +407,16 @@ const RateChart: React.FC = () => {
       {/* View Modal */}
       {viewingConfig && (
         <div className="modal-overlay">
-          <div className="modal-box animate-fadeUp" style={{ maxWidth: '90%', width: 1000, padding: 32 }}>
-            <div className="flex justify-between items-center mb-6" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 16 }}>
-              <h2 className="text-xl font-bold text-white">Historical Rate Chart</h2>
+          <div className="modal-box animate-fadeUp" style={{ maxWidth: '95%', width: '1200px', padding: 0, overflow: 'hidden' }}>
+            <div style={{ padding: '20px 24px', background: 'rgba(15,23,42,0.9)', borderBottom: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 className="text-xl font-bold text-white">Rate Chart — {viewingConfig.effectiveFrom}</h2>
               <button onClick={() => setViewingConfig(null)} className="text-slate-400 hover:text-white transition">
                 <X size={24} />
               </button>
             </div>
-            <RateTable config={viewingConfig} />
+            <div style={{ padding: 24, maxHeight: '80vh', overflow: 'auto' }}>
+              <RateTable config={viewingConfig} />
+            </div>
           </div>
         </div>
       )}
