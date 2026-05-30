@@ -374,12 +374,12 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <div onClick={() => setPrintEnabled(!printEnabled)} className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center gap-3 ${printEnabled ? 'bg-blue-500/10 border-blue-500/50 text-blue-400' : 'bg-white/5 border-white/10 text-slate-500'}`}>
-                <Printer size={18} />
+              <div onClick={() => setPrintEnabled(!printEnabled)} className={`p-4 rounded-xl border cursor-pointer transition-all flex flex-col items-center justify-center gap-2 ${printEnabled ? 'bg-blue-500/10 border-blue-500/50 text-blue-400' : 'bg-white/5 border-white/10 text-slate-500'}`}>
+                <Printer size={20} />
                 <span className="font-bold text-xs">Auto Print</span>
               </div>
-              <div onClick={() => setSmsEnabled(!smsEnabled)} className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center gap-3 ${smsEnabled ? 'bg-purple-500/10 border-purple-500/50 text-purple-400' : 'bg-white/5 border-white/10 text-slate-500'}`}>
-                <MessageSquare size={18} />
+              <div onClick={() => setSmsEnabled(!smsEnabled)} className={`p-4 rounded-xl border cursor-pointer transition-all flex flex-col items-center justify-center gap-2 ${smsEnabled ? 'bg-purple-500/10 border-purple-500/50 text-purple-400' : 'bg-white/5 border-white/10 text-slate-500'}`}>
+                <MessageSquare size={20} />
                 <span className="font-bold text-xs">Send SMS</span>
               </div>
             </div>
