@@ -5,7 +5,7 @@ import { up } from '../utils/userDb';
 import { useLanguage } from '../contexts/LanguageContext';
 import { BarChart3, Users, Wallet, Printer, X, Calendar, Search, ArrowLeft } from 'lucide-react';
 
-type ReportType = 'collection' | 'farmer' | 'payment' | null;
+type ReportType = 'collection' | 'farmer' | 'payment' | 'farmer-periodical' | null;
 
 const Reports: React.FC = () => {
   const { t } = useLanguage();
@@ -55,52 +55,44 @@ const Reports: React.FC = () => {
       const filteredRows: any[] = [];
       let totalQty = 0, totalAmt = 0, totalFat = 0, totalSnf = 0, totalEntries = 0;
 
-      Object.keys(allData).forEach(date => {
-        if (date >= fromDate && date <= toDate) {
-          const shifts = allData[date];
-          Object.keys(shifts).forEach(s => {
-            if (shift === 'All' || s === shift) {
-              const entries = shifts[s];
-              const farmerCodes = Object.keys(entries);
-              let dayQty = 0, dayAmt = 0, dayFat = 0, daySnf = 0;
-
-              farmerCodes.forEach(code => {
-                const e = entries[code];
-                dayQty += e.qty;
-                dayAmt += e.amount;
-                dayFat += e.fat;
-                daySnf += (e.snf || e.clr || 0);
-              });
-
+      // CHANGE 1: Single date filter for collection report
+      const date = fromDate; 
+      if (allData[date]) {
+        const shifts = allData[date];
+        ['Morning', 'Evening'].forEach(s => {
+          if (shifts[s]) {
+            const entries = shifts[s];
+            Object.keys(entries).forEach(code => {
+              const e = entries[code];
               filteredRows.push({
-                date,
                 shift: s,
-                count: farmerCodes.length,
-                qty: dayQty,
-                fat: dayFat / farmerCodes.length,
-                snf: daySnf / farmerCodes.length,
-                amount: dayAmt
+                code,
+                name: e.farmerName || 'Unknown',
+                qty: e.qty,
+                fat: e.fat,
+                snf: (e.snf || e.clr || 0),
+                rate: e.rate,
+                amount: e.amount
               });
 
-              totalQty += dayQty;
-              totalAmt += dayAmt;
-              totalFat += dayFat;
-              totalSnf += daySnf;
-              totalEntries += farmerCodes.length;
-            }
-          });
-        }
-      });
+              totalQty += e.qty;
+              totalAmt += e.amount;
+              totalFat += e.fat;
+              totalSnf += (e.snf || e.clr || 0);
+              totalEntries++;
+            });
+          }
+        });
+      }
 
-      filteredRows.sort((a, b) => a.date.localeCompare(b.date));
       setReportData(filteredRows);
       setReportTitle('Collection Shift Wise Report');
-      setPeriod(`${fromDate} to ${toDate} (${shift})`);
+      setPeriod(`Date: ${date}`);
       setGrandTotal({
         qty: totalQty,
         amount: totalAmt,
-        fat: totalFat / totalEntries,
-        snf: totalSnf / totalEntries,
+        fat: totalEntries > 0 ? totalFat / totalEntries : 0,
+        snf: totalEntries > 0 ? totalSnf / totalEntries : 0,
         count: totalEntries
       });
       setShowFilterModal(false);
@@ -174,10 +166,63 @@ const Reports: React.FC = () => {
       setGrandTotal({
         qty: totalQty,
         amount: totalAmt,
-        fat: totalFat / totalEntries,
-        snf: totalSnf / totalEntries,
+        fat: totalEntries > 0 ? totalFat / totalEntries : 0,
+        snf: totalEntries > 0 ? totalSnf / totalEntries : 0,
         count: totalEntries
       });
+      setShowFilterModal(false);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateFarmerPeriodicalReport = async () => {
+    if (!farmerCode) {
+      alert("Please enter Farmer Code");
+      return;
+    }
+    setLoading(true);
+    try {
+      const collectionSnap = await get(ref(database, up('milkCollection')));
+      if (!collectionSnap.exists()) {
+        setReportData([]);
+        return;
+      }
+
+      const allCollection = collectionSnap.val();
+      const filteredRows: any[] = [];
+      let totalQty = 0, totalAmt = 0;
+
+      Object.keys(allCollection).forEach(date => {
+        if (date >= fromDate && date <= toDate) {
+          const shifts = allCollection[date];
+          Object.keys(shifts).forEach(s => {
+            const entries = shifts[s];
+            if (entries[farmerCode]) {
+              const e = entries[farmerCode];
+              filteredRows.push({
+                date,
+                shift: s,
+                qty: e.qty,
+                fat: e.fat,
+                snf: (e.snf || e.clr || 0),
+                rate: e.rate,
+                amount: e.amount
+              });
+              totalQty += e.qty;
+              totalAmt += e.amount;
+            }
+          });
+        }
+      });
+
+      filteredRows.sort((a, b) => a.date.localeCompare(b.date));
+      setReportData(filteredRows);
+      setReportTitle(`Farmer Periodical Report - ${farmerCode}`);
+      setPeriod(`${fromDate} to ${toDate}`);
+      setGrandTotal({ qty: totalQty, amount: totalAmt });
       setShowFilterModal(false);
     } catch (e) {
       console.error(e);
@@ -284,7 +329,7 @@ const Reports: React.FC = () => {
       <div className="page-wrapper animate-fadeIn">
         <h1 className="page-title"><BarChart3 color="#f59e0b" /> Reports Module</h1>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 option-cards-grid">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 option-cards-grid">
           <div onClick={() => handleOpenFilter('collection')} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2563eb)', height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
             <div style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Calendar className="text-white" size={20} />
@@ -314,6 +359,17 @@ const Reports: React.FC = () => {
               <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Monthly payment summary</p>
             </div>
           </div>
+
+          {/* CHANGE 2: Farmer Wise Periodical Card */}
+          <div onClick={() => handleOpenFilter('farmer-periodical')} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ background: 'linear-gradient(135deg, #4c1d95, #7c3aed)', height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
+            <div style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Users className="text-white" size={20} />
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <h3 style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>Farmer Wise Periodical</h3>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Date range farmer report</p>
+            </div>
+          </div>
         </div>
 
         {showFilterModal && (
@@ -322,7 +378,8 @@ const Reports: React.FC = () => {
               <div className="flex justify-between items-center" style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                 <h2 style={{ fontSize: 18, fontWeight: 800, color: 'white' }}>
                   {activeReport === 'collection' ? 'Collection Filters' : 
-                   activeReport === 'farmer' ? 'Farmer Filters' : 'Payment Filters'}
+                   activeReport === 'farmer' ? 'Farmer Filters' : 
+                   activeReport === 'farmer-periodical' ? 'Farmer Periodical Filters' : 'Payment Filters'}
                 </h2>
                 <button onClick={() => setShowFilterModal(false)} style={{ color: 'rgba(255,255,255,0.6)' }}>
                   <X size={24} />
@@ -330,7 +387,12 @@ const Reports: React.FC = () => {
               </div>
 
               <div className="space-y-4">
-                {activeReport !== 'payment' ? (
+                {activeReport === 'collection' ? (
+                  <div style={{ marginBottom: '16px' }}>
+                    <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Collection Date</label>
+                    <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="input-3d" style={{ padding: '10px 14px', fontSize: '14px' }} />
+                  </div>
+                ) : activeReport !== 'payment' ? (
                   <>
                     <div style={{ marginBottom: '16px' }}>
                       <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>From Date</label>
@@ -340,20 +402,10 @@ const Reports: React.FC = () => {
                       <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>To Date</label>
                       <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="input-3d" style={{ padding: '10px 14px', fontSize: '14px' }} />
                     </div>
-                    {activeReport === 'collection' && (
+                    {(activeReport === 'farmer' || activeReport === 'farmer-periodical') && (
                       <div style={{ marginBottom: '16px' }}>
-                        <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Shift</label>
-                        <select value={shift} onChange={(e) => setShift(e.target.value as any)} className="input-3d" style={{ padding: '10px 14px', fontSize: '14px' }}>
-                          <option value="All">All Shifts</option>
-                          <option value="Morning">Morning</option>
-                          <option value="Evening">Evening</option>
-                        </select>
-                      </div>
-                    )}
-                    {activeReport === 'farmer' && (
-                      <div style={{ marginBottom: '16px' }}>
-                        <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Farmer Code (Optional)</label>
-                        <input type="text" value={farmerCode} onChange={(e) => setFarmerCode(e.target.value)} className="input-3d" style={{ padding: '10px 14px', fontSize: '14px' }} placeholder="All Farmers" />
+                        <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Farmer Code {activeReport === 'farmer-periodical' ? '(Required)' : '(Optional)'}</label>
+                        <input type="text" value={farmerCode} onChange={(e) => setFarmerCode(e.target.value)} className="input-3d" style={{ padding: '10px 14px', fontSize: '14px' }} placeholder={activeReport === 'farmer-periodical' ? "e.g. F001" : "All Farmers"} />
                       </div>
                     )}
                   </>
@@ -364,15 +416,15 @@ const Reports: React.FC = () => {
                   </div>
                 )}
 
-                <button
-                  disabled={loading}
+                <button 
                   onClick={() => {
                     if (activeReport === 'collection') generateCollectionReport();
                     else if (activeReport === 'farmer') generateFarmerReport();
+                    else if (activeReport === 'farmer-periodical') generateFarmerPeriodicalReport();
                     else generatePaymentReport();
-                  }}
-                  className="btn-3d w-full"
-                  style={{ marginTop: '24px', padding: '12px', fontSize: '16px' }}
+                  }} 
+                  className="btn-3d w-full py-3 mt-4"
+                  disabled={loading}
                 >
                   {loading ? 'Generating...' : 'Generate Report'}
                 </button>
@@ -386,39 +438,38 @@ const Reports: React.FC = () => {
 
   return (
     <div className="page-wrapper animate-fadeIn">
-      <div className="flex justify-between items-center mb-8">
-        <div className="flex items-center gap-4">
-          <button onClick={() => { setReportData([]); setActiveReport(null); }} className="p-2 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 transition-colors">
-            <ArrowLeft size={20} />
-          </button>
-          <div>
-            <h1 className="text-2xl font-black text-white">{reportTitle}</h1>
-            <p className="text-slate-400 text-xs uppercase tracking-widest font-bold">Period: {period}</p>
-          </div>
-        </div>
-        <div className="flex gap-3">
-          <button onClick={() => setShowFilterModal(true)} className="btn-secondary">
-            <Search size={18} /> Filters
-          </button>
-          <button onClick={handlePrint} className="btn-3d">
-            <Printer size={18} /> Print Report
-          </button>
-        </div>
+      <div className="flex justify-between items-center mb-6 no-print">
+        <button onClick={() => setActiveReport(null)} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
+          <ArrowLeft size={20} /> Back to Reports
+        </button>
+        <button onClick={handlePrint} className="btn-3d flex items-center gap-2 px-6">
+          <Printer size={18} /> Print Report
+        </button>
       </div>
 
-      <div className="glass-card overflow-hidden">
+      <div className="glass-card" style={{ padding: '24px' }}>
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-black text-white mb-1">{dcsInfo.name || 'DCS Pro'}</h1>
+          <p className="text-slate-500 text-sm mb-4">{dcsInfo.address || ''}</p>
+          <div className="inline-block px-4 py-1 bg-amber-500/10 border border-amber-500/20 rounded-full">
+            <span className="text-amber-500 text-xs font-black uppercase tracking-widest">{reportTitle}</span>
+          </div>
+          <p className="text-slate-400 text-xs mt-3 font-bold">Period: {period}</p>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-white/5 bg-white/5">
+              <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-white/5">
                 {activeReport === 'collection' && (
                   <>
-                    <th className="p-4">Date</th>
                     <th className="p-4">Shift</th>
-                    <th className="p-4">Farmers</th>
+                    <th className="p-4">Code</th>
+                    <th className="p-4">Farmer Name</th>
                     <th className="p-4">Qty (L)</th>
-                    <th className="p-4">Avg FAT</th>
-                    <th className="p-4">Avg SNF</th>
+                    <th className="p-4">FAT%</th>
+                    <th className="p-4">SNF%</th>
+                    <th className="p-4">Rate</th>
                     <th className="p-4">Amount</th>
                   </>
                 )}
@@ -431,6 +482,18 @@ const Reports: React.FC = () => {
                     <th className="p-4">Avg FAT</th>
                     <th className="p-4">Avg SNF</th>
                     <th className="p-4">Total Amount</th>
+                    <th className="p-4">Farmer Signature</th>
+                  </>
+                )}
+                {activeReport === 'farmer-periodical' && (
+                  <>
+                    <th className="p-4">Date</th>
+                    <th className="p-4">Shift</th>
+                    <th className="p-4">Qty (L)</th>
+                    <th className="p-4">FAT%</th>
+                    <th className="p-4">SNF%</th>
+                    <th className="p-4">Rate</th>
+                    <th className="p-4">Amount</th>
                   </>
                 )}
                 {activeReport === 'payment' && (
@@ -450,47 +513,69 @@ const Reports: React.FC = () => {
                 <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
                   {activeReport === 'collection' && (
                     <>
-                      <td className="p-4 text-slate-400 text-sm">{row.date}</td>
-                      <td className="p-4"><span className={`px-2 py-1 rounded text-[10px] font-bold ${row.shift === 'Morning' ? 'bg-blue-500/10 text-blue-500' : 'bg-orange-500/10 text-orange-500'}`}>{row.shift}</span></td>
-                      <td className="p-4 text-white text-sm">{row.count}</td>
-                      <td className="p-4 text-white text-sm font-bold">{row.qty.toFixed(1)}</td>
-                      <td className="p-4 text-slate-400 text-sm">{row.fat.toFixed(2)}%</td>
-                      <td className="p-4 text-slate-400 text-sm">{row.snf.toFixed(2)}%</td>
-                      <td className="p-4 font-black text-green-400 text-sm">₹{row.amount.toFixed(2)}</td>
+                      <td className="p-4">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${row.shift === 'Morning' ? 'bg-blue-500/20 text-blue-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                          {row.shift}
+                        </span>
+                      </td>
+                      <td className="p-4 font-mono text-xs text-slate-400">{row.code}</td>
+                      <td className="p-4 font-bold text-white">{row.name}</td>
+                      <td className="p-4 font-black text-white">{row.qty.toFixed(1)}</td>
+                      <td className="p-4 text-slate-400">{row.fat.toFixed(1)}%</td>
+                      <td className="p-4 text-slate-400">{row.snf.toFixed(1)}%</td>
+                      <td className="p-4 text-slate-400">₹{row.rate.toFixed(2)}</td>
+                      <td className="p-4 font-black text-green-400">₹{row.amount.toFixed(2)}</td>
                     </>
                   )}
                   {activeReport === 'farmer' && (
                     <>
-                      <td className="p-4 font-mono text-white text-xs">{row.code}</td>
-                      <td className="p-4 text-white text-sm font-bold">{row.name}</td>
-                      <td className="p-4 text-slate-400 text-sm">{row.count}</td>
-                      <td className="p-4 text-white text-sm font-bold">{row.qty.toFixed(1)}</td>
-                      <td className="p-4 text-slate-400 text-sm">{(row.fat / row.count).toFixed(2)}%</td>
-                      <td className="p-4 text-slate-400 text-sm">{(row.snf / row.count).toFixed(2)}%</td>
-                      <td className="p-4 font-black text-green-400 text-sm">₹{row.amount.toFixed(2)}</td>
+                      <td className="p-4 font-mono text-xs text-slate-400">{row.code}</td>
+                      <td className="p-4 font-bold text-white">{row.name}</td>
+                      <td className="p-4 text-slate-400">{row.count}</td>
+                      <td className="p-4 font-black text-white">{row.qty.toFixed(1)}</td>
+                      <td className="p-4 text-slate-400">{(row.fat / row.count).toFixed(2)}%</td>
+                      <td className="p-4 text-slate-400">{(row.snf / row.count).toFixed(2)}%</td>
+                      <td className="p-4 font-black text-green-400">₹{row.amount.toFixed(2)}</td>
+                      <td className="p-4"><div style={{ minWidth: '200px', height: '40px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}></div></td>
+                    </>
+                  )}
+                  {activeReport === 'farmer-periodical' && (
+                    <>
+                      <td className="p-4 text-slate-400 text-sm">{row.date}</td>
+                      <td className="p-4">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${row.shift === 'Morning' ? 'bg-blue-500/20 text-blue-400' : 'bg-amber-500/20 text-amber-400'}`}>
+                          {row.shift}
+                        </span>
+                      </td>
+                      <td className="p-4 font-black text-white">{row.qty.toFixed(1)}</td>
+                      <td className="p-4 text-slate-400">{row.fat.toFixed(1)}%</td>
+                      <td className="p-4 text-slate-400">{row.snf.toFixed(1)}%</td>
+                      <td className="p-4 text-slate-400">₹{row.rate.toFixed(2)}</td>
+                      <td className="p-4 font-black text-green-400">₹{row.amount.toFixed(2)}</td>
                     </>
                   )}
                   {activeReport === 'payment' && (
                     <>
-                      <td className="p-4 font-mono text-white text-xs">{row.code}</td>
-                      <td className="p-4 text-white text-sm font-bold">{row.name}</td>
-                      <td className="p-4 text-white text-sm font-bold">{row.qty.toFixed(1)}</td>
-                      <td className="p-4 text-slate-300 text-sm">₹{row.gross.toFixed(2)}</td>
-                      <td className="p-4 text-red-400 text-sm">₹{row.deductions.toFixed(2)}</td>
-                      <td className="p-4 font-black text-green-400 text-sm">₹{row.net.toFixed(2)}</td>
+                      <td className="p-4 font-mono text-xs text-slate-400">{row.code}</td>
+                      <td className="p-4 font-bold text-white">{row.name}</td>
+                      <td className="p-4 font-black text-white">{row.qty.toFixed(1)}</td>
+                      <td className="p-4 text-slate-300">₹{row.gross.toFixed(2)}</td>
+                      <td className="p-4 text-red-400">₹{row.deductions.toFixed(2)}</td>
+                      <td className="p-4 font-black text-green-400">₹{row.net.toFixed(2)}</td>
                     </>
                   )}
                 </tr>
               ))}
             </tbody>
-            <tfoot className="bg-white/5">
-              <tr className="font-black text-white border-t-2 border-white/10">
+            <tfoot className="border-t-2 border-white/10">
+              <tr className="font-black text-white">
                 {activeReport === 'collection' && (
                   <>
                     <td colSpan={3} className="p-4 text-right text-[10px] uppercase text-slate-500">Grand Total</td>
                     <td className="p-4 text-lg">{grandTotal.qty.toFixed(1)}</td>
                     <td className="p-4 text-slate-400 text-sm">{grandTotal.fat.toFixed(2)}%</td>
                     <td className="p-4 text-slate-400 text-sm">{grandTotal.snf.toFixed(2)}%</td>
+                    <td className="p-4"></td>
                     <td className="p-4 text-lg text-green-400">₹{grandTotal.amount.toFixed(2)}</td>
                   </>
                 )}
@@ -500,6 +585,15 @@ const Reports: React.FC = () => {
                     <td className="p-4 text-lg">{grandTotal.qty.toFixed(1)}</td>
                     <td className="p-4 text-slate-400 text-sm">{grandTotal.fat.toFixed(2)}%</td>
                     <td className="p-4 text-slate-400 text-sm">{grandTotal.snf.toFixed(2)}%</td>
+                    <td className="p-4 text-lg text-green-400">₹{grandTotal.amount.toFixed(2)}</td>
+                    <td className="p-4"></td>
+                  </>
+                )}
+                {activeReport === 'farmer-periodical' && (
+                  <>
+                    <td colSpan={2} className="p-4 text-right text-[10px] uppercase text-slate-500">Grand Total</td>
+                    <td className="p-4 text-lg">{grandTotal.qty.toFixed(1)}</td>
+                    <td colSpan={3} className="p-4"></td>
                     <td className="p-4 text-lg text-green-400">₹{grandTotal.amount.toFixed(2)}</td>
                   </>
                 )}
@@ -533,12 +627,13 @@ const Reports: React.FC = () => {
             <tr>
               {activeReport === 'collection' && (
                 <>
-                  <th>Date</th>
                   <th>Shift</th>
-                  <th>Farmers</th>
+                  <th>Code</th>
+                  <th>Farmer Name</th>
                   <th>Qty (L)</th>
-                  <th>Avg FAT</th>
-                  <th>Avg SNF</th>
+                  <th>FAT%</th>
+                  <th>SNF%</th>
+                  <th>Rate</th>
                   <th>Amount</th>
                 </>
               )}
@@ -551,6 +646,18 @@ const Reports: React.FC = () => {
                   <th>Avg FAT</th>
                   <th>Avg SNF</th>
                   <th>Total Amount</th>
+                  <th>Farmer Signature</th>
+                </>
+              )}
+              {activeReport === 'farmer-periodical' && (
+                <>
+                  <th>Date</th>
+                  <th>Shift</th>
+                  <th>Qty (L)</th>
+                  <th>FAT%</th>
+                  <th>SNF%</th>
+                  <th>Rate</th>
+                  <th>Amount</th>
                 </>
               )}
               {activeReport === 'payment' && (
@@ -570,12 +677,13 @@ const Reports: React.FC = () => {
               <tr key={idx}>
                 {activeReport === 'collection' && (
                   <>
-                    <td>{row.date}</td>
                     <td>{row.shift}</td>
-                    <td>{row.count}</td>
+                    <td>{row.code}</td>
+                    <td>{row.name}</td>
                     <td>{row.qty.toFixed(1)}</td>
-                    <td>{row.fat.toFixed(2)}%</td>
-                    <td>{row.snf.toFixed(2)}%</td>
+                    <td>{row.fat.toFixed(1)}%</td>
+                    <td>{row.snf.toFixed(1)}%</td>
+                    <td>₹{row.rate.toFixed(2)}</td>
                     <td>₹{row.amount.toFixed(2)}</td>
                   </>
                 )}
@@ -587,6 +695,18 @@ const Reports: React.FC = () => {
                     <td>{row.qty.toFixed(1)}</td>
                     <td>{(row.fat / row.count).toFixed(2)}%</td>
                     <td>{(row.snf / row.count).toFixed(2)}%</td>
+                    <td>₹{row.amount.toFixed(2)}</td>
+                    <td><div style={{ minWidth: '200px', height: '60px', borderBottom: '1px solid rgba(0,0,0,0.2)' }}></div></td>
+                  </>
+                )}
+                {activeReport === 'farmer-periodical' && (
+                  <>
+                    <td>{row.date}</td>
+                    <td>{row.shift}</td>
+                    <td>{row.qty.toFixed(1)}</td>
+                    <td>{row.fat.toFixed(1)}%</td>
+                    <td>{row.snf.toFixed(1)}%</td>
+                    <td>₹{row.rate.toFixed(2)}</td>
                     <td>₹{row.amount.toFixed(2)}</td>
                   </>
                 )}
@@ -609,6 +729,7 @@ const Reports: React.FC = () => {
                   <td>{grandTotal.qty.toFixed(1)}</td>
                   <td>{grandTotal.fat.toFixed(2)}%</td>
                   <td>{grandTotal.snf.toFixed(2)}%</td>
+                  <td></td>
                   <td>₹{grandTotal.amount.toFixed(2)}</td>
                 </>
               )}
@@ -618,6 +739,15 @@ const Reports: React.FC = () => {
                   <td>{grandTotal.qty.toFixed(1)}</td>
                   <td>{grandTotal.fat.toFixed(2)}%</td>
                   <td>{grandTotal.snf.toFixed(2)}%</td>
+                  <td>₹{grandTotal.amount.toFixed(2)}</td>
+                  <td></td>
+                </>
+              )}
+              {activeReport === 'farmer-periodical' && (
+                <>
+                  <td colSpan={2} style={{ textAlign: 'right' }}>Grand Total</td>
+                  <td>{grandTotal.qty.toFixed(1)}</td>
+                  <td colSpan={3}></td>
                   <td>₹{grandTotal.amount.toFixed(2)}</td>
                 </>
               )}
