@@ -99,13 +99,11 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   }, [qty, fat, snfClr, activeRateConfig]);
 
   const getConfigForDate = async (collectionDate: string) => {
-    // First try: load from current (always the latest uploaded rate chart)
     const currentSnap = await get(ref(database, 'globalRateConfig/current'));
     if (currentSnap.exists()) {
       return currentSnap.val();
     }
 
-    // Fallback: search history by date
     const historySnap = await get(ref(database, 'globalRateConfig/history'));
     if (!historySnap.exists()) return null;
 
@@ -152,32 +150,20 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     const config = await getConfigForDate(sessionDate);
     if (!config) {
       alert('No rate chart found for this date. Please contact admin to upload a rate chart.');
-      console.warn('No rate config found for date:', sessionDate);
-      setFatMin(2.5);
-      setFatMax(15.0);
-      setSnfMin(7.5);
-      setSnfMax(15.0);
       return;
     }
     setActiveRateConfig(config);
 
-    // Safe extraction with fallback
     const fatVals = (config.fatValues || []).map(Number).filter((n: any) => !isNaN(n)).sort((a: number, b: number) => a - b);
     const snfVals = (config.snfValues || []).map(Number).filter((n: any) => !isNaN(n)).sort((a: number, b: number) => a - b);
 
     if (fatVals.length > 0) {
       setFatMin(fatVals[0]);
       setFatMax(fatVals[fatVals.length - 1]);
-    } else {
-      setFatMin(2.5);
-      setFatMax(15.0);
     }
     if (snfVals.length > 0) {
       setSnfMin(snfVals[0]);
       setSnfMax(snfVals[snfVals.length - 1]);
-    } else {
-      setSnfMin(7.5);
-      setSnfMax(15.0);
     }
 
     setShowSessionSetup(false);
@@ -193,7 +179,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     }
 
     if (!farmerFound) {
-      alert('Farmer not found! Please enter a valid farmer code.');
+      alert('Farmer not found!');
       farmerCodeRef.current?.focus();
       return;
     }
@@ -201,48 +187,13 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     const fatVal = parseFloat(fat);
     const snfVal = parseFloat(snfClr);
 
-    const FIXED_FAT_MIN = 2.5;
-    const FIXED_FAT_MAX = 15.0;
-    const FIXED_SNF_MIN = 7.5;
-    const FIXED_SNF_MAX = 15.0;
-
-    if (fatVal < FIXED_FAT_MIN || fatVal > FIXED_FAT_MAX) {
-      const popup = document.createElement('div');
-      popup.innerHTML = `
-        <div style="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px)">
-          <div style="background:linear-gradient(145deg,#1a0a0a,#2d1010);border:1px solid rgba(248,113,113,0.4);border-radius:16px;padding:32px;max-width:360px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
-            <div style="font-size:40px;margin-bottom:12px">❌</div>
-            <h3 style="color:#f87171;font-size:18px;font-weight:800;margin-bottom:8px">Invalid FAT Value</h3>
-            <p style="color:rgba(255,255,255,0.7);font-size:14px;margin-bottom:6px">Allowed Range: <strong style="color:white">${FIXED_FAT_MIN} – ${FIXED_FAT_MAX}</strong></p>
-            <p style="color:rgba(255,255,255,0.5);font-size:13px;margin-bottom:24px">Entered: <strong style="color:#f87171">${fatVal}</strong></p>
-            <button onclick="this.closest('div[style*=inset]').remove()" style="background:linear-gradient(135deg,#ef4444,#b91c1c);border:none;border-radius:10px;color:white;font-weight:700;font-size:14px;padding:12px 32px;cursor:pointer;width:100%">OK</button>
-          </div>
-        </div>`;
-      document.body.appendChild(popup.firstElementChild!);
-      fatRef.current?.focus();
+    if (fatVal < 2.5 || fatVal > 15.0 || snfVal < 7.5 || snfVal > 15.0) {
+      alert('Invalid FAT or SNF/CLR values!');
       return;
     }
 
-    if (snfVal < FIXED_SNF_MIN || snfVal > FIXED_SNF_MAX) {
-      const popup = document.createElement('div');
-      popup.innerHTML = `
-        <div style="position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px)">
-          <div style="background:linear-gradient(145deg,#1a0a0a,#2d1010);border:1px solid rgba(248,113,113,0.4);border-radius:16px;padding:32px;max-width:360px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6)">
-            <div style="font-size:40px;margin-bottom:12px">❌</div>
-            <h3 style="color:#f87171;font-size:18px;font-weight:800;margin-bottom:8px">Invalid ${sessionMode} Value</h3>
-            <p style="color:rgba(255,255,255,0.7);font-size:14px;margin-bottom:6px">Allowed Range: <strong style="color:white">${FIXED_SNF_MIN} – ${FIXED_SNF_MAX}</strong></p>
-            <p style="color:rgba(255,255,255,0.5);font-size:13px;margin-bottom:24px">Entered: <strong style="color:#f87171">${snfVal}</strong></p>
-            <button onclick="this.closest('div[style*=inset]').remove()" style="background:linear-gradient(135deg,#ef4444,#b91c1c);border:none;border-radius:10px;color:white;font-weight:700;font-size:14px;padding:12px 32px;cursor:pointer;width:100%">OK</button>
-          </div>
-        </div>`;
-      document.body.appendChild(popup.firstElementChild!);
-      snfClrRef.current?.focus();
-      return;
-    }
-
-    // Prevent duplicate entry if not modifying
     if (!isModifying && todayEntries.find(e => e.farmerCode === farmerCode)) {
-      alert('⚠️ Entry already exists! Use Modify button from the table.');
+      alert('Entry already exists!');
       return;
     }
 
@@ -255,24 +206,16 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
       timestamp: Date.now(),
     };
 
-    if (sessionMode === 'SNF') {
-      entryData.snf = parseFloat(snfClr);
-    } else {
-      entryData.clr = parseFloat(snfClr);
-    }
+    if (sessionMode === 'SNF') entryData.snf = parseFloat(snfClr);
+    else entryData.clr = parseFloat(snfClr);
 
     const entryRef = ref(database, up(`milkCollection/${sessionDate}/${sessionShift}/${farmerCode}`));
     await set(entryRef, entryData);
 
-    if (printEnabled) {
-      printSlip();
-    }
-
+    if (printEnabled) printSlip();
     if (smsEnabled) {
-      // Fetch farmer mobile from Firebase
       const farmerSnap = await get(ref(database, up(`farmers/${farmerCode}`)));
       const farmerMobile = farmerSnap.exists() ? farmerSnap.val().mobileNo : '';
-      
       if (farmerMobile) {
         await sendSMS({
           farmerId: farmerCode,
@@ -293,24 +236,19 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
 
   const printSlip = () => {
     const printContent = `
-      <div id="milk-print-slip" style="padding: 20px; font-family: Arial;">
+      <div style="padding: 20px; font-family: Arial;">
         <h2 style="text-align: center;">${dcsInfo.name || 'DCS Pro'}</h2>
         <h3 style="text-align: center;">Milk Collection Receipt</h3>
         <hr/>
         <p><strong>Date:</strong> ${sessionDate} | <strong>Shift:</strong> ${sessionShift}</p>
-        <p><strong>Farmer Code:</strong> ${farmerCode}</p>
-        <p><strong>Farmer Name:</strong> ${farmerName}</p>
+        <p><strong>Farmer:</strong> ${farmerCode} - ${farmerName}</p>
         <hr/>
-        <p><strong>Quantity:</strong> ${qty} Liters</p>
-        <p><strong>FAT:</strong> ${fat}%</p>
-        <p><strong>${sessionMode}:</strong> ${snfClr}%</p>
-        <p><strong>Rate:</strong> ₹${(rate || 0).toFixed(2)}/Liter</p>
+        <p><strong>Quantity:</strong> ${qty} L</p>
+        <p><strong>FAT:</strong> ${fat}% | <strong>${sessionMode}:</strong> ${snfClr}%</p>
+        <p><strong>Rate:</strong> ₹${(rate || 0).toFixed(2)}</p>
         <p style="font-size: 18px;"><strong>Amount:</strong> ₹${(amount || 0).toFixed(2)}</p>
-        <hr/>
-        <p style="text-align: center; font-size: 12px;">Thank you!</p>
       </div>
     `;
-    
     const printWindow = window.open('', '', 'width=400,height=600');
     if (printWindow) {
       printWindow.document.write(printContent);
@@ -342,21 +280,17 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     setFat(entry.fat.toString());
     setSnfClr((entry.snf || entry.clr || '').toString());
     setIsModifying(true);
-    setWarningMessage('');
     qtyRef.current?.focus();
   };
 
   const handleDelete = async (code: string) => {
-    if (confirm('Are you sure you want to delete this entry?')) {
-      const entryRef = ref(database, up(`milkCollection/${sessionDate}/${sessionShift}/${code}`));
-      await remove(entryRef);
-      setDuplicateWarning({show: false, message: ''});
+    if (confirm('Delete this entry?')) {
+      await remove(ref(database, up(`milkCollection/${sessionDate}/${sessionShift}/${code}`)));
     }
   };
 
   const handleFarmerCodeChange = (code: string) => {
     setFarmerCode(code);
-    setDuplicateWarning({show: false, message: ''});
     if (code.length >= 1) {
       if (fetchTimerRef.current) clearTimeout(fetchTimerRef.current);
       fetchTimerRef.current = setTimeout(async () => {
@@ -364,50 +298,33 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
         if (snap.exists()) {
           setFarmerName(snap.val().farmerName || snap.val().name);
           setFarmerFound(true);
-          setWarningMessage(todayEntries.find(ent => ent.farmerCode === code) ? 'Already entered today' : '');
+          setWarningMessage(todayEntries.find(ent => ent.farmerCode === code) ? 'Already entered' : '');
         } else {
           setFarmerName('');
           setFarmerFound(false);
-          setWarningMessage('');
         }
       }, 300);
     } else {
       setFarmerName('');
       setFarmerFound(false);
-      setWarningMessage('');
     }
   };
 
   const handleFarmerCodeKeyDown = async (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      if (farmerFound) {
-        // Check if entry already exists
-        const existingEntrySnap = await get(
-          ref(database, up(`milkCollection/${sessionDate}/${sessionShift}/${farmerCode}`))
-        );
-
-        if (existingEntrySnap.exists()) {
-          const existing = existingEntrySnap.val();
-          // Show warning - do NOT allow fresh save
-          setDuplicateWarning({
-            show: true,
-            message: `⚠️ Entry already exists for ${existing.farmerName}!\nQty: ${existing.qty}L | FAT: ${existing.fat}% | Rate: ₹${(existing.rate || 0).toFixed(2)}\n\nPlease use the 'Modify' button in the table below to update this entry.`
-          });
-          return;
-        }
-        qtyRef.current?.focus();
+    if (e.key === 'Enter' && farmerFound) {
+      const snap = await get(ref(database, up(`milkCollection/${sessionDate}/${sessionShift}/${farmerCode}`)));
+      if (snap.exists()) {
+        setDuplicateWarning({ show: true, message: `⚠️ Entry exists for ${farmerName}!` });
+        return;
       }
+      qtyRef.current?.focus();
     }
   };
 
   const totalQty = (todayEntries || []).reduce((sum, e) => sum + safeNum(e?.qty), 0);
   const totalAmount = (todayEntries || []).reduce((sum, e) => sum + safeNum(e?.amount), 0);
-  const avgFat = (todayEntries || []).length > 0
-    ? (todayEntries || []).reduce((sum, e) => sum + safeNum(e?.fat), 0) / todayEntries.length
-    : 0;
-  const avgSnfClr = (todayEntries || []).length > 0
-    ? (todayEntries || []).reduce((sum, e) => sum + safeNum(e?.snf || e?.clr), 0) / todayEntries.length
-    : 0;
+  const avgFat = (todayEntries || []).length > 0 ? (todayEntries || []).reduce((sum, e) => sum + safeNum(e?.fat), 0) / todayEntries.length : 0;
+  const avgSnfClr = (todayEntries || []).length > 0 ? (todayEntries || []).reduce((sum, e) => sum + safeNum(e?.snf || e?.clr), 0) / todayEntries.length : 0;
 
   if (showSessionSetup) {
     return (
@@ -478,10 +395,11 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
 
   return (
     <div className="page-wrapper animate-fadeIn">
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Entry Form */}
-        <div style={{ width: '400px', flexShrink: 0 }}>
-          <div className="glass-card sticky top-24" style={{ padding: '16px 22px 22px 22px' }}>
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
+        {/* Left Column: Entry Form + Session Summary */}
+        <div style={{ width: '400px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* Milk Entry Form */}
+          <div className="glass-card" style={{ padding: '16px 22px 22px 22px' }}>
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h2 className="text-white font-black text-xl tracking-tight">Milk Entry</h2>
@@ -497,10 +415,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
               <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label className="label-text" style={{ display: 'block', marginBottom: '8px', fontSize: '11px', letterSpacing: '0.5px' }}>Farmer Code</label>
-                  {warningMessage && <span className="text-[10px] text-amber-500 animate-pulse font-bold">{warningMessage}</span>}
-                </div>
+                <label className="label-text" style={{ display: 'block', marginBottom: '8px', fontSize: '11px', letterSpacing: '0.5px' }}>Farmer Code</label>
                 <input
                   ref={farmerCodeRef}
                   type="number"
@@ -512,66 +427,27 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                   placeholder="Enter Code"
                 />
                 {farmerName && (
-                  <div style={{ marginTop: '10px', padding: '8px 12px', borderRadius: '10px', background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.25)', display: 'flex', alignItems: 'center', gap: '8px' }} className="animate-fadeIn">
+                  <div style={{ marginTop: '10px', padding: '8px 12px', borderRadius: '10px', background: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.25)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <CheckCircle size={14} className="text-green-500" />
                     <span className="text-white font-bold text-sm truncate">{farmerName}</span>
                   </div>
                 )}
               </div>
 
-              {duplicateWarning.show && (
-                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs whitespace-pre-line leading-relaxed animate-bounce">
-                  {duplicateWarning.message}
-                </div>
-              )}
-
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div>
                   <label className="label-text" style={{ display: 'block', marginBottom: '8px', fontSize: '11px', letterSpacing: '0.5px' }}>Quantity (L)</label>
-                  <input
-                    ref={qtyRef}
-                    type="number"
-                    step="0.1"
-                    value={qty}
-                    onChange={(e) => setQty(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && fatRef.current?.focus()}
-                    className="input-3d"
-                    style={{ padding: '11px 14px', fontSize: '14px' }}
-                    placeholder="0.0"
-                  />
+                  <input ref={qtyRef} type="number" step="0.1" value={qty} onChange={(e) => setQty(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && fatRef.current?.focus()} className="input-3d" style={{ padding: '11px 14px', fontSize: '14px' }} placeholder="0.0" />
                 </div>
                 <div>
                   <label className="label-text" style={{ display: 'block', marginBottom: '8px', fontSize: '11px', letterSpacing: '0.5px' }}>FAT (%)</label>
-                  <input
-                    ref={fatRef}
-                    type="number"
-                    step="0.1"
-                    value={fat}
-                    onChange={(e) => setFat(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && snfClrRef.current?.focus()}
-                    className="input-3d"
-                    style={{ padding: '11px 14px', fontSize: '14px' }}
-                    placeholder="0.0"
-                  />
+                  <input ref={fatRef} type="number" step="0.1" value={fat} onChange={(e) => setFat(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && snfClrRef.current?.focus()} className="input-3d" style={{ padding: '11px 14px', fontSize: '14px' }} placeholder="0.0" />
                 </div>
               </div>
 
               <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label className="label-text" style={{ display: 'block', marginBottom: '8px', fontSize: '11px', letterSpacing: '0.5px' }}>{sessionMode} (%)</label>
-                  <span className="text-[10px] text-slate-500 font-bold">Range: {snfMin} - {snfMax}</span>
-                </div>
-                <input
-                  ref={snfClrRef}
-                  type="number"
-                  step="0.1"
-                  value={snfClr}
-                  onChange={(e) => setSnfClr(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSaveOrUpdate()}
-                  className="input-3d"
-                  style={{ padding: '11px 14px', fontSize: '14px' }}
-                  placeholder="0.0"
-                />
+                <label className="label-text" style={{ display: 'block', marginBottom: '8px', fontSize: '11px', letterSpacing: '0.5px' }}>{sessionMode} (%)</label>
+                <input ref={snfClrRef} type="number" step="0.1" value={snfClr} onChange={(e) => setSnfClr(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSaveOrUpdate()} className="input-3d" style={{ padding: '11px 14px', fontSize: '14px' }} placeholder="0.0" />
               </div>
 
               <div style={{ padding: '16px 18px', borderRadius: '14px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -586,33 +462,15 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
               </div>
 
               <div style={{ display: 'flex', gap: '12px', paddingTop: '6px' }}>
-                <button
-                  onClick={clearForm}
-                  className="btn-secondary flex-1 py-3"
-                >
-                  Clear
-                </button>
-                <button
-                  onClick={handleSaveOrUpdate}
-                  className={`btn-3d flex-[2] py-3 ${isModifying ? 'from-amber-500 to-orange-600' : ''}`}
-                >
-                  {isModifying ? 'Update Entry' : 'Save Entry'}
-                </button>
+                <button onClick={clearForm} className="btn-secondary flex-1 py-3">Clear</button>
+                <button onClick={handleSaveOrUpdate} className={`btn-3d flex-[2] py-3 ${isModifying ? 'from-amber-500 to-orange-600' : ''}`}>{isModifying ? 'Update Entry' : 'Save Entry'}</button>
               </div>
             </div>
           </div>
 
-          {/* Session Summary — SEPARATE card below, NOT inside glass-card */}
-          <div className="glass-card" style={{ marginTop: '14px', padding: '16px 20px' }}>
-            <p style={{
-              fontSize: '11px', fontWeight: 800,
-              color: 'rgba(255,255,255,0.45)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.6px',
-              marginBottom: '14px',
-              paddingBottom: '10px',
-              borderBottom: '1px solid rgba(255,255,255,0.07)'
-            }}>Session Summary</p>
+          {/* Session Summary Card */}
+          <div className="glass-card" style={{ padding: '16px 20px' }}>
+            <p style={{ fontSize: '11px', fontWeight: 800, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '14px', paddingBottom: '10px', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>Session Summary</p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '10px', padding: '12px 14px' }}>
                 <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '6px' }}>Total QTY</p>
@@ -620,11 +478,11 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
               </div>
               <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '10px', padding: '12px 14px' }}>
                 <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '6px' }}>Avg FAT</p>
-                <p style={{ fontSize: '18px', fontWeight: 900, color: 'white' }}>{avgFat.toFixed(2)}<span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>%</span></p>
+                <p style={{ fontSize: '18px', fontWeight: 900, color: 'white' }}>{avgFat.toFixed(2)}%</p>
               </div>
               <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '10px', padding: '12px 14px' }}>
-                <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '6px' }}>Avg SNF</p>
-                <p style={{ fontSize: '18px', fontWeight: 900, color: 'white' }}>{avgSnfClr.toFixed(2)}<span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>%</span></p>
+                <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '6px' }}>Avg {sessionMode}</p>
+                <p style={{ fontSize: '18px', fontWeight: 900, color: 'white' }}>{avgSnfClr.toFixed(2)}%</p>
               </div>
               <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '10px', padding: '12px 14px' }}>
                 <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '6px' }}>Total Amount</p>
@@ -634,71 +492,47 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
           </div>
         </div>
 
-        {/* Entries Table */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1 }}>
-          {/* Recent Entries Table */}
+        {/* Right Column: Entries Table */}
+        <div style={{ flex: 1 }}>
           <div className="glass-card overflow-hidden">
             <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 className="text-white font-bold flex items-center gap-2">
-                <Clock size={16} className="text-amber-500" /> Recent Entries
-              </h3>
-              <span className="bg-white/5 text-slate-400 px-3 py-1 rounded-full text-[10px] font-bold">
-                {(todayEntries || []).length} Records
-              </span>
+              <h3 className="text-white font-bold flex items-center gap-2"><Clock size={16} className="text-amber-500" /> Recent Entries</h3>
+              <span className="bg-white/5 text-slate-400 px-3 py-1 rounded-full text-[10px] font-bold">{(todayEntries || []).length} Records</span>
             </div>
-            <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+            <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
               <table className="w-full text-left border-collapse">
                 <thead className="sticky top-0 bg-slate-900/95 backdrop-blur-sm z-10">
                   <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-white/5">
-                    <th style={{ padding: '12px 16px', fontWeight: 900, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }}>Code</th>
-                    <th style={{ padding: '12px 16px', fontWeight: 900, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }}>Farmer Name</th>
-                    <th style={{ padding: '12px 16px', fontWeight: 900, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }}>Qty</th>
-                    <th style={{ padding: '12px 16px', fontWeight: 900, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }}>FAT</th>
-                    <th style={{ padding: '12px 16px', fontWeight: 900, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }}>{sessionMode}</th>
-                    <th style={{ padding: '12px 16px', fontWeight: 900, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }}>Rate</th>
-                    <th style={{ padding: '12px 16px', fontWeight: 900, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }}>Amount</th>
-                    <th style={{ padding: '12px 16px', fontWeight: 900, fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.4)' }} className="text-center">Actions</th>
+                    <th className="p-4">Code</th>
+                    <th className="p-4">Farmer Name</th>
+                    <th className="p-4">Qty</th>
+                    <th className="p-4">FAT</th>
+                    <th className="p-4">{sessionMode}</th>
+                    <th className="p-4">Rate</th>
+                    <th className="p-4">Amount</th>
+                    <th className="p-4 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {(todayEntries || []).sort((a,b) => b.timestamp - a.timestamp).map((entry) => {
-                    if (!entry) return null;
-                    return (
-                      <tr key={entry.farmerCode} className="hover:bg-white/[0.02] transition-colors group">
-                        <td style={{ padding: '12px 16px' }}><span className="bg-white/5 px-2 py-1 rounded font-mono text-white text-xs">{entry.farmerCode}</span></td>
-                        <td style={{ padding: '12px 16px' }} className="font-bold text-slate-300 text-sm">{entry.farmerName}</td>
-                        <td style={{ padding: '12px 16px' }} className="font-black text-white text-sm">{safeNum(entry.qty).toFixed(1)}</td>
-                        <td style={{ padding: '12px 16px' }} className="text-slate-400 text-sm">{safeNum(entry.fat).toFixed(1)}</td>
-                        <td style={{ padding: '12px 16px' }} className="text-slate-400 text-sm">{safeNum(entry.snf || entry.clr).toFixed(1)}</td>
-                        <td style={{ padding: '12px 16px' }} className="text-slate-400 text-sm">₹{safeNum(entry.rate).toFixed(2)}</td>
-                        <td style={{ padding: '12px 16px' }} className="font-black text-green-400 text-sm">₹{safeNum(entry.amount).toFixed(2)}</td>
-                        <td style={{ padding: '12px 16px' }}>
-                          <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={() => handleModify(entry)}
-                              className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all"
-                              title="Edit"
-                            >
-                              <Edit2 size={14} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(entry.farmerCode)}
-                              className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
-                              title="Delete"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                  {(todayEntries || []).length === 0 && (
-                    <tr>
-                      <td colSpan={8} className="p-12 text-center text-slate-500 font-medium italic">
-                        No entries recorded for this session yet.
+                  {(todayEntries || []).sort((a,b) => b.timestamp - a.timestamp).map((entry) => (
+                    <tr key={entry.farmerCode} className="hover:bg-white/[0.02] transition-colors group">
+                      <td className="p-4"><span className="bg-white/5 px-2 py-1 rounded font-mono text-white text-xs">{entry.farmerCode}</span></td>
+                      <td className="p-4 font-bold text-slate-300 text-sm">{entry.farmerName}</td>
+                      <td className="p-4 font-black text-white text-sm">{safeNum(entry.qty).toFixed(1)}</td>
+                      <td className="p-4 text-slate-400 text-sm">{safeNum(entry.fat).toFixed(1)}%</td>
+                      <td className="p-4 text-slate-400 text-sm">{safeNum(entry.snf || entry.clr).toFixed(1)}%</td>
+                      <td className="p-4 text-slate-400 text-sm">₹{safeNum(entry.rate).toFixed(2)}</td>
+                      <td className="p-4 font-black text-green-400 text-sm">₹{safeNum(entry.amount).toFixed(2)}</td>
+                      <td className="p-4">
+                        <div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => handleModify(entry)} className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all"><Edit2 size={14} /></button>
+                          <button onClick={() => handleDelete(entry.farmerCode)} className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"><Trash2 size={14} /></button>
+                        </div>
                       </td>
                     </tr>
+                  ))}
+                  {(todayEntries || []).length === 0 && (
+                    <tr><td colSpan={8} className="p-12 text-center text-slate-500 font-medium italic">No entries recorded yet.</td></tr>
                   )}
                 </tbody>
               </table>
