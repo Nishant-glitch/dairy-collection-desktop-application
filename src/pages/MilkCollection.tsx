@@ -408,13 +408,15 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                 <div style={{ display: 'flex', gap: '8px', background: 'rgba(0,0,0,0.2)', padding: '4px', borderRadius: '10px' }}>
                   <button 
                     onClick={() => setSessionShift('Morning')} 
-                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${sessionShift === 'Morning' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
+                    className={`flex-1 rounded-lg font-bold transition-all ${sessionShift === 'Morning' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
+                    style={{ padding: '10px 32px', fontSize: '16px', minHeight: '44px' }}
                   >
                     Morning
                   </button>
                   <button 
                     onClick={() => setSessionShift('Evening')} 
-                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${sessionShift === 'Evening' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
+                    className={`flex-1 rounded-lg font-bold transition-all ${sessionShift === 'Evening' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
+                    style={{ padding: '10px 32px', fontSize: '16px', minHeight: '44px' }}
                   >
                     Evening
                   </button>
@@ -425,13 +427,15 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                 <div style={{ display: 'flex', gap: '8px', background: 'rgba(0,0,0,0.2)', padding: '4px', borderRadius: '10px' }}>
                   <button 
                     onClick={() => setSessionMode('SNF')} 
-                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${sessionMode === 'SNF' ? 'bg-green-600 text-white shadow-lg shadow-green-600/20' : 'text-white/40 hover:text-white/60'}`}
+                    className={`flex-1 rounded-lg font-bold transition-all ${sessionMode === 'SNF' ? 'bg-green-600 text-white shadow-lg shadow-green-600/20' : 'text-white/40 hover:text-white/60'}`}
+                    style={{ padding: '10px 32px', fontSize: '16px', minHeight: '44px' }}
                   >
                     SNF
                   </button>
                   <button 
                     onClick={() => setSessionMode('CLR')} 
-                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${sessionMode === 'CLR' ? 'bg-green-600 text-white shadow-lg shadow-green-600/20' : 'text-white/40 hover:text-white/60'}`}
+                    className={`flex-1 rounded-lg font-bold transition-all ${sessionMode === 'CLR' ? 'bg-green-600 text-white shadow-lg shadow-green-600/20' : 'text-white/40 hover:text-white/60'}`}
+                    style={{ padding: '10px 32px', fontSize: '16px', minHeight: '44px' }}
                   >
                     CLR
                   </button>
@@ -439,8 +443,8 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
               </div>
             </div>
 
-            <div className="space-y-3">
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <div className="space-y-3" style={{ gap: '16px', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', marginTop: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <Printer size={18} className="text-blue-400" />
                   <span style={{ fontSize: '14px', fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>Auto-Print Slip</span>
@@ -648,7 +652,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
             </div>
             <div className="glass-card" style={{ padding: '16px 20px' }}>
               <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>Total Amount</p>
-              <p style={{ fontSize: '22px', fontWeight: 900, color: '#4ade80' }}>₹{totalAmount.toFixed(0)}</p>
+              <p style={{ fontSize: '22px', fontWeight: 900, color: '#4ade80' }}>₹{totalAmount.toFixed(2)}</p>
             </div>
             <div className="glass-card" style={{ padding: '16px 20px' }}>
               <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>Avg FAT</p>
@@ -675,30 +679,30 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-white/5">
-                    <th style={{ padding: '12px 20px', fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Code</th>
-                    <th style={{ padding: '12px 20px', fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Farmer Name</th>
-                    <th style={{ padding: '12px 20px', fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Qty (L)</th>
-                    <th style={{ padding: '12px 20px', fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>FAT/SNF</th>
-                    <th style={{ padding: '12px 20px', fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Rate</th>
-                    <th style={{ padding: '12px 20px', fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Amount</th>
-                    <th style={{ padding: '12px 20px', fontSize: '10px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }} className="text-right">Actions</th>
+                    <th style={{ padding: '12px 20px', fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Code</th>
+                    <th style={{ padding: '12px 20px', fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Farmer Name</th>
+                    <th style={{ padding: '12px 20px', fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Qty (L)</th>
+                    <th style={{ padding: '12px 20px', fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>FAT/SNF</th>
+                    <th style={{ padding: '12px 20px', fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Rate</th>
+                    <th style={{ padding: '12px 20px', fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Amount</th>
+                    <th style={{ padding: '12px 20px', fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }} className="text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {todayEntries.sort((a, b) => safeNum(b?.timestamp) - safeNum(a?.timestamp)).map((entry) => (
                     <tr key={entry.farmerCode} className="hover:bg-white/5 transition-colors">
-                      <td style={{ padding: '14px 20px', fontSize: '14px', fontWeight: 700, color: 'white' }}>{entry.farmerCode}</td>
-                      <td style={{ padding: '14px 20px', fontSize: '14px', fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>{entry.farmerName}</td>
-                      <td style={{ padding: '14px 20px', fontSize: '14px', fontWeight: 700, color: 'white' }}>{safeNum(entry?.qty).toFixed(2)}</td>
-                      <td style={{ padding: '14px 20px', fontSize: '14px' }}>
+                      <td style={{ padding: '14px 20px', fontSize: '15px', fontWeight: 700, color: 'white' }}>{entry.farmerCode}</td>
+                      <td style={{ padding: '14px 20px', fontSize: '15px', fontWeight: 600, color: 'rgba(255,255,255,0.8)' }}>{entry.farmerName}</td>
+                      <td style={{ padding: '14px 20px', fontSize: '15px', fontWeight: 700, color: 'white' }}>{safeNum(entry?.qty).toFixed(2)}</td>
+                      <td style={{ padding: '14px 20px', fontSize: '15px' }}>
                         <div className="flex items-center gap-2">
                           <span className="text-blue-400 font-bold">{safeNum(entry?.fat).toFixed(1)}</span>
                           <span className="text-white/20">/</span>
                           <span className="text-green-400 font-bold">{safeNum(entry?.snf || entry?.clr).toFixed(1)}</span>
                         </div>
                       </td>
-                      <td style={{ padding: '14px 20px', fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>₹{safeNum(entry?.rate).toFixed(2)}</td>
-                      <td style={{ padding: '14px 20px', fontSize: '14px', fontWeight: 800, color: '#4ade80' }}>₹{safeNum(entry?.amount).toFixed(2)}</td>
+                      <td style={{ padding: '14px 20px', fontSize: '15px', color: 'rgba(255,255,255,0.6)' }}>₹{safeNum(entry?.rate).toFixed(2)}</td>
+                      <td style={{ padding: '14px 20px', fontSize: '15px', fontWeight: 800, color: '#4ade80' }}>₹{safeNum(entry?.amount).toFixed(2)}</td>
                       <td style={{ padding: '14px 20px' }} className="text-right">
                         <div className="flex justify-end gap-2">
                           <button
