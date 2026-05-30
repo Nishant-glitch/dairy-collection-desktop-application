@@ -18,6 +18,7 @@ const Reports: React.FC = () => {
   const [fromDate, setFromDate] = useState(new Date().toISOString().split('T')[0]);
   const [toDate, setToDate] = useState(new Date().toISOString().split('T')[0]);
   const [shift, setShift] = useState<'All' | 'Morning' | 'Evening'>('All');
+  const [collectionShift, setCollectionShift] = useState('Morning');
   const [farmerCode, setFarmerCode] = useState('');
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7)); // yyyy-mm
 
@@ -55,38 +56,39 @@ const Reports: React.FC = () => {
       const filteredRows: any[] = [];
       let totalQty = 0, totalAmt = 0, totalFat = 0, totalSnf = 0, totalEntries = 0;
 
-      // CHANGE 1: Single date filter for collection report
+      // Single date filter for collection report
       const date = fromDate; 
       if (allData[date]) {
         const shifts = allData[date];
-        ['Morning', 'Evening'].forEach(s => {
-          if (shifts[s]) {
-            const entries = shifts[s];
-            Object.keys(entries).forEach(code => {
-              const e = entries[code];
-              filteredRows.push({
-                shift: s,
-                code,
-                name: e.farmerName || 'Unknown',
-                qty: e.qty,
-                fat: e.fat,
-                snf: (e.snf || e.clr || 0),
-                rate: e.rate,
-                amount: e.amount
-              });
-
-              totalQty += e.qty;
-              totalAmt += e.amount;
-              totalFat += e.fat;
-              totalSnf += (e.snf || e.clr || 0);
-              totalEntries++;
+        // Filter by selected collectionShift
+        if (shifts[collectionShift]) {
+          const entries = shifts[collectionShift];
+          Object.keys(entries).forEach(code => {
+            const e = entries[code];
+            filteredRows.push({
+              shift: collectionShift,
+              code,
+              name: e.farmerName || 'Unknown',
+              qty: e.qty,
+              fat: e.fat,
+              snf: (e.snf || e.clr || 0),
+              rate: e.rate,
+              amount: e.amount
             });
-          }
-        });
+
+            totalQty += e.qty;
+            totalAmt += e.amount;
+            totalFat += e.fat;
+            totalSnf += (e.snf || e.clr || 0);
+            totalEntries++;
+          });
+        }
       }
 
       setReportData(filteredRows);
-      setReportTitle('Collection Shift Wise Report');
+      // Update title with date and shift
+      const formattedDate = date.split('-').reverse().join('/');
+      setReportTitle(`Collection Report — ${formattedDate} | ${collectionShift}`);
       setPeriod(`Date: ${date}`);
       setGrandTotal({
         qty: totalQty,
@@ -388,10 +390,39 @@ const Reports: React.FC = () => {
 
               <div className="space-y-4">
                 {activeReport === 'collection' ? (
-                  <div style={{ marginBottom: '16px' }}>
-                    <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Collection Date</label>
-                    <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="input-3d" style={{ padding: '10px 14px', fontSize: '14px' }} />
-                  </div>
+                  <>
+                    <div style={{ marginBottom: '16px' }}>
+                      <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Collection Date</label>
+                      <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} className="input-3d" style={{ padding: '10px 14px', fontSize: '14px' }} />
+                    </div>
+                    <div style={{ marginBottom: '16px' }}>
+                      <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>SHIFT</label>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => setCollectionShift('Morning')}
+                          className="flex-1 py-2 rounded-lg font-bold transition-all"
+                          style={{ 
+                            background: collectionShift === 'Morning' ? '#2563eb' : 'rgba(255,255,255,0.05)',
+                            color: 'white',
+                            border: '1px solid rgba(255,255,255,0.1)'
+                          }}
+                        >
+                          Morning
+                        </button>
+                        <button 
+                          onClick={() => setCollectionShift('Evening')}
+                          className="flex-1 py-2 rounded-lg font-bold transition-all"
+                          style={{ 
+                            background: collectionShift === 'Evening' ? '#2563eb' : 'rgba(255,255,255,0.05)',
+                            color: 'white',
+                            border: '1px solid rgba(255,255,255,0.1)'
+                          }}
+                        >
+                          Evening
+                        </button>
+                      </div>
+                    </div>
+                  </>
                 ) : activeReport !== 'payment' ? (
                   <>
                     <div style={{ marginBottom: '16px' }}>
@@ -463,7 +494,6 @@ const Reports: React.FC = () => {
               <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-white/5">
                 {activeReport === 'collection' && (
                   <>
-                    <th className="p-4">Shift</th>
                     <th className="p-4">Code</th>
                     <th className="p-4">Farmer Name</th>
                     <th className="p-4">Qty (L)</th>
@@ -498,7 +528,6 @@ const Reports: React.FC = () => {
                 )}
                 {activeReport === 'payment' && (
                   <>
-                    <th className="p-4">Code</th>
                     <th className="p-4">Farmer Name</th>
                     <th className="p-4">Total Qty</th>
                     <th className="p-4">Gross Amt</th>
@@ -513,11 +542,6 @@ const Reports: React.FC = () => {
                 <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
                   {activeReport === 'collection' && (
                     <>
-                      <td className="p-4">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${row.shift === 'Morning' ? 'bg-blue-500/20 text-blue-400' : 'bg-amber-500/20 text-amber-400'}`}>
-                          {row.shift}
-                        </span>
-                      </td>
                       <td className="p-4 font-mono text-xs text-slate-400">{row.code}</td>
                       <td className="p-4 font-bold text-white">{row.name}</td>
                       <td className="p-4 font-black text-white">{row.qty.toFixed(1)}</td>
@@ -571,7 +595,7 @@ const Reports: React.FC = () => {
               <tr className="font-black text-white">
                 {activeReport === 'collection' && (
                   <>
-                    <td colSpan={3} className="p-4 text-right text-[10px] uppercase text-slate-500">Grand Total</td>
+                    <td colSpan={2} className="p-4 text-right text-[10px] uppercase text-slate-500">Grand Total</td>
                     <td className="p-4 text-lg">{grandTotal.qty.toFixed(1)}</td>
                     <td className="p-4 text-slate-400 text-sm">{grandTotal.fat.toFixed(2)}%</td>
                     <td className="p-4 text-slate-400 text-sm">{grandTotal.snf.toFixed(2)}%</td>
@@ -627,7 +651,6 @@ const Reports: React.FC = () => {
             <tr>
               {activeReport === 'collection' && (
                 <>
-                  <th>Shift</th>
                   <th>Code</th>
                   <th>Farmer Name</th>
                   <th>Qty (L)</th>
@@ -677,7 +700,6 @@ const Reports: React.FC = () => {
               <tr key={idx}>
                 {activeReport === 'collection' && (
                   <>
-                    <td>{row.shift}</td>
                     <td>{row.code}</td>
                     <td>{row.name}</td>
                     <td>{row.qty.toFixed(1)}</td>
@@ -725,7 +747,7 @@ const Reports: React.FC = () => {
             <tr className="grand-total-row">
               {activeReport === 'collection' && (
                 <>
-                  <td colSpan={3} style={{ textAlign: 'right' }}>Grand Total</td>
+                  <td colSpan={2} style={{ textAlign: 'right' }}>Grand Total</td>
                   <td>{grandTotal.qty.toFixed(1)}</td>
                   <td>{grandTotal.fat.toFixed(2)}%</td>
                   <td>{grandTotal.snf.toFixed(2)}%</td>
