@@ -480,8 +480,8 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     <div className="page-wrapper animate-fadeIn">
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Entry Form */}
-        <div style={{ flex: '0 0 380px' }}>
-          <div className="glass-card sticky top-6" style={{ padding: '24px' }}>
+        <div style={{ width: '400px', flexShrink: 0 }}>
+          <div className="glass-card sticky top-24" style={{ padding: '16px 22px 22px 22px' }}>
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h2 className="text-white font-black text-xl tracking-tight">Milk Entry</h2>
@@ -601,30 +601,41 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Entries Table & Summary */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1 }}>
-          {/* Stats Summary */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
-            <div className="glass-card border-b-4 border-b-blue-500" style={{ padding: '16px 18px' }}>
-              <p className="text-slate-400 text-[10px] font-bold uppercase mb-1">Total Quantity</p>
-              <p style={{ fontSize: '22px', fontWeight: 900, color: 'white', marginTop: '6px' }}>{safeNum(totalQty).toFixed(1)} <span className="text-xs text-slate-500">L</span></p>
-            </div>
-            <div className="glass-card border-b-4 border-b-green-500" style={{ padding: '16px 18px' }}>
-              <p className="text-slate-400 text-[10px] font-bold uppercase mb-1">Total Amount</p>
-              <p style={{ fontSize: '22px', fontWeight: 900, color: 'white', marginTop: '6px' }} className="text-green-400">₹{safeNum(totalAmount).toFixed(2)}</p>
-            </div>
-            <div className="glass-card border-b-4 border-b-amber-500" style={{ padding: '16px 18px' }}>
-              <p className="text-slate-400 text-[10px] font-bold uppercase mb-1">Avg FAT</p>
-              <p style={{ fontSize: '22px', fontWeight: 900, color: 'white', marginTop: '6px' }}>{safeNum(avgFat).toFixed(2)} <span className="text-xs text-slate-500">%</span></p>
-            </div>
-            <div className="glass-card border-b-4 border-b-purple-500" style={{ padding: '16px 18px' }}>
-              <p className="text-slate-400 text-[10px] font-bold uppercase mb-1">Avg {sessionMode}</p>
-              <p style={{ fontSize: '22px', fontWeight: 900, color: 'white', marginTop: '6px' }}>{safeNum(avgSnfClr).toFixed(2)} <span className="text-xs text-slate-500">%</span></p>
+          {/* Session Summary — SEPARATE card below, NOT inside glass-card */}
+          <div className="glass-card" style={{ marginTop: '14px', padding: '16px 20px' }}>
+            <p style={{
+              fontSize: '11px', fontWeight: 800,
+              color: 'rgba(255,255,255,0.45)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.6px',
+              marginBottom: '14px',
+              paddingBottom: '10px',
+              borderBottom: '1px solid rgba(255,255,255,0.07)'
+            }}>Session Summary</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '10px', padding: '12px 14px' }}>
+                <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '6px' }}>Total QTY</p>
+                <p style={{ fontSize: '18px', fontWeight: 900, color: 'white' }}>{totalQty.toFixed(2)} <span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>L</span></p>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '10px', padding: '12px 14px' }}>
+                <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '6px' }}>Avg FAT</p>
+                <p style={{ fontSize: '18px', fontWeight: 900, color: 'white' }}>{avgFat.toFixed(2)}<span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>%</span></p>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '10px', padding: '12px 14px' }}>
+                <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '6px' }}>Avg SNF</p>
+                <p style={{ fontSize: '18px', fontWeight: 900, color: 'white' }}>{avgSnfClr.toFixed(2)}<span style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>%</span></p>
+              </div>
+              <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '10px', padding: '12px 14px' }}>
+                <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '6px' }}>Total Amount</p>
+                <p style={{ fontSize: '18px', fontWeight: 900, color: '#4ade80' }}>₹{totalAmount.toFixed(2)}</p>
+              </div>
             </div>
           </div>
+        </div>
 
+        {/* Entries Table */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', flex: 1 }}>
           {/* Recent Entries Table */}
           <div className="glass-card overflow-hidden">
             <div style={{ padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
