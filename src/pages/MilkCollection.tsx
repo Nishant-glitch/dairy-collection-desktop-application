@@ -389,9 +389,9 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
         background: 'transparent'
       }}>
         <div className="modal-3d animate-fadeIn" style={{ padding: '32px', maxWidth: '600px', width: '100%' }}>
-          <div className="flex justify-between items-center mb-8">
+          <div className="flex justify-between items-center" style={{ marginBottom: '32px' }}>
             <div>
-              <h2 className="text-2xl font-black text-white mb-1">Session Setup</h2>
+              <h2 className="text-2xl font-black text-white" style={{ marginBottom: '4px' }}>Session Setup</h2>
               <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Configure your collection shift</p>
             </div>
             <div className="w-12 h-12 rounded-2xl bg-blue-500/10 flex items-center justify-center">
@@ -399,9 +399,9 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
             </div>
           </div>
 
-          <div className="space-y-6">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label className="label-text flex items-center gap-2">
                   <Calendar size={14} className="text-blue-400" />
                   Collection Date
@@ -413,21 +413,23 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                   className="input-3d"
                 />
               </div>
-              <div className="space-y-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <label className="label-text flex items-center gap-2">
                   <Clock size={14} className="text-amber-400" />
                   Select Shift
                 </label>
-                <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-white/10">
+                <div className="flex gap-2 bg-white/5 rounded-xl border border-white/10" style={{ padding: '4px' }}>
                   <button
                     onClick={() => setSessionShift('Morning')}
-                    className={`flex-1 py-2.5 rounded-lg text-xs font-black transition-all ${sessionShift === 'Morning' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+                    style={{ padding: '10px 0' }}
+                    className={`flex-1 rounded-lg text-xs font-black transition-all ${sessionShift === 'Morning' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
                   >
                     MORNING
                   </button>
                   <button
                     onClick={() => setSessionShift('Evening')}
-                    className={`flex-1 py-2.5 rounded-lg text-xs font-black transition-all ${sessionShift === 'Evening' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+                    style={{ padding: '10px 0' }}
+                    className={`flex-1 rounded-lg text-xs font-black transition-all ${sessionShift === 'Evening' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
                   >
                     EVENING
                   </button>
@@ -435,33 +437,35 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
               </div>
             </div>
 
-            <div className="space-y-3">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <label className="label-text flex items-center gap-2">
                 <Zap size={14} className="text-purple-400" />
                 Measurement Mode
               </label>
               <div className="grid grid-cols-2 gap-4">
-                <div 
+                <div
                   onClick={() => setSessionMode('SNF')}
-                  className={`cursor-pointer p-4 rounded-2xl border-2 transition-all ${sessionMode === 'SNF' ? 'bg-blue-500/10 border-blue-500' : 'bg-white/5 border-transparent hover:border-white/10'}`}
+                  style={{ padding: '16px' }}
+                  className={`cursor-pointer rounded-2xl border-2 transition-all ${sessionMode === 'SNF' ? 'bg-blue-500/10 border-blue-500' : 'bg-white/5 border-transparent hover:border-white/10'}`}
                 >
-                  <h4 className={`text-sm font-black mb-1 ${sessionMode === 'SNF' ? 'text-blue-400' : 'text-slate-400'}`}>SNF MODE</h4>
+                  <h4 style={{ marginBottom: '4px' }} className={`text-sm font-black ${sessionMode === 'SNF' ? 'text-blue-400' : 'text-slate-400'}`}>SNF MODE</h4>
                   <p className="text-[10px] text-slate-500 leading-relaxed font-medium">Standard measurement using FAT and SNF values.</p>
                 </div>
-                <div 
+                <div
                   onClick={() => setSessionMode('CLR')}
-                  className={`cursor-pointer p-4 rounded-2xl border-2 transition-all ${sessionMode === 'CLR' ? 'bg-blue-500/10 border-blue-500' : 'bg-white/5 border-transparent hover:border-white/10'}`}
+                  style={{ padding: '16px' }}
+                  className={`cursor-pointer rounded-2xl border-2 transition-all ${sessionMode === 'CLR' ? 'bg-blue-500/10 border-blue-500' : 'bg-white/5 border-transparent hover:border-white/10'}`}
                 >
-                  <h4 className={`text-sm font-black mb-1 ${sessionMode === 'CLR' ? 'text-blue-400' : 'text-slate-400'}`}>CLR MODE</h4>
+                  <h4 style={{ marginBottom: '4px' }} className={`text-sm font-black ${sessionMode === 'CLR' ? 'text-blue-400' : 'text-slate-400'}`}>CLR MODE</h4>
                   <p className="text-[10px] text-slate-500 leading-relaxed font-medium">Calculates SNF based on FAT and Lactometer Reading.</p>
                 </div>
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-4">
+            <div className="rounded-2xl bg-white/5 border border-white/10" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-green-500/10">
+                  <div className="rounded-lg bg-green-500/10" style={{ padding: '8px' }}>
                     <Printer className="text-green-500" size={16} />
                   </div>
                   <div>
@@ -469,7 +473,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                     <p className="text-[10px] text-slate-500 font-medium">Print slip after each entry</p>
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={() => setPrintEnabled(!printEnabled)}
                   className={`w-12 h-6 rounded-full transition-all relative ${printEnabled ? 'bg-green-600' : 'bg-slate-700'}`}
                 >
@@ -478,7 +482,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-blue-500/10">
+                  <div className="rounded-lg bg-blue-500/10" style={{ padding: '8px' }}>
                     <MessageSquare className="text-blue-500" size={16} />
                   </div>
                   <div>
@@ -486,7 +490,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                     <p className="text-[10px] text-slate-500 font-medium">Send SMS to farmers on save</p>
                   </div>
                 </div>
-                <button 
+                <button
                   onClick={() => setSmsEnabled(!smsEnabled)}
                   className={`w-12 h-6 rounded-full transition-all relative ${smsEnabled ? 'bg-blue-600' : 'bg-slate-700'}`}
                 >
@@ -495,9 +499,10 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
               </div>
             </div>
 
-            <button 
+            <button
               onClick={handleStartSession}
-              className="btn-primary w-full py-4 text-sm font-black tracking-widest uppercase shadow-xl"
+              className="btn-primary w-full text-sm font-black tracking-widest uppercase shadow-xl"
+              style={{ padding: '16px', width: '100%' }}
             >
               Start Collection Session
             </button>
@@ -510,12 +515,12 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   return (
     <div className="page-wrapper animate-fadeIn">
       {showSavedMessage && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-2xl bg-green-500 text-white font-black shadow-2xl flex items-center gap-3 animate-bounce">
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 rounded-2xl bg-green-500 text-white font-black shadow-2xl flex items-center gap-3 animate-bounce" style={{ padding: '12px 24px' }}>
           <CheckCircle size={20} /> ENTRY SAVED SUCCESSFULLY
         </div>
       )}
 
-      <div className="flex justify-between items-center mb-8 no-print">
+      <div className="flex justify-between items-center no-print" style={{ marginBottom: '32px' }}>
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
@@ -537,14 +542,15 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
             </div>
           </div>
           <div className="h-8 w-px bg-white/10" />
-          <div className="flex items-center gap-3 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10">
+          <div className="flex items-center gap-3 rounded-xl bg-white/5 border border-white/10" style={{ padding: '6px 12px' }}>
             <div className={`w-2 h-2 rounded-full animate-pulse ${sessionMode === 'SNF' ? 'bg-blue-500' : 'bg-purple-500'}`} />
             <span className="text-sm font-bold">{sessionMode} Mode</span>
           </div>
         </div>
-        <button 
+        <button
           onClick={() => setShowSessionSetup(true)}
-          className="px-4 py-2 rounded-lg border border-white/10 text-white/60 text-xs font-bold hover:bg-white/5 transition-all"
+          className="rounded-lg border border-white/10 text-white/60 text-xs font-bold hover:bg-white/5 transition-all"
+          style={{ padding: '8px 16px' }}
         >
           Change Session
         </button>
@@ -554,7 +560,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
         {/* Left Panel: New Entry Form */}
         <div>
           <div className="glass-card" style={{ padding: '28px' }}>
-            <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+            <h2 className="text-lg font-bold text-white flex items-center gap-2" style={{ marginBottom: '24px' }}>
               <Droplet size={20} className="text-blue-500" />
               New Entry
             </h2>
@@ -576,15 +582,15 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                   {farmerFound && <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500" size={18} />}
                 </div>
                 {farmerName && (
-                  <div className="mt-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                  <div className="rounded-lg bg-green-500/10 border border-green-500/20" style={{ marginTop: '8px', padding: '12px' }}>
                     <p className="text-green-400 font-bold text-sm">{farmerName}</p>
-                    {warningMessage && <p className="text-amber-400 text-[10px] font-bold uppercase mt-1">{warningMessage}</p>}
+                    {warningMessage && <p className="text-amber-400 text-[10px] font-bold uppercase" style={{ marginTop: '4px' }}>{warningMessage}</p>}
                   </div>
                 )}
               </div>
 
               {duplicateWarning.show && (
-                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs whitespace-pre-line leading-relaxed animate-bounce">
+                <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs whitespace-pre-line leading-relaxed animate-bounce" style={{ padding: '12px' }}>
                   {duplicateWarning.message}
                 </div>
               )}
@@ -621,8 +627,8 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
               </div>
 
               <div>
-                <div className="flex justify-between items-center mb-2">
-                  <label className="label-text" style={{ display: 'block', marginBottom: '8px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px', color: 'rgba(255,255,255,0.5)' }}>{sessionMode} (%)</label>
+                <div className="flex justify-between items-center" style={{ marginBottom: '8px' }}>
+                  <label className="label-text" style={{ display: 'block', marginBottom: 0, fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px', color: 'rgba(255,255,255,0.5)' }}>{sessionMode} (%)</label>
                   <span className="text-[10px] text-slate-500 font-bold">Range: {snfMin} - {snfMax}</span>
                 </div>
                 <input
@@ -643,7 +649,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                   <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Rate / Liter</span>
                   <span className="text-white font-black text-lg">₹{safeNum(rate).toFixed(2)}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="pt-3 border-t border-white/5">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px' }} className="border-t border-white/5">
                   <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.5)' }}>Total Amount</span>
                   <span className="text-2xl font-black text-green-500">₹{safeNum(amount).toFixed(2)}</span>
                 </div>
@@ -706,12 +712,12 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
 
           {/* Recent Entries Table */}
           <div className="glass-card overflow-hidden">
-            <div className="p-5 border-b border-white/5 flex justify-between items-center">
+            <div className="border-b border-white/5 flex justify-between items-center" style={{ padding: '20px' }}>
               <h2 className="text-md font-bold text-white flex items-center gap-2">
                 <History size={18} className="text-amber-500" />
                 Recent Entries
               </h2>
-              <span className="px-2.5 py-1 rounded-md bg-white/5 text-white/40 text-[10px] font-bold uppercase tracking-wider">
+              <span className="rounded-md bg-white/5 text-white/40 text-[10px] font-bold uppercase tracking-wider" style={{ padding: '4px 10px' }}>
                 {todayEntries.length} Records
               </span>
             </div>
@@ -747,13 +753,15 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => handleModify(entry)}
-                            className="p-2 rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all"
+                            className="rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all"
+                            style={{ padding: '8px' }}
                           >
                             <Edit2 size={14} />
                           </button>
                           <button
                             onClick={() => handleDelete(entry.farmerCode)}
-                            className="p-2 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                            className="rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                            style={{ padding: '8px' }}
                           >
                             <Trash2 size={14} />
                           </button>
@@ -763,7 +771,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                   ))}
                   {todayEntries.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="p-12 text-center text-white/20 text-sm font-medium">
+                      <td colSpan={7} className="text-center text-white/20 text-sm font-medium" style={{ padding: '48px' }}>
                         No entries found for this session
                       </td>
                     </tr>
