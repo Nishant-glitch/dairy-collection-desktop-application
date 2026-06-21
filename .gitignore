@@ -1,0 +1,7 @@
+# Build output
+dist
+
+# Local environment files (contain secrets - never commit)
+.env
+.env.local
+.env.*.local

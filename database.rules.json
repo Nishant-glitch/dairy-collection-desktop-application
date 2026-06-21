@@ -1,0 +1,16 @@
+{
+  "rules": {
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "globalRateConfig": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.email === 'admin@nishant.com'"
+    },
+    ".read": false,
+    ".write": false
+  }
+}

@@ -68,12 +68,14 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
 
   useEffect(() => {
     loadDCSInfo();
-    loadFarmers();
+    const unsubscribe = loadFarmers();
+    return unsubscribe;
   }, []);
 
   useEffect(() => {
     if (!showSessionSetup) {
-      loadTodayEntries();
+      const unsubscribe = loadTodayEntries();
+      return unsubscribe;
     }
   }, [showSessionSetup, sessionDate, sessionShift]);
 
@@ -125,7 +127,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
 
   const loadFarmers = () => {
     const farmersRef = ref(database, up('farmers'));
-    onValue(farmersRef, (snapshot) => {
+    return onValue(farmersRef, (snapshot) => {
       if (snapshot.exists()) {
         setFarmers(snapshot.val());
       }
@@ -134,7 +136,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
 
   const loadTodayEntries = () => {
     const entriesRef = ref(database, up(`milkCollection/${sessionDate}/${sessionShift}`));
-    onValue(entriesRef, (snapshot) => {
+    return onValue(entriesRef, (snapshot) => {
       const entries: Entry[] = [];
       if (snapshot.exists()) {
         const data = snapshot.val();

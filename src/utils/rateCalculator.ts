@@ -97,19 +97,17 @@ export const getRateFromMap = (
   // Cap SNF at max
   const cappedSnf = Math.min(snf, snfValues[snfValues.length - 1]);
 
-  // Find closest FAT
-  const closestFat = fatValues.reduce((prev: number, curr: number) =>
-    Math.abs(curr - cappedFat) < Math.abs(prev - cappedFat) ? curr : prev
-  );
-
-  // Find closest SNF
-  const closestSnf = snfValues.reduce((prev: number, curr: number) =>
-    Math.abs(curr - cappedSnf) < Math.abs(prev - cappedSnf) ? curr : prev
-  );
+  // Use the rate band at or below the measured value (dairy convention: a
+  // higher rate only applies once that FAT/SNF level is actually reached).
+  // This is deterministic and never rounds UP to a higher-paying band.
+  // For exact grid values (the normal case) it returns the same value as before.
+  // If the value is below the chart minimum, fall back to the lowest band.
+  const flooredFat = [...fatValues].reverse().find((v: number) => v <= cappedFat) ?? fatValues[0];
+  const flooredSnf = [...snfValues].reverse().find((v: number) => v <= cappedSnf) ?? snfValues[0];
 
   // Lookup using underscore keys
-  const fatKey = toKey(closestFat);
-  const snfKey = toKey(closestSnf);
+  const fatKey = toKey(flooredFat);
+  const snfKey = toKey(flooredSnf);
 
   return config.rateMap[fatKey]?.[snfKey] || 0;
 };
