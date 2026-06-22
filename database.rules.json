@@ -1,9 +1,17 @@
 {
   "rules": {
     "users": {
+      ".read": "auth != null && auth.token.email === 'admin@nishant.com'",
       "$uid": {
-        ".read": "auth != null && auth.uid === $uid",
+        ".read": "auth != null && (auth.uid === $uid || auth.token.email === 'admin@nishant.com')",
         ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "subscriptions": {
+      ".read": "auth != null && auth.token.email === 'admin@nishant.com'",
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || auth.token.email === 'admin@nishant.com')",
+        ".write": "auth != null && auth.token.email === 'admin@nishant.com'"
       }
     },
     "globalRateConfig": {

@@ -14,6 +14,9 @@ import Deductions from './pages/Deductions';
 import PaymentRegister from './pages/PaymentRegister';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import Subscribe from './pages/Subscribe';
+import AdminSubscriptions from './pages/AdminSubscriptions';
+import { hasAccess } from './utils/subscription';
 import { Milk } from 'lucide-react';
 
 function App() {
@@ -21,6 +24,8 @@ function App() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [checkingAccess, setCheckingAccess] = useState(true);
+  const [hasSubAccess, setHasSubAccess] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -31,23 +36,46 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0f172a]">
-        <div className="flex flex-col items-center gap-6">
-          <div className="animate-bounce" style={{ width: 80, height: 80, background: 'linear-gradient(135deg, #f59e0b, #d97706)', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 40px rgba(245,158,11,0.2)' }}>
-            <Milk color="#0f172a" size={40} />
-          </div>
-          <div style={{ color: '#f1f5f9', fontSize: 24, fontWeight: 800, letterSpacing: '1px' }}>DCS PRO</div>
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    setCheckingAccess(true);
+    hasAccess().then((ok) => {
+      setHasSubAccess(ok);
+      setCheckingAccess(false);
+    });
+  }, [isAuthenticated]);
+
+  const loadingScreen = (
+    <div className="min-h-screen flex items-center justify-center bg-[#0f172a]">
+      <div className="flex flex-col items-center gap-6">
+        <div className="animate-bounce" style={{ width: 80, height: 80, background: 'linear-gradient(135deg, #f59e0b, #d97706)', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 20px 40px rgba(245,158,11,0.2)' }}>
+          <Milk color="#0f172a" size={40} />
         </div>
+        <div style={{ color: '#f1f5f9', fontSize: 24, fontWeight: 800, letterSpacing: '1px' }}>DCS PRO</div>
       </div>
-    );
+    </div>
+  );
+
+  if (loading) {
+    return loadingScreen;
   }
 
   if (!isAuthenticated) {
     return (
       <LanguageProvider>
         <Login onLogin={() => setIsAuthenticated(true)} />
+      </LanguageProvider>
+    );
+  }
+
+  if (checkingAccess) {
+    return loadingScreen;
+  }
+
+  if (!hasSubAccess) {
+    return (
+      <LanguageProvider>
+        <Subscribe />
       </LanguageProvider>
     );
   }
@@ -72,6 +100,8 @@ function App() {
         return <Reports />;
       case 'settings':
         return <Settings />;
+      case 'admin-subscriptions':
+        return <AdminSubscriptions />;
       default:
         return <Dashboard />;
     }
