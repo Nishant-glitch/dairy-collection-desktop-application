@@ -6,8 +6,8 @@ import { MessageSquare, Save, RefreshCw, Bell, Shield, Send } from 'lucide-react
 import axios from 'axios';
 
 const Settings: React.FC = () => {
-  const [smsApiKey, setSmsApiKey] = useState('511304ApFLOfqq69eafe97P1');
-  const [smsTemplateId, setSmsTemplateId] = useState('69eafce28acc315c3a09beb2');
+  const [smsApiKey, setSmsApiKey] = useState(import.meta.env.VITE_MSG91_AUTH_KEY || '');
+  const [smsTemplateId, setSmsTemplateId] = useState(import.meta.env.VITE_MSG91_TEMPLATE_ID || '');
   const [testMobile, setTestMobile] = useState('');
   const [testingSMS, setTestingSMS] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -22,8 +22,8 @@ const Settings: React.FC = () => {
     try {
       const snap = await get(ref(database, up('settings/sms')));
       if (snap.exists()) {
-        setSmsApiKey(snap.val().apiKey || '511304ApFLOfqq69eafe97P1');
-        setSmsTemplateId(snap.val().templateId || '69eafce28acc315c3a09beb2');
+        setSmsApiKey(snap.val().apiKey || import.meta.env.VITE_MSG91_AUTH_KEY || '');
+        setSmsTemplateId(snap.val().templateId || import.meta.env.VITE_MSG91_TEMPLATE_ID || '');
       }
       const prefSnap = await get(ref(database, up('settings/preferences')));
       if (prefSnap.exists()) {
@@ -71,8 +71,13 @@ const Settings: React.FC = () => {
     }
     setTestingSMS(true);
     try {
-      const authKey = smsApiKey.trim() || '511304ApFLOfqq69eafe97P1';
-      const templateId = smsTemplateId.trim() || '69eafce28acc315c3a09beb2';
+      const authKey = smsApiKey.trim() || import.meta.env.VITE_MSG91_AUTH_KEY || '';
+      const templateId = smsTemplateId.trim() || import.meta.env.VITE_MSG91_TEMPLATE_ID || '';
+      if (!authKey || !templateId) {
+        alert('❌ SMS API Key / Template ID not set. Please enter and save them first.');
+        setTestingSMS(false);
+        return;
+      }
       await fetch('https://api.msg91.com/api/v5/flow/', {
         method: 'POST',
         mode: 'no-cors',

@@ -43,7 +43,8 @@ const FarmerMaster: React.FC = () => {
   });
 
   useEffect(() => {
-    loadFarmers();
+    const unsubscribe = loadFarmers();
+    return unsubscribe;
   }, []);
 
   useEffect(() => {
@@ -52,7 +53,7 @@ const FarmerMaster: React.FC = () => {
 
   const loadFarmers = () => {
     const farmersRef = ref(database, up('farmers'));
-    onValue(farmersRef, (snapshot) => {
+    return onValue(farmersRef, (snapshot) => {
       const farmerArray: Farmer[] = [];
       if (snapshot.exists()) {
         const data = snapshot.val();

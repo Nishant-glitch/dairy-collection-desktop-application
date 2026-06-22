@@ -33,13 +33,14 @@ const PaymentRegister: React.FC = () => {
   });
 
   useEffect(() => {
-    loadFarmers();
+    const unsubscribe = loadFarmers();
     loadDCSInfo();
+    return unsubscribe;
   }, []);
 
   const loadFarmers = () => {
     const farmersRef = ref(database, up('farmers'));
-    onValue(farmersRef, (snapshot) => {
+    return onValue(farmersRef, (snapshot) => {
       if (snapshot.exists()) {
         setFarmers(snapshot.val());
       }

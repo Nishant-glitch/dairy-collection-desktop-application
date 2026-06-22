@@ -23,8 +23,9 @@ const Dashboard: React.FC = () => {
   const [loadingRateChart, setLoadingRateChart] = useState(true);
 
   useEffect(() => {
-    loadDashboardData();
+    const unsubscribe = loadDashboardData();
     loadActiveRateChart();
+    return unsubscribe;
   }, []);
 
   const loadActiveRateChart = async () => {
@@ -46,7 +47,7 @@ const Dashboard: React.FC = () => {
 
     // Load today's collection
     const todayRef = ref(database, up(`milkCollection/${today}`));
-    onValue(todayRef, (snapshot) => {
+    const unsubToday = onValue(todayRef, (snapshot) => {
       let todayQty = 0;
       let todayAmount = 0;
 
@@ -65,7 +66,7 @@ const Dashboard: React.FC = () => {
 
     // Load month's collection
     const collectionRef = ref(database, up('milkCollection'));
-    onValue(collectionRef, (snapshot) => {
+    const unsubMonth = onValue(collectionRef, (snapshot) => {
       let monthQty = 0;
       let monthAmount = 0;
       const last7Days: any[] = [];
@@ -120,10 +121,17 @@ const Dashboard: React.FC = () => {
 
     // Load total farmers
     const farmersRef = ref(database, up('farmers'));
-    onValue(farmersRef, (snapshot) => {
+    const unsubFarmers = onValue(farmersRef, (snapshot) => {
       const totalFarmers = snapshot.exists() ? Object.keys(snapshot.val()).length : 0;
       setStats((prev) => ({ ...prev, totalFarmers }));
     });
+
+    // Detach all listeners when the component unmounts to avoid leaks/stale data
+    return () => {
+      unsubToday();
+      unsubMonth();
+      unsubFarmers();
+    };
   };
 
   return (

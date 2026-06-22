@@ -13,22 +13,19 @@ export const getRateFromMap = (fat: number, snf: number, config: any): number =>
   
   if (fatValues.length === 0 || snfValues.length === 0) return 0;
 
-  // Find closest FAT (cap at max)
+  // Cap at max, then use the rate band at or below the measured value
+  // (dairy convention: a higher rate only applies once that FAT/SNF level is
+  // actually reached). Deterministic and never rounds up to a higher band.
   const cappedFat = Math.min(fat, fatValues[fatValues.length - 1]);
-  const closestFat = fatValues.reduce((prev: number, curr: number) =>
-    Math.abs(curr - cappedFat) < Math.abs(prev - cappedFat) ? curr : prev
-  );
-  
-  // Find closest SNF (cap at max)
+  const flooredFat = [...fatValues].reverse().find((v: number) => v <= cappedFat) ?? fatValues[0];
+
   const cappedSnf = Math.min(snf, snfValues[snfValues.length - 1]);
-  const closestSnf = snfValues.reduce((prev: number, curr: number) =>
-    Math.abs(curr - cappedSnf) < Math.abs(prev - cappedSnf) ? curr : prev
-  );
-  
+  const flooredSnf = [...snfValues].reverse().find((v: number) => v <= cappedSnf) ?? snfValues[0];
+
   // Use sanitized keys for lookup
-  const fatKey = closestFat.toFixed(1).replace('.', '_');
-  const snfKey = closestSnf.toFixed(1).replace('.', '_');
-  
+  const fatKey = flooredFat.toFixed(1).replace('.', '_');
+  const snfKey = flooredSnf.toFixed(1).replace('.', '_');
+
   return config.rateMap[fatKey]?.[snfKey] || 0;
 };
 

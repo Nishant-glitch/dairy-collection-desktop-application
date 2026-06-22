@@ -23,8 +23,15 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   }, []);
 
   const createAdminIfNotExists = async () => {
+    // Admin credentials must NOT be hard-coded in the source. They are only
+    // read from build-time env vars purely to bootstrap the account on a fresh
+    // Firebase project. In normal operation the admin already exists, so these
+    // are left blank and this becomes a no-op (login behaviour is unchanged).
+    const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
+    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
+    if (!adminEmail || !adminPassword) return;
     try {
-      await createUserWithEmailAndPassword(auth, 'admin@nishant.com', 'nishant@123');
+      await createUserWithEmailAndPassword(auth, adminEmail, adminPassword);
     } catch (e: any) {
       if (e.code !== 'auth/email-already-in-use') {
         console.error(e);

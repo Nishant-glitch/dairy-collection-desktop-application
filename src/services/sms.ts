@@ -2,8 +2,10 @@ import { ref, get, push } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
 
-const DEFAULT_AUTH_KEY = '511304ApFLOfqq69eafe97P1';
-const DEFAULT_TEMPLATE_ID = '69eafce28acc315c3a09beb2';
+// Fallback credentials are read from build-time env vars, never hard-coded.
+// The primary source remains the per-user SMS settings stored in Firebase.
+const DEFAULT_AUTH_KEY = import.meta.env.VITE_MSG91_AUTH_KEY || '';
+const DEFAULT_TEMPLATE_ID = import.meta.env.VITE_MSG91_TEMPLATE_ID || '';
 
 export const sendSMS = async ({
   farmerId,
@@ -28,6 +30,11 @@ export const sendSMS = async ({
     const templateId = settingsSnap.exists() && settingsSnap.val().templateId
       ? settingsSnap.val().templateId
       : DEFAULT_TEMPLATE_ID;
+
+    if (!authKey || !templateId) {
+      console.error('SMS not configured: missing MSG91 auth key / template id. Set them in Settings.');
+      return false;
+    }
 
     const cleanMobile = mobile.replace(/^\+91/, '').replace(/\s/g, '');
     if (!/^\d{10}$/.test(cleanMobile)) {

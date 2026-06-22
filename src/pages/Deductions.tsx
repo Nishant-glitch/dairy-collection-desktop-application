@@ -45,18 +45,20 @@ const Deductions: React.FC = () => {
   const itemRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    loadFarmers();
+    const unsubscribe = loadFarmers();
+    return unsubscribe;
   }, []);
 
   useEffect(() => {
     if (selectedFarmerCode && activeSection === 'newEntry' && step === 2) {
-      loadGrossEntries();
+      const unsubscribe = loadGrossEntries();
+      return unsubscribe;
     }
   }, [selectedFarmerCode, activeSection, step]);
 
   const loadFarmers = () => {
     const farmersRef = ref(database, up('farmers'));
-    onValue(farmersRef, (snapshot) => {
+    return onValue(farmersRef, (snapshot) => {
       if (snapshot.exists()) {
         setFarmers(snapshot.val());
       }
@@ -65,7 +67,7 @@ const Deductions: React.FC = () => {
 
   const loadGrossEntries = () => {
     const grossRef = ref(database, up(`grossEntries/${selectedFarmerCode}`));
-    onValue(grossRef, (snapshot) => {
+    return onValue(grossRef, (snapshot) => {
       const entries: GrossEntry[] = [];
       if (snapshot.exists()) {
         const data = snapshot.val();
