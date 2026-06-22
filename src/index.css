@@ -434,12 +434,33 @@ body {
 
 .animate-fadeUp { animation: fadeIn 0.35s ease; }
 
-/* Print styles */
+/* Print styles — only the report sheet is printed. The visibility pattern works
+   even though the sheet is nested (unlike display:none on an ancestor). */
 @media print {
-  body > * { display: none !important; }
-  #print-area { display: block !important; }
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  body * { visibility: hidden !important; }
+  #report-sheet, #report-sheet * { visibility: visible !important; }
+  #report-sheet {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 16px !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    color: #000 !important;
+    font-family: 'Arial', sans-serif !important;
+  }
 }
-#print-area { display: none; }
+
 
 .page-wrapper {
   max-width: 1400px;
@@ -540,64 +561,4 @@ body {
   background: rgba(0, 0, 0, 0.4);
   border-color: #4ade80;
   box-shadow: 0 0 10px rgba(74, 222, 128, 0.2);
-}
-
-/* FIX 6: PRINT REPORT BLANK PAGE */
-@media print {
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-  
-  body {
-    background: white !important;
-    color: black !important;
-  }
-  
-  /* Hide everything except print area */
-  body > * {
-    display: none !important;
-  }
-  
-  #print-area {
-    display: block !important;
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    background: white !important;
-    color: black !important;
-    padding: 20px !important;
-    font-family: 'Arial', sans-serif !important;
-  }
-  
-  #print-area * {
-    color: black !important;
-    background: white !important;
-  }
-  
-  #print-area table {
-    width: 100% !important;
-    border-collapse: collapse !important;
-  }
-  
-  #print-area th {
-    background: #f0f0f0 !important;
-    color: black !important;
-    border: 1px solid #000 !important;
-    padding: 6px 10px !important;
-    font-weight: bold !important;
-    font-size: 11px !important;
-  }
-  
-  #print-area td {
-    border: 1px solid #333 !important;
-    padding: 5px 10px !important;
-    font-size: 11px !important;
-  }
-  
-  #print-area .grand-total-row td {
-    font-weight: bold !important;
-    background: #e0e0e0 !important;
-  }
 }
