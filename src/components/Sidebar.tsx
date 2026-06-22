@@ -9,8 +9,10 @@ import {
   Receipt,
   BarChart3,
   Settings,
+  Crown,
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { isAdmin } from '../utils/userDb';
 
 interface SidebarProps {
   currentPage: string;
@@ -33,6 +35,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, isOpen, onCl
     { id: 'reports', icon: BarChart3, label: t('reports') },
     { id: 'settings', icon: Settings, label: t('settings') },
   ];
+
+  if (isAdmin()) {
+    menuItems.push({ id: 'admin-subscriptions', icon: Crown, label: 'Subscriptions' });
+  }
 
   return (
     <aside 
