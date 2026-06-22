@@ -354,8 +354,8 @@ const Reports: React.FC = () => {
               <Users className="text-white" size={20} />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <h3 style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>Farmer Wise</h3>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Individual farmer performance</p>
+              <h3 style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>Payment Register (Without Deduction)</h3>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Net payment, no deductions</p>
             </div>
           </div>
 
@@ -364,8 +364,8 @@ const Reports: React.FC = () => {
               <Wallet className="text-white" size={20} />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <h3 style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>Payment Register</h3>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Monthly payment summary</p>
+              <h3 style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>Payment Register (With Deduction)</h3>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Monthly payment after deductions</p>
             </div>
           </div>
 
@@ -386,9 +386,9 @@ const Reports: React.FC = () => {
             <div className="modal-3d animate-fadeIn" style={{ padding: '28px', maxWidth: '450px', width: '90%' }}>
               <div className="flex justify-between items-center" style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                 <h2 style={{ fontSize: 18, fontWeight: 800, color: 'white' }}>
-                  {activeReport === 'collection' ? 'Collection Filters' : 
-                   activeReport === 'farmer' ? 'Farmer Filters' : 
-                   activeReport === 'farmer-periodical' ? 'Farmer Periodical Filters' : 'Payment Filters'}
+                  {activeReport === 'collection' ? 'Collection Filters' :
+                   activeReport === 'farmer' ? 'Payment (Without Deduction) Filters' :
+                   activeReport === 'farmer-periodical' ? 'Farmer Periodical Filters' : 'Payment (With Deduction) Filters'}
                 </h2>
                 <button onClick={() => setShowFilterModal(false)} style={{ color: 'rgba(255,255,255,0.6)' }}>
                   <X size={24} />
@@ -480,14 +480,16 @@ const Reports: React.FC = () => {
     v === null || v === undefined || isNaN(Number(v)) ? '' : Number(v).toFixed(dp);
   const sheetSubtitle =
     activeReport === 'collection' ? 'Shift Summary'
-      : activeReport === 'farmer' ? 'Farmer Wise Summary'
-        : activeReport === 'payment' ? 'Payment Register'
+      : activeReport === 'farmer' ? 'Payment Register (Without Deduction)'
+        : activeReport === 'payment' ? 'Payment Register (With Deduction)'
           : 'Farmer Periodical Summary';
 
   const th: React.CSSProperties = { textAlign: 'left', padding: '5px 8px', borderBottom: '2px solid #000', fontWeight: 700, whiteSpace: 'nowrap' };
   const thR: React.CSSProperties = { ...th, textAlign: 'right' };
+  const thSign: React.CSSProperties = { ...th, textAlign: 'center', minWidth: '210px' };
   const td: React.CSSProperties = { textAlign: 'left', padding: '4px 8px', borderBottom: '1px solid #ddd' };
   const tdR: React.CSSProperties = { ...td, textAlign: 'right' };
+  const tdSign: React.CSSProperties = { ...td, minWidth: '210px', height: '46px' };
   const ft: React.CSSProperties = { padding: '6px 8px', borderTop: '2px solid #000', borderBottom: '2px solid #000', fontWeight: 700 };
   const ftR: React.CSSProperties = { ...ft, textAlign: 'right' };
 
@@ -531,9 +533,8 @@ const Reports: React.FC = () => {
               <th style={thR}>Rate</th><th style={thR}>net Amount</th>
             </>)}
             {activeReport === 'farmer' && (<>
-              <th style={th}>Code</th><th style={th}>Member's Name</th><th style={thR}>Entries</th>
-              <th style={thR}>Total Qty</th><th style={thR}>Avg FAT</th><th style={thR}>Avg SNF</th>
-              <th style={thR}>net Amount</th><th style={th}>Signature</th>
+              <th style={th}>Code</th><th style={th}>Member's Name</th><th style={thR}>Total Qty</th>
+              <th style={thR}>Amount</th><th style={thSign}>Signature</th>
             </>)}
             {activeReport === 'farmer-periodical' && (<>
               <th style={th}>Date</th><th style={th}>Shift</th><th style={thR}>Quantity</th>
@@ -542,6 +543,7 @@ const Reports: React.FC = () => {
             {activeReport === 'payment' && (<>
               <th style={th}>Code</th><th style={th}>Member's Name</th><th style={thR}>Total Qty</th>
               <th style={thR}>Gross Amt</th><th style={thR}>Deductions</th><th style={thR}>Net Payment</th>
+              <th style={thSign}>Signature</th>
             </>)}
           </tr>
         </thead>
@@ -554,9 +556,8 @@ const Reports: React.FC = () => {
                 <td style={tdR}>{n(row.rate, 2)}</td><td style={tdR}>{n(row.amount, 2)}</td>
               </>)}
               {activeReport === 'farmer' && (<>
-                <td style={td}>{row.code}</td><td style={td}>{row.name}</td><td style={tdR}>{row.count}</td>
-                <td style={tdR}>{n(row.qty, 2)}</td><td style={tdR}>{n(row.fat / row.count, 2)}</td><td style={tdR}>{n(row.snf / row.count, 2)}</td>
-                <td style={tdR}>{n(row.amount, 2)}</td><td style={td}></td>
+                <td style={td}>{row.code}</td><td style={td}>{row.name}</td><td style={tdR}>{n(row.qty, 2)}</td>
+                <td style={tdR}>{n(row.amount, 2)}</td><td style={tdSign}></td>
               </>)}
               {activeReport === 'farmer-periodical' && (<>
                 <td style={td}>{fmtDMY(row.date)}</td><td style={td}>{row.shift}</td><td style={tdR}>{n(row.qty, 2)}</td>
@@ -565,6 +566,7 @@ const Reports: React.FC = () => {
               {activeReport === 'payment' && (<>
                 <td style={td}>{row.code}</td><td style={td}>{row.name}</td><td style={tdR}>{n(row.qty, 2)}</td>
                 <td style={tdR}>{n(row.gross, 2)}</td><td style={tdR}>{n(row.deductions, 2)}</td><td style={tdR}>{n(row.net, 2)}</td>
+                <td style={tdSign}></td>
               </>)}
             </tr>
           ))}
@@ -577,8 +579,7 @@ const Reports: React.FC = () => {
               <td style={ft}></td><td style={ftR}>{n(grandTotal.amount, 2)}</td>
             </>)}
             {activeReport === 'farmer' && (<>
-              <td style={ft} colSpan={3}>Grand Total</td><td style={ftR}>{n(grandTotal.qty, 2)}</td>
-              <td style={ftR}>{n(grandTotal.fat, 2)}</td><td style={ftR}>{n(grandTotal.snf, 2)}</td>
+              <td style={ft} colSpan={2}>Grand Total</td><td style={ftR}>{n(grandTotal.qty, 2)}</td>
               <td style={ftR}>{n(grandTotal.amount, 2)}</td><td style={ft}></td>
             </>)}
             {activeReport === 'farmer-periodical' && (<>
@@ -588,6 +589,7 @@ const Reports: React.FC = () => {
             {activeReport === 'payment' && (<>
               <td style={ft} colSpan={2}>Grand Total</td><td style={ftR}>{n(grandTotal.qty, 2)}</td>
               <td style={ftR}>{n(grandTotal.gross, 2)}</td><td style={ftR}>{n(grandTotal.deductions, 2)}</td><td style={ftR}>{n(grandTotal.net, 2)}</td>
+              <td style={ft}></td>
             </>)}
           </tr>
         </tfoot>
