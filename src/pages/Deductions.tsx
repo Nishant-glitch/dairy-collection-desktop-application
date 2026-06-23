@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ref, onValue, push, set, remove, get } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
-import { Plus, FileText, BarChart2, X, Edit2, Trash2, Calculator, ShoppingBag, ArrowLeft } from 'lucide-react';
+import { Plus, FileText, BarChart2, X, Edit2, Trash2, Calculator, ShoppingBag, ArrowLeft, Printer } from 'lucide-react';
 import { formatIndianCurrency } from '../utils/rateCalculator';
 
 interface GrossEntry {
@@ -477,14 +477,19 @@ const Deductions: React.FC = () => {
   if (activeSection === 'grossReport') {
     return (
       <div className="page-wrapper animate-fadeIn">
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-4 mb-6 no-print">
           <button onClick={() => setActiveSection(null)} className="p-2 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 transition-colors">
             <ArrowLeft size={20} />
           </button>
           <h1 className="page-title" style={{ marginBottom: 0 }}>Farmer Gross Report</h1>
+          {reportData.length > 0 && (
+            <button onClick={() => window.print()} className="btn-3d flex items-center gap-2 px-6" style={{ marginLeft: 'auto' }}>
+              <Printer size={18} /> Print Report
+            </button>
+          )}
         </div>
 
-        <div className="glass-card" style={{ padding: '20px 24px', marginBottom: '24px' }}>
+        <div className="glass-card no-print" style={{ padding: '20px 24px', marginBottom: '24px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '16px', alignItems: 'flex-end' }}>
             <div>
               <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Farmer Code</label>
@@ -503,41 +508,45 @@ const Deductions: React.FC = () => {
         </div>
 
         {reportData.length > 0 && (
-          <div className="glass-card overflow-hidden animate-fadeIn">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-white/5 bg-white/5">
-                    <th style={{ padding: '14px 16px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.5)' }}>Date</th>
-                    <th style={{ padding: '14px 16px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.5)' }}>Farmer</th>
-                    <th style={{ padding: '14px 16px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.5)' }}>Item</th>
-                    <th style={{ padding: '14px 16px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.5)' }}>Category</th>
-                    <th style={{ padding: '14px 16px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.5)' }}>Qty</th>
-                    <th style={{ padding: '14px 16px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.5)' }}>Rate</th>
-                    <th style={{ padding: '14px 16px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.5)' }}>Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {reportData.map((entry, idx) => (
-                    <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
-                      <td style={{ padding: '14px 16px', color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>{entry.date}</td>
-                      <td style={{ padding: '14px 16px', color: 'white', fontSize: '14px', fontWeight: 'bold' }}>{entry.farmerName} <span className="text-slate-500 text-xs ml-1">({entry.farmerCode})</span></td>
-                      <td style={{ padding: '14px 16px', color: 'rgba(255,255,255,0.7)', fontSize: '14px' }}>{entry.item}</td>
-                      <td style={{ padding: '14px 16px' }}><span className="bg-white/5 px-2 py-1 rounded text-[10px] text-slate-400">{entry.category}</span></td>
-                      <td style={{ padding: '14px 16px', color: 'white', fontSize: '14px' }}>{entry.pcs}</td>
-                      <td style={{ padding: '14px 16px', color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>₹{entry.rate.toFixed(2)}</td>
-                      <td style={{ padding: '14px 16px', fontWeight: 900, color: '#4ade80', fontSize: '14px' }}>₹{entry.amount.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot className="bg-white/5">
-                  <tr>
-                    <td colSpan={6} className="p-4 text-right text-slate-400 font-bold uppercase text-[10px]">Total Amount</td>
-                    <td className="p-4 font-black text-green-400 text-lg">₹{reportData.reduce((sum, e) => sum + e.amount, 0).toFixed(2)}</td>
-                  </tr>
-                </tfoot>
-              </table>
+          <div
+            id="report-sheet"
+            style={{ background: '#fff', maxWidth: '920px', margin: '0 auto', padding: '28px 32px', borderRadius: '4px', boxShadow: '0 12px 48px rgba(0,0,0,0.45)', color: '#111' }}
+          >
+            <div style={{ textAlign: 'center', marginBottom: 20, borderBottom: '2px solid #111', paddingBottom: 12 }}>
+              <h2 style={{ fontSize: 20, fontWeight: 800, color: '#111', margin: 0 }}>Farmer Gross Report</h2>
+              <p style={{ fontSize: 12, color: '#555', margin: '6px 0 0' }}>
+                {reportFarmerCode ? `Farmer: ${reportFarmerCode}` : 'All Farmers'}
+                {(fromDate || toDate) ? ` | ${fromDate || '…'} to ${toDate || '…'}` : ''}
+              </p>
             </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  {['Date', 'Farmer', 'Item', 'Category', 'Qty', 'Rate', 'Amount'].map((h, i) => (
+                    <th key={h} style={{ padding: '8px 10px', fontSize: '12px', fontWeight: 700, color: '#111', borderBottom: '2px solid #333', textAlign: i >= 4 ? 'right' : 'left' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {reportData.map((entry, idx) => (
+                  <tr key={idx}>
+                    <td style={{ padding: '7px 10px', fontSize: '13px', color: '#222', borderBottom: '1px solid #ddd' }}>{entry.date}</td>
+                    <td style={{ padding: '7px 10px', fontSize: '13px', color: '#222', borderBottom: '1px solid #ddd', fontWeight: 700 }}>{entry.farmerName} ({entry.farmerCode})</td>
+                    <td style={{ padding: '7px 10px', fontSize: '13px', color: '#222', borderBottom: '1px solid #ddd' }}>{entry.item}</td>
+                    <td style={{ padding: '7px 10px', fontSize: '13px', color: '#222', borderBottom: '1px solid #ddd' }}>{entry.category}</td>
+                    <td style={{ padding: '7px 10px', fontSize: '13px', color: '#222', borderBottom: '1px solid #ddd', textAlign: 'right' }}>{entry.pcs}</td>
+                    <td style={{ padding: '7px 10px', fontSize: '13px', color: '#222', borderBottom: '1px solid #ddd', textAlign: 'right' }}>₹{entry.rate.toFixed(2)}</td>
+                    <td style={{ padding: '7px 10px', fontSize: '13px', color: '#222', borderBottom: '1px solid #ddd', textAlign: 'right', fontWeight: 700 }}>₹{entry.amount.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan={6} style={{ padding: '10px', textAlign: 'right', fontWeight: 800, fontSize: '13px', borderTop: '2px solid #333' }}>Total Amount</td>
+                  <td style={{ padding: '10px', textAlign: 'right', fontWeight: 800, fontSize: '14px', borderTop: '2px solid #333' }}>₹{reportData.reduce((sum, e) => sum + e.amount, 0).toFixed(2)}</td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
         )}
       </div>
@@ -547,14 +556,19 @@ const Deductions: React.FC = () => {
   if (activeSection === 'deductionReport') {
     return (
       <div className="page-wrapper animate-fadeIn">
-        <div className="flex items-center gap-4 mb-6">
+        <div className="flex items-center gap-4 mb-6 no-print">
           <button onClick={() => setActiveSection(null)} className="p-2 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 transition-colors">
             <ArrowLeft size={20} />
           </button>
           <h1 className="page-title" style={{ marginBottom: 0 }}>Monthly Deduction Summary</h1>
+          {deductionReportData.length > 0 && (
+            <button onClick={() => window.print()} className="btn-3d flex items-center gap-2 px-6" style={{ marginLeft: 'auto' }}>
+              <Printer size={18} /> Print Report
+            </button>
+          )}
         </div>
 
-        <div className="glass-card" style={{ padding: '20px 24px', marginBottom: '24px' }}>
+        <div className="glass-card no-print" style={{ padding: '20px 24px', marginBottom: '24px' }}>
           <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
             <div className="flex-1">
               <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Select Month</label>
@@ -565,35 +579,39 @@ const Deductions: React.FC = () => {
         </div>
 
         {deductionReportData.length > 0 && (
-          <div className="glass-card overflow-hidden animate-fadeIn">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-white/5 bg-white/5">
-                    <th style={{ padding: '14px 16px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.5)' }}>Farmer Code</th>
-                    <th style={{ padding: '14px 16px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.5)' }}>Farmer Name</th>
-                    <th style={{ padding: '14px 16px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.5)' }}>Total Entries</th>
-                    <th style={{ padding: '14px 16px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.5)' }}>Total Deduction Amount</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {deductionReportData.map((row, idx) => (
-                    <tr key={idx} className="hover:bg-white/[0.02] transition-colors">
-                      <td style={{ padding: '14px 16px' }}><span className="bg-white/5 px-2 py-1 rounded font-mono text-white text-xs">{row.farmerCode}</span></td>
-                      <td style={{ padding: '14px 16px', color: 'white', fontSize: '14px', fontWeight: 'bold' }}>{row.farmerName}</td>
-                      <td style={{ padding: '14px 16px', color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>{row.totalEntries} items</td>
-                      <td style={{ padding: '14px 16px', fontWeight: 900, color: '#f87171', fontSize: '14px' }}>₹{row.totalAmount.toFixed(2)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot className="bg-white/5">
-                  <tr>
-                    <td colSpan={3} className="p-4 text-right text-slate-400 font-bold uppercase text-[10px]">Grand Total</td>
-                    <td className="p-4 font-black text-red-400 text-lg">₹{deductionReportData.reduce((sum, row) => sum + row.totalAmount, 0).toFixed(2)}</td>
-                  </tr>
-                </tfoot>
-              </table>
+          <div
+            id="report-sheet"
+            style={{ background: '#fff', maxWidth: '920px', margin: '0 auto', padding: '28px 32px', borderRadius: '4px', boxShadow: '0 12px 48px rgba(0,0,0,0.45)', color: '#111' }}
+          >
+            <div style={{ textAlign: 'center', marginBottom: 20, borderBottom: '2px solid #111', paddingBottom: 12 }}>
+              <h2 style={{ fontSize: 20, fontWeight: 800, color: '#111', margin: 0 }}>Monthly Deduction Summary</h2>
+              <p style={{ fontSize: 12, color: '#555', margin: '6px 0 0' }}>Month: {deductionMonth}</p>
             </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr>
+                  {['Farmer Code', 'Farmer Name', 'Total Entries', 'Total Deduction Amount'].map((h, i) => (
+                    <th key={h} style={{ padding: '8px 10px', fontSize: '12px', fontWeight: 700, color: '#111', borderBottom: '2px solid #333', textAlign: i === 3 ? 'right' : 'left' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {deductionReportData.map((row, idx) => (
+                  <tr key={idx}>
+                    <td style={{ padding: '7px 10px', fontSize: '13px', color: '#222', borderBottom: '1px solid #ddd', fontWeight: 700 }}>{row.farmerCode}</td>
+                    <td style={{ padding: '7px 10px', fontSize: '13px', color: '#222', borderBottom: '1px solid #ddd' }}>{row.farmerName}</td>
+                    <td style={{ padding: '7px 10px', fontSize: '13px', color: '#222', borderBottom: '1px solid #ddd' }}>{row.totalEntries} items</td>
+                    <td style={{ padding: '7px 10px', fontSize: '13px', color: '#222', borderBottom: '1px solid #ddd', textAlign: 'right', fontWeight: 700 }}>₹{row.totalAmount.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan={3} style={{ padding: '10px', textAlign: 'right', fontWeight: 800, fontSize: '13px', borderTop: '2px solid #333' }}>Grand Total</td>
+                  <td style={{ padding: '10px', textAlign: 'right', fontWeight: 800, fontSize: '14px', borderTop: '2px solid #333' }}>₹{deductionReportData.reduce((sum, row) => sum + row.totalAmount, 0).toFixed(2)}</td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
         )}
       </div>

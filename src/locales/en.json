@@ -8,6 +8,8 @@
   "dcsMaster": "DCS Master",
   "rateChart": "Rate Chart",
   "milkCollection": "Milk Collection",
+  "bmcMaster": "BMC Master",
+  "bmcEntry": "BMC Entry",
   "deductions": "Deductions",
   "paymentRegister": "Payment Register",
   "reports": "Reports",
