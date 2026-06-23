@@ -4,7 +4,7 @@ import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getRateFromMap } from '../utils/rateCalculator';
-import { Snowflake, Calendar, Clock, CheckCircle, Trash2, History } from 'lucide-react';
+import { Snowflake, Calendar, Clock, CheckCircle, Trash2, Edit2, History } from 'lucide-react';
 
 interface BMC {
   bmcId: string;
@@ -16,6 +16,7 @@ interface BMCEntryRecord {
   entryId: string;
   date: string;
   shift: 'morning' | 'evening';
+  milkType: 'cow' | 'buffalo';
   bmcId: string;
   bmcName: string;
   quantityKg: number;
@@ -31,6 +32,8 @@ const BMCEntry: React.FC = () => {
 
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [shift, setShift] = useState<'morning' | 'evening'>('morning');
+  const [milkType, setMilkType] = useState<'cow' | 'buffalo'>('cow');
+  const [editId, setEditId] = useState<string | null>(null);
   const [bmcId, setBmcId] = useState('');
   const [quantityKg, setQuantityKg] = useState('');
   const [fat, setFat] = useState('');
@@ -131,12 +134,26 @@ const BMCEntry: React.FC = () => {
   }, [quantityKg, fat, snf, rateConfig]);
 
   const clearForm = () => {
+    setEditId(null);
     setBmcId('');
     setQuantityKg('');
     setFat('');
     setSnf('');
     setRate(0);
     setAmount(0);
+  };
+
+  const handleEdit = (entry: BMCEntryRecord) => {
+    // FarmerMaster-style edit: re-populate the form, then Save updates in place.
+    setEditId(entry.entryId);
+    setDate(entry.date);
+    setShift(entry.shift);
+    setMilkType(entry.milkType || 'cow');
+    setBmcId(entry.bmcId);
+    setQuantityKg(entry.quantityKg.toString());
+    setFat(entry.fat.toString());
+    setSnf(entry.snf.toString());
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSave = async () => {
@@ -158,6 +175,7 @@ const BMCEntry: React.FC = () => {
     const entryData = {
       date,
       shift,
+      milkType,
       bmcId,
       bmcName: bmc?.name || '',
       quantityKg: parseFloat(quantityKg),
@@ -168,8 +186,12 @@ const BMCEntry: React.FC = () => {
       createdAt: Date.now(),
     };
 
-    const newRef = push(ref(database, up('bmcEntries')));
-    await set(newRef, entryData);
+    if (editId) {
+      await set(ref(database, up(`bmcEntries/${editId}`)), entryData);
+    } else {
+      const newRef = push(ref(database, up('bmcEntries')));
+      await set(newRef, entryData);
+    }
 
     clearForm();
     setShowSavedMessage(true);
@@ -249,6 +271,26 @@ const BMCEntry: React.FC = () => {
               </div>
 
               <div>
+                <label className="label-text" style={labelStyle}>MILK TYPE</label>
+                <div className="flex gap-2 bg-white/5 rounded-xl border border-white/10" style={{ padding: '4px' }}>
+                  <button
+                    onClick={() => setMilkType('cow')}
+                    style={{ padding: '10px 0' }}
+                    className={`flex-1 rounded-lg text-xs font-black transition-all ${milkType === 'cow' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+                  >
+                    COW
+                  </button>
+                  <button
+                    onClick={() => setMilkType('buffalo')}
+                    style={{ padding: '10px 0' }}
+                    className={`flex-1 rounded-lg text-xs font-black transition-all ${milkType === 'buffalo' ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+                  >
+                    BUFFALO
+                  </button>
+                </div>
+              </div>
+
+              <div>
                 <label className="label-text" style={labelStyle}>BMC</label>
                 <select
                   value={bmcId}
@@ -322,8 +364,8 @@ const BMCEntry: React.FC = () => {
               </div>
 
               <div style={{ display: 'flex', gap: '14px', paddingTop: '4px' }}>
-                <button onClick={clearForm} className="btn-secondary" style={{ flex: 1, padding: '13px', fontSize: '14px', fontWeight: 700 }}>Clear</button>
-                <button onClick={handleSave} className="btn-primary" style={{ flex: 2, padding: '13px', fontSize: '14px', fontWeight: 800 }}>Save Entry</button>
+                <button onClick={clearForm} className="btn-secondary" style={{ flex: 1, padding: '13px', fontSize: '14px', fontWeight: 700 }}>{editId ? 'Cancel' : 'Clear'}</button>
+                <button onClick={handleSave} className={`btn-primary ${editId ? 'from-amber-500 to-orange-600' : ''}`} style={{ flex: 2, padding: '13px', fontSize: '14px', fontWeight: 800 }}>{editId ? 'Update Entry' : 'Save Entry'}</button>
               </div>
             </div>
           </div>
@@ -356,8 +398,8 @@ const BMCEntry: React.FC = () => {
               <table className="w-full text-left border-collapse">
                 <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                   <tr className="bg-[#0f172a]">
-                    {['Shift', 'BMC', 'Qty (KG)', 'FAT', 'SNF', 'Rate', 'Amount', ''].map((h, i) => (
-                      <th key={i} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }} className={i === 7 ? 'text-right' : ''}>{h}</th>
+                    {['Shift', 'Type', 'BMC', 'Qty (KG)', 'FAT', 'SNF', 'Rate', 'Amount', ''].map((h, i) => (
+                      <th key={i} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }} className={i === 8 ? 'text-right' : ''}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -365,6 +407,7 @@ const BMCEntry: React.FC = () => {
                   {todayEntries.sort((a, b) => safeNum(b?.createdAt) - safeNum(a?.createdAt)).map((entry) => (
                     <tr key={entry.entryId} className="hover:bg-white/5 transition-colors">
                       <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 600, color: 'rgba(255,255,255,0.8)', textTransform: 'capitalize' }}>{entry.shift}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700, textTransform: 'capitalize', color: (entry.milkType || 'cow') === 'cow' ? '#34d399' : '#a78bfa' }}>{entry.milkType || 'cow'}</td>
                       <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 600, color: 'white' }}>{entry.bmcName}</td>
                       <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700, color: 'white' }}>{safeNum(entry?.quantityKg).toFixed(2)}</td>
                       <td style={{ padding: '12px 16px', fontSize: '14px', color: '#60a5fa', fontWeight: 700 }}>{safeNum(entry?.fat).toFixed(1)}</td>
@@ -372,19 +415,28 @@ const BMCEntry: React.FC = () => {
                       <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>₹{safeNum(entry?.rate).toFixed(2)}</td>
                       <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 800, color: '#4ade80' }}>₹{safeNum(entry?.amount).toFixed(2)}</td>
                       <td style={{ padding: '12px 16px' }} className="text-right">
-                        <button
-                          onClick={() => handleDelete(entry.entryId)}
-                          className="rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
-                          style={{ padding: '8px' }}
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => handleEdit(entry)}
+                            className="rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all"
+                            style={{ padding: '8px' }}
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(entry.entryId)}
+                            className="rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                            style={{ padding: '8px' }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
                   {todayEntries.length === 0 && (
                     <tr>
-                      <td colSpan={8} className="text-center text-white/20 text-sm font-medium" style={{ padding: '48px' }}>
+                      <td colSpan={9} className="text-center text-white/20 text-sm font-medium" style={{ padding: '48px' }}>
                         No BMC entries found for this date
                       </td>
                     </tr>
