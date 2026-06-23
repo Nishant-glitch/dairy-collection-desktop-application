@@ -10,6 +10,7 @@ import {
   BarChart3,
   Settings,
   Crown,
+  Snowflake,
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { isAdmin } from '../utils/userDb';
@@ -30,6 +31,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, isOpen, onCl
     { id: 'farmer-master', icon: Users, label: t('farmerMaster') },
     { id: 'rate-chart', icon: FileText, label: t('rateChart') },
     { id: 'milk-collection', icon: Droplet, label: t('milkCollection') },
+    { id: 'bmc-master', icon: Snowflake, label: t('bmcMaster') },
+    { id: 'bmc-entry', icon: Snowflake, label: t('bmcEntry') },
     { id: 'deductions', icon: Wallet, label: t('deductions') },
     { id: 'payment-register', icon: Receipt, label: t('paymentRegister') },
     { id: 'reports', icon: BarChart3, label: t('reports') },

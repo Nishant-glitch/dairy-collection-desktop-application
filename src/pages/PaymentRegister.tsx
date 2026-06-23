@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ref, get, set, onValue } from 'firebase/database';
+import { ref, get, set, onValue, query, orderByChild, startAt, endAt } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatIndianCurrency } from '../utils/rateCalculator';
 import { sendPaymentSMS } from '../services/sms';
-import { Smartphone, QrCode, Check, Calculator, X } from 'lucide-react';
+import { Smartphone, QrCode, Check, Calculator, X, Users, Snowflake } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 interface PaymentEntry {
@@ -32,11 +32,67 @@ const PaymentRegister: React.FC = () => {
     farmer: '',
   });
 
+  // BMC Payment Register state
+  const [activeTab, setActiveTab] = useState<'farmer' | 'bmc'>('farmer');
+  const today = new Date().toISOString().split('T')[0];
+  const firstOfMonth = `${new Date().toISOString().substring(0, 7)}-01`;
+  const [bmcFromDate, setBmcFromDate] = useState(firstOfMonth);
+  const [bmcToDate, setBmcToDate] = useState(today);
+  const [bmcFilter, setBmcFilter] = useState('all');
+  const [bmcList, setBmcList] = useState<any[]>([]);
+  const [bmcEntries, setBmcEntries] = useState<any[]>([]);
+  const [bmcCalculated, setBmcCalculated] = useState(false);
+
   useEffect(() => {
     const unsubscribe = loadFarmers();
     loadDCSInfo();
-    return unsubscribe;
+    const bmcUnsub = loadBMCList();
+    return () => {
+      unsubscribe();
+      bmcUnsub();
+    };
   }, []);
+
+  const loadBMCList = () => {
+    const bmcRef = ref(database, up('bmcMaster'));
+    return onValue(bmcRef, (snapshot) => {
+      const list: any[] = [];
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        Object.keys(data).forEach((id) => list.push({ bmcId: id, ...data[id] }));
+      }
+      list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      setBmcList(list);
+    });
+  };
+
+  const calculateBMCEntries = async () => {
+    // Date-range query on bmcEntries (uses the .indexOn ["date"] index).
+    const entriesQuery = query(
+      ref(database, up('bmcEntries')),
+      orderByChild('date'),
+      startAt(bmcFromDate),
+      endAt(bmcToDate)
+    );
+    const snapshot = await get(entriesQuery);
+
+    const list: any[] = [];
+    if (snapshot.exists()) {
+      const data = snapshot.val();
+      Object.keys(data).forEach((id) => {
+        const entry = data[id];
+        if (bmcFilter === 'all' || entry.bmcId === bmcFilter) {
+          list.push({ entryId: id, ...entry });
+        }
+      });
+    }
+    list.sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      return (a.createdAt || 0) - (b.createdAt || 0);
+    });
+    setBmcEntries(list);
+    setBmcCalculated(true);
+  };
 
   const loadFarmers = () => {
     const farmersRef = ref(database, up('farmers'));
@@ -188,6 +244,26 @@ const PaymentRegister: React.FC = () => {
     <div className="page-wrapper animate-fadeIn">
       <h1 className="page-title">{t('paymentRegister')}</h1>
 
+      {/* Tabs: Farmer vs BMC */}
+      <div className="flex gap-2 bg-white/5 rounded-xl border border-white/10" style={{ padding: '4px', marginBottom: '20px', maxWidth: '420px' }}>
+        <button
+          onClick={() => setActiveTab('farmer')}
+          style={{ padding: '10px 16px' }}
+          className={`flex-1 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 ${activeTab === 'farmer' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+        >
+          <Users size={14} /> FARMER PAYMENTS
+        </button>
+        <button
+          onClick={() => setActiveTab('bmc')}
+          style={{ padding: '10px 16px' }}
+          className={`flex-1 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 ${activeTab === 'bmc' ? 'bg-sky-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+        >
+          <Snowflake size={14} /> BMC PAYMENTS
+        </button>
+      </div>
+
+      {activeTab === 'farmer' && (
+      <>
       <div className="glass-card" style={{ padding: '20px 24px', marginBottom: '20px' }}>
         <div className="flex flex-col md:flex-row gap-4 items-start md:items-end" style={{ gap: '16px' }}>
           <div style={{ maxWidth: '280px', width: '100%' }}>
@@ -289,6 +365,153 @@ const PaymentRegister: React.FC = () => {
             </table>
           </div>
         </div>
+      )}
+      </>
+      )}
+
+      {activeTab === 'bmc' && (
+      <>
+        <div className="glass-card" style={{ padding: '20px 24px', marginBottom: '20px' }}>
+          <div className="flex flex-col md:flex-row gap-4 items-start md:items-end" style={{ gap: '16px' }}>
+            <div style={{ maxWidth: '200px', width: '100%' }}>
+              <label style={labelStyle}>From Date</label>
+              <input
+                type="date"
+                value={bmcFromDate}
+                onChange={(e) => setBmcFromDate(e.target.value)}
+                className="input-3d w-full"
+                style={{ height: '40px', padding: '10px 14px', fontSize: '14px' }}
+              />
+            </div>
+            <div style={{ maxWidth: '200px', width: '100%' }}>
+              <label style={labelStyle}>To Date</label>
+              <input
+                type="date"
+                value={bmcToDate}
+                onChange={(e) => setBmcToDate(e.target.value)}
+                className="input-3d w-full"
+                style={{ height: '40px', padding: '10px 14px', fontSize: '14px' }}
+              />
+            </div>
+            <div style={{ maxWidth: '240px', width: '100%' }}>
+              <label style={labelStyle}>BMC</label>
+              <select
+                value={bmcFilter}
+                onChange={(e) => setBmcFilter(e.target.value)}
+                className="input-3d w-full"
+                style={{ height: '40px', padding: '10px 14px', fontSize: '14px' }}
+              >
+                <option value="all">All BMCs</option>
+                {bmcList.map((b) => (
+                  <option key={b.bmcId} value={b.bmcId}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={calculateBMCEntries}
+              className="btn-3d"
+              style={{ padding: '10px 20px', height: '40px', minHeight: '40px', marginLeft: 'auto' }}
+            >
+              <Calculator size={16} />
+              Calculate
+            </button>
+          </div>
+        </div>
+
+        {bmcCalculated && (
+          <div className="glass-card" style={{ padding: '20px 24px' }}>
+            {bmcEntries.length === 0 ? (
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15, textAlign: 'center', padding: '32px 0' }}>
+                No BMC entries found for the selected range.
+              </p>
+            ) : (
+              <>
+                {/* Per-BMC subtotals (only when All BMCs selected) */}
+                {bmcFilter === 'all' && (
+                  <div style={{ marginBottom: 20 }}>
+                    <h3 style={{ color: '#38bdf8', fontSize: 13, fontWeight: 800, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Per-BMC Subtotals</h3>
+                    <div className="table-3d overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr>
+                            <th className="px-4 py-[9px]" style={{ padding: '10px 16px', fontSize: '13px', fontWeight: 700 }}>BMC</th>
+                            <th className="px-4 py-[9px] text-right" style={{ padding: '10px 16px', fontSize: '13px', fontWeight: 700 }}>Entries</th>
+                            <th className="px-4 py-[9px] text-right" style={{ padding: '10px 16px', fontSize: '13px', fontWeight: 700 }}>Total Qty (KG)</th>
+                            <th className="px-4 py-[9px] text-right" style={{ padding: '10px 16px', fontSize: '13px', fontWeight: 700 }}>Total Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.values(
+                            bmcEntries.reduce((acc: any, e: any) => {
+                              const key = e.bmcId || e.bmcName;
+                              if (!acc[key]) acc[key] = { bmcName: e.bmcName, count: 0, qty: 0, amount: 0 };
+                              acc[key].count += 1;
+                              acc[key].qty += parseFloat(e.quantityKg || 0);
+                              acc[key].amount += parseFloat(e.amount || 0);
+                              return acc;
+                            }, {})
+                          ).map((row: any, idx: number) => (
+                            <tr key={idx} className="table-row">
+                              <td className="px-4 py-[9px]" style={{ padding: '10px 16px', fontSize: '14px', fontWeight: 600, color: 'white' }}>{row.bmcName}</td>
+                              <td className="px-4 py-[9px] text-right" style={{ padding: '10px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>{row.count}</td>
+                              <td className="px-4 py-[9px] text-right" style={{ padding: '10px 16px', fontSize: '14px', color: 'white', fontWeight: 600 }}>{row.qty.toFixed(2)}</td>
+                              <td className="px-4 py-[9px] text-right" style={{ padding: '10px 16px', fontSize: '14px', color: '#4ade80', fontWeight: 600 }}>{formatIndianCurrency(row.amount)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Detailed entries */}
+                <div className="table-3d overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr>
+                        <th className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Date</th>
+                        <th className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Shift</th>
+                        <th className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>BMC</th>
+                        <th className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Qty (KG)</th>
+                        <th className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>FAT</th>
+                        <th className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>SNF</th>
+                        <th className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Rate</th>
+                        <th className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bmcEntries.map((e: any) => (
+                        <tr key={e.entryId} className="table-row">
+                          <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '14px', color: 'white', fontWeight: 600 }}>{e.date}</td>
+                          <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.7)', textTransform: 'capitalize' }}>{e.shift}</td>
+                          <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.85)' }}>{e.bmcName}</td>
+                          <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: 'white', fontWeight: 600 }}>{parseFloat(e.quantityKg || 0).toFixed(2)}</td>
+                          <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: '#60a5fa' }}>{parseFloat(e.fat || 0).toFixed(1)}</td>
+                          <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: '#4ade80' }}>{parseFloat(e.snf || 0).toFixed(1)}</td>
+                          <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>₹{parseFloat(e.rate || 0).toFixed(2)}</td>
+                          <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: '#4ade80', fontWeight: 700 }}>{formatIndianCurrency(parseFloat(e.amount || 0))}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot style={{ background: 'rgba(255, 255, 255, 0.05)', fontWeight: 700 }}>
+                      <tr>
+                        <td colSpan={3} className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'white', fontSize: '14px', fontWeight: 700 }}>TOTAL</td>
+                        <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', color: 'white', fontSize: '14px', fontWeight: 700 }}>
+                          {bmcEntries.reduce((sum, e) => sum + parseFloat(e.quantityKg || 0), 0).toFixed(2)}
+                        </td>
+                        <td colSpan={3}></td>
+                        <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', color: '#4ade80', fontSize: '14px', fontWeight: 700 }}>
+                          {formatIndianCurrency(bmcEntries.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0))}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </>
       )}
 
       {showQR.show && (

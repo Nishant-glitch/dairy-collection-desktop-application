@@ -10,6 +10,8 @@ import DCSMaster from './pages/DCSMaster';
 import FarmerMaster from './pages/FarmerMaster';
 import RateChart from './pages/RateChart';
 import MilkCollection from './pages/MilkCollection';
+import BMCMaster from './pages/BMCMaster';
+import BMCEntry from './pages/BMCEntry';
 import Deductions from './pages/Deductions';
 import PaymentRegister from './pages/PaymentRegister';
 import Reports from './pages/Reports';
@@ -92,6 +94,10 @@ function App() {
         return <RateChart />;
       case 'milk-collection':
         return <MilkCollection onNavigate={setCurrentPage} />;
+      case 'bmc-master':
+        return <BMCMaster />;
+      case 'bmc-entry':
+        return <BMCEntry />;
       case 'deductions':
         return <Deductions />;
       case 'payment-register':
