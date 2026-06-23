@@ -156,6 +156,12 @@ const BMCEntry: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    // Enter in any field submits the form — preventDefault stops the page reload.
+    e.preventDefault();
+    handleSave();
+  };
+
   const handleSave = async () => {
     if (!bmcId) {
       alert('Please select a BMC!');
@@ -234,7 +240,7 @@ const BMCEntry: React.FC = () => {
               New BMC Entry
             </h2>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div>
                 <label className="label-text flex items-center gap-2" style={labelStyle}>
                   <Calendar size={14} className="text-blue-400" /> DATE
@@ -254,6 +260,7 @@ const BMCEntry: React.FC = () => {
                 </label>
                 <div className="flex gap-2 bg-white/5 rounded-xl border border-white/10" style={{ padding: '4px' }}>
                   <button
+                    type="button"
                     onClick={() => setShift('morning')}
                     style={{ padding: '10px 0' }}
                     className={`flex-1 rounded-lg text-xs font-black transition-all ${shift === 'morning' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
@@ -261,6 +268,7 @@ const BMCEntry: React.FC = () => {
                     MORNING
                   </button>
                   <button
+                    type="button"
                     onClick={() => setShift('evening')}
                     style={{ padding: '10px 0' }}
                     className={`flex-1 rounded-lg text-xs font-black transition-all ${shift === 'evening' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
@@ -274,6 +282,7 @@ const BMCEntry: React.FC = () => {
                 <label className="label-text" style={labelStyle}>MILK TYPE</label>
                 <div className="flex gap-2 bg-white/5 rounded-xl border border-white/10" style={{ padding: '4px' }}>
                   <button
+                    type="button"
                     onClick={() => setMilkType('cow')}
                     style={{ padding: '10px 0' }}
                     className={`flex-1 rounded-lg text-xs font-black transition-all ${milkType === 'cow' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
@@ -281,6 +290,7 @@ const BMCEntry: React.FC = () => {
                     COW
                   </button>
                   <button
+                    type="button"
                     onClick={() => setMilkType('buffalo')}
                     style={{ padding: '10px 0' }}
                     className={`flex-1 rounded-lg text-xs font-black transition-all ${milkType === 'buffalo' ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
@@ -364,10 +374,10 @@ const BMCEntry: React.FC = () => {
               </div>
 
               <div style={{ display: 'flex', gap: '14px', paddingTop: '4px' }}>
-                <button onClick={clearForm} className="btn-secondary" style={{ flex: 1, padding: '13px', fontSize: '14px', fontWeight: 700 }}>{editId ? 'Cancel' : 'Clear'}</button>
-                <button onClick={handleSave} className={`btn-primary ${editId ? 'from-amber-500 to-orange-600' : ''}`} style={{ flex: 2, padding: '13px', fontSize: '14px', fontWeight: 800 }}>{editId ? 'Update Entry' : 'Save Entry'}</button>
+                <button type="button" onClick={clearForm} className="btn-secondary" style={{ flex: 1, padding: '13px', fontSize: '14px', fontWeight: 700 }}>{editId ? 'Cancel' : 'Clear'}</button>
+                <button type="submit" className={`btn-primary ${editId ? 'from-amber-500 to-orange-600' : ''}`} style={{ flex: 2, padding: '13px', fontSize: '14px', fontWeight: 800 }}>{editId ? 'Update Entry' : 'Save Entry'}</button>
               </div>
-            </div>
+            </form>
           </div>
         </div>
 
