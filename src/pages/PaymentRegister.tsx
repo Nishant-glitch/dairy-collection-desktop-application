@@ -7,6 +7,7 @@ import { formatIndianCurrency } from '../utils/rateCalculator';
 import { sendPaymentSMS } from '../services/sms';
 import { Smartphone, QrCode, Check, Calculator, X, Users, Snowflake, Printer } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { COMFED_LOGO, SUDHA_LOGO } from '../utils/reportLogos';
 
 interface PaymentEntry {
   farmerId: string;
@@ -482,12 +483,27 @@ const PaymentRegister: React.FC = () => {
               id="report-sheet"
               style={{ background: '#fff', maxWidth: '920px', margin: '0 auto', padding: '28px 32px', borderRadius: '4px', boxShadow: '0 12px 48px rgba(0,0,0,0.45)', color: '#111' }}
             >
-              <div style={{ textAlign: 'center', marginBottom: 20, borderBottom: '2px solid #111', paddingBottom: 12 }}>
-                <h2 style={{ fontSize: 20, fontWeight: 800, color: '#111', margin: 0 }}>{dcsInfo.name || 'DCS Pro'}</h2>
-                <p style={{ fontSize: 14, fontWeight: 700, color: '#333', margin: '4px 0 0' }}>BMC Payment Register</p>
-                <p style={{ fontSize: 12, color: '#555', margin: '6px 0 0' }}>
-                  {bmcFromDate} to {bmcToDate} &nbsp;|&nbsp; BMC: {selectedBmcName} &nbsp;|&nbsp; Type: {milkTypeFilter === 'all' ? 'All' : milkTypeFilter}
-                </p>
+              {/* Header with logos — same COMFED (left) / SUDHA (right) pattern as Reports */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', borderBottom: '2px solid #000', paddingBottom: '8px', marginBottom: 20 }}>
+                <div style={{ width: '96px', textAlign: 'center', flexShrink: 0 }}>
+                  {COMFED_LOGO
+                    ? <img src={COMFED_LOGO} alt="COMFED" style={{ maxWidth: '88px', maxHeight: '64px' }} />
+                    : <div style={{ border: '1px solid #777', borderRadius: '50%', width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', fontSize: '9px', fontWeight: 700 }}>COMFED</div>}
+                </div>
+                <div style={{ textAlign: 'center', flex: 1 }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#111', textTransform: 'uppercase' }}>{dcsInfo.name || 'DCS Pro'}</div>
+                  {dcsInfo.code && <div style={{ fontSize: 13, fontWeight: 700, color: '#222' }}>{dcsInfo.code}</div>}
+                  {dcsInfo.address && <div style={{ fontSize: 11, fontStyle: 'italic', color: '#444' }}>{dcsInfo.address}</div>}
+                  <div style={{ fontSize: 14, fontWeight: 700, textDecoration: 'underline', marginTop: 3, color: '#111' }}>BMC Payment Register</div>
+                  <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>
+                    {bmcFromDate} to {bmcToDate} &nbsp;|&nbsp; BMC: {selectedBmcName} &nbsp;|&nbsp; Type: {milkTypeFilter === 'all' ? 'All' : milkTypeFilter}
+                  </div>
+                </div>
+                <div style={{ width: '96px', textAlign: 'center', flexShrink: 0 }}>
+                  {SUDHA_LOGO
+                    ? <img src={SUDHA_LOGO} alt="Sudha" style={{ maxWidth: '88px', maxHeight: '64px' }} />
+                    : <div style={{ border: '1px solid #c0392b', borderRadius: '4px', padding: '8px 6px', fontSize: '15px', fontWeight: 700, color: '#c0392b', fontStyle: 'italic' }}>Sudha</div>}
+                </div>
               </div>
 
               {/* Cow / Buffalo breakdown */}
