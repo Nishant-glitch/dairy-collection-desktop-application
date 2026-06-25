@@ -13,6 +13,8 @@ const Settings: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [language, setLanguage] = useState('English');
   const [dateFormat, setDateFormat] = useState('DD/MM/YYYY');
+  const [bmcBill, setBmcBill] = useState({ unionName: '', route: '', salesSthan: '', headLoadRate: '', nextBillNo: 1 });
+  const [savingBill, setSavingBill] = useState(false);
 
   useEffect(() => {
     loadSettings();
@@ -30,8 +32,31 @@ const Settings: React.FC = () => {
         setLanguage(prefSnap.val().language || 'English');
         setDateFormat(prefSnap.val().dateFormat || 'DD/MM/YYYY');
       }
+      const billSnap = await get(ref(database, up('settings/bmcBill')));
+      if (billSnap.exists()) {
+        setBmcBill({ unionName: '', route: '', salesSthan: '', headLoadRate: '', nextBillNo: 1, ...billSnap.val() });
+      }
     } catch (err) {
       console.error('Error loading settings:', err);
+    }
+  };
+
+  const handleSaveBmcBill = async () => {
+    setSavingBill(true);
+    try {
+      await set(ref(database, up('settings/bmcBill')), {
+        unionName: bmcBill.unionName,
+        route: bmcBill.route,
+        salesSthan: bmcBill.salesSthan,
+        headLoadRate: bmcBill.headLoadRate,
+        nextBillNo: parseInt(String(bmcBill.nextBillNo)) || 1,
+        updatedAt: Date.now(),
+      });
+      alert('✅ BMC Bill settings saved!');
+    } catch (err) {
+      alert('❌ Failed to save BMC Bill settings');
+    } finally {
+      setSavingBill(false);
     }
   };
 
@@ -207,6 +232,80 @@ const Settings: React.FC = () => {
         >
           <Save style={{ width: 16, height: 16 }} />
           Save Preferences
+        </button>
+      </div>
+
+      {/* BMC Bill Header Settings */}
+      <div className="glass-card" style={{ padding: 24, marginBottom: 20 }}>
+        <h2 style={{ color: '#f1f5f9', fontSize: 18, fontWeight: 700, marginBottom: 4 }}>
+          🧾 BMC Bill (Union Format) Settings
+        </h2>
+        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginBottom: 20 }}>
+          Header fields for the BMC Payment Register printout. Society name/code come from DCS Master.
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginBottom: 16 }}>
+          <div>
+            <label className="label-text">UNION NAME</label>
+            <input
+              type="text"
+              value={bmcBill.unionName}
+              onChange={(e) => setBmcBill({ ...bmcBill, unionName: e.target.value })}
+              placeholder="e.g. Mithila Dugdh Utpadak Sahkari Sangh Ltd."
+              className="input-field"
+            />
+          </div>
+          <div>
+            <label className="label-text">ROUTE</label>
+            <input
+              type="text"
+              value={bmcBill.route}
+              onChange={(e) => setBmcBill({ ...bmcBill, route: e.target.value })}
+              placeholder="Route name / number"
+              className="input-field"
+            />
+          </div>
+          <div>
+            <label className="label-text">SALES STHAN / LOCATION CODE</label>
+            <input
+              type="text"
+              value={bmcBill.salesSthan}
+              onChange={(e) => setBmcBill({ ...bmcBill, salesSthan: e.target.value })}
+              placeholder="Sales sthan / location code"
+              className="input-field"
+            />
+          </div>
+          <div>
+            <label className="label-text">HEAD LOAD RATE</label>
+            <input
+              type="text"
+              value={bmcBill.headLoadRate}
+              onChange={(e) => setBmcBill({ ...bmcBill, headLoadRate: e.target.value })}
+              placeholder="Display only — no calculation"
+              className="input-field"
+            />
+          </div>
+          <div>
+            <label className="label-text">NEXT BILL NO.</label>
+            <input
+              type="number"
+              value={bmcBill.nextBillNo}
+              onChange={(e) => setBmcBill({ ...bmcBill, nextBillNo: parseInt(e.target.value) || 1 })}
+              placeholder="1"
+              className="input-field"
+            />
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 4 }}>
+              Auto-increments each time a BMC bill is generated.
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={handleSaveBmcBill}
+          disabled={savingBill}
+          className="btn-primary"
+          style={{ padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}
+        >
+          <Save style={{ width: 16, height: 16 }} />
+          {savingBill ? 'Saving...' : 'Save BMC Bill Settings'}
         </button>
       </div>
 

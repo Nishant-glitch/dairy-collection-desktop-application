@@ -44,14 +44,18 @@ const PaymentRegister: React.FC = () => {
   const [bmcList, setBmcList] = useState<any[]>([]);
   const [bmcEntries, setBmcEntries] = useState<any[]>([]);
   const [bmcCalculated, setBmcCalculated] = useState(false);
+  const [bmcBill, setBmcBill] = useState<any>({ unionName: '', route: '', salesSthan: '', headLoadRate: '', nextBillNo: 1 });
+  const [billNo, setBillNo] = useState<number | null>(null);
 
   useEffect(() => {
     const unsubscribe = loadFarmers();
     loadDCSInfo();
     const bmcUnsub = loadBMCList();
+    const billUnsub = loadBmcBill();
     return () => {
       unsubscribe();
       bmcUnsub();
+      billUnsub();
     };
   }, []);
 
@@ -65,6 +69,17 @@ const PaymentRegister: React.FC = () => {
       }
       list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       setBmcList(list);
+    });
+  };
+
+  const loadBmcBill = () => {
+    // Union-bill header fields (Union Name, Route, Sales Sthan, Head Load Rate)
+    // and the auto-increment Bill No counter — all configured in Settings.
+    const billRef = ref(database, up('settings/bmcBill'));
+    return onValue(billRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setBmcBill({ unionName: '', route: '', salesSthan: '', headLoadRate: '', nextBillNo: 1, ...snapshot.val() });
+      }
     });
   };
 
@@ -93,6 +108,18 @@ const PaymentRegister: React.FC = () => {
     });
     setBmcEntries(list);
     setBmcCalculated(true);
+
+    // Assign an auto-increment Bill No to this generated bill, then bump the
+    // stored counter so the next bill gets the next number. Only consume a
+    // number when the bill actually has data.
+    if (list.length > 0) {
+      const billSnap = await get(ref(database, up('settings/bmcBill/nextBillNo')));
+      const cur = billSnap.exists() ? (parseInt(billSnap.val()) || 1) : 1;
+      setBillNo(cur);
+      await set(ref(database, up('settings/bmcBill/nextBillNo')), cur + 1);
+    } else {
+      setBillNo(null);
+    }
   };
 
   const loadFarmers = () => {
@@ -451,151 +478,162 @@ const PaymentRegister: React.FC = () => {
         )}
 
         {bmcCalculated && bmcEntries.length > 0 && (() => {
-          // Pre-computed aggregates for the printable sheet.
-          const grandQty = bmcEntries.reduce((s, e) => s + parseFloat(e.quantityKg || 0), 0);
-          const grandAmt = bmcEntries.reduce((s, e) => s + parseFloat(e.amount || 0), 0);
-          const byType = bmcEntries.reduce((acc: any, e: any) => {
-            const k = e.milkType || 'cow';
-            if (!acc[k]) acc[k] = { count: 0, qty: 0, amount: 0 };
-            acc[k].count += 1;
-            acc[k].qty += parseFloat(e.quantityKg || 0);
-            acc[k].amount += parseFloat(e.amount || 0);
-            return acc;
-          }, {});
-          const byBmc = Object.values(
-            bmcEntries.reduce((acc: any, e: any) => {
-              const key = e.bmcId || e.bmcName;
-              if (!acc[key]) acc[key] = { bmcName: e.bmcName, count: 0, qty: 0, amount: 0 };
-              acc[key].count += 1;
-              acc[key].qty += parseFloat(e.quantityKg || 0);
-              acc[key].amount += parseFloat(e.amount || 0);
-              return acc;
-            }, {})
+          const fmtDMY = (d: string) => {
+            if (!d) return '';
+            const [y, m, day] = d.split('-');
+            return `${day}/${m}/${y}`;
+          };
+          const fmtDM = (d: string) => {
+            const parts = d.split('-');
+            return `${parts[2]}-${parts[1]}`;
+          };
+
+          // Aggregate per milkType -> date -> shift. Kg.Fat / Kg.SNF are derived
+          // at display time (qty*fat/100, qty*snf/100). Value Rs. is the
+          // rate-chart amount already computed at entry time (no new rate logic).
+          const buildSection = (type: string) => {
+            const byDate: any = {};
+            bmcEntries
+              .filter((e: any) => (e.milkType || 'cow') === type)
+              .forEach((e: any) => {
+                const d = e.date;
+                if (!byDate[d]) byDate[d] = {
+                  morning: { qty: 0, kgFat: 0, kgSnf: 0, value: 0 },
+                  evening: { qty: 0, kgFat: 0, kgSnf: 0, value: 0 },
+                };
+                const slot = e.shift === 'evening' ? byDate[d].evening : byDate[d].morning;
+                const q = parseFloat(e.quantityKg || 0);
+                const f = parseFloat(e.fat || 0);
+                const s = parseFloat(e.snf || 0);
+                slot.qty += q;
+                slot.kgFat += (q * f) / 100;
+                slot.kgSnf += (q * s) / 100;
+                slot.value += parseFloat(e.amount || 0);
+              });
+            return { byDate, dates: Object.keys(byDate).sort() };
+          };
+
+          const cow = buildSection('cow');
+          const buff = buildSection('buffalo');
+
+          const secQty = (sec: any) => sec.dates.reduce((sum: number, d: string) => sum + sec.byDate[d].morning.qty + sec.byDate[d].evening.qty, 0);
+          const secVal = (sec: any) => sec.dates.reduce((sum: number, d: string) => sum + sec.byDate[d].morning.value + sec.byDate[d].evening.value, 0);
+          const cowQty = secQty(cow);
+          const bufQty = secQty(buff);
+          const allQty = cowQty + bufQty;
+          const grandValue = secVal(cow) + secVal(buff);
+          const selectedBmcName = bmcFilter === 'all' ? 'All' : (bmcList.find((b) => b.bmcId === bmcFilter)?.name || '');
+
+          const cellBase: React.CSSProperties = { border: '1px solid #888', fontSize: 9, padding: '2px 4px', color: '#111' };
+          const hCell: React.CSSProperties = { ...cellBase, fontWeight: 700, textAlign: 'center', background: '#eee' };
+          const nCell: React.CSSProperties = { ...cellBase, textAlign: 'right' };
+          const dCell: React.CSSProperties = { ...cellBase, textAlign: 'center', fontWeight: 700 };
+          const infoLabel: React.CSSProperties = { fontWeight: 700 };
+
+          const shiftCells = (slot: any) => {
+            if (!slot || slot.qty === 0) {
+              return (<>
+                <td style={nCell} /><td style={nCell} /><td style={nCell} />
+                <td style={nCell} /><td style={nCell} /><td style={nCell} />
+              </>);
+            }
+            const fatPct = slot.qty > 0 ? (slot.kgFat * 100) / slot.qty : 0;
+            const snfPct = slot.qty > 0 ? (slot.kgSnf * 100) / slot.qty : 0;
+            return (<>
+              <td style={nCell}>{slot.qty.toFixed(1)}</td>
+              <td style={nCell}>{fatPct.toFixed(1)}</td>
+              <td style={nCell}>{slot.kgFat.toFixed(3)}</td>
+              <td style={nCell}>{snfPct.toFixed(1)}</td>
+              <td style={nCell}>{slot.kgSnf.toFixed(3)}</td>
+              <td style={nCell}>{slot.value.toFixed(2)}</td>
+            </>);
+          };
+
+          const renderSection = (label: string, sec: any) => (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#111', margin: '4px 0' }}>{label}</div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+                <thead>
+                  <tr>
+                    <th style={{ ...hCell, width: '7%' }} rowSpan={2}>Date</th>
+                    <th style={hCell} colSpan={6}>MORNING</th>
+                    <th style={hCell} colSpan={6}>EVENING</th>
+                  </tr>
+                  <tr>
+                    {['QTY', 'Fat%', 'Kg.Fat', 'SNF%', 'Kg.SNF', 'Value Rs.', 'QTY', 'Fat%', 'Kg.Fat', 'SNF%', 'Kg.SNF', 'Value Rs.'].map((h, i) => (
+                      <th key={i} style={hCell}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sec.dates.length === 0 ? (
+                    <tr><td style={{ ...cellBase, textAlign: 'center' }} colSpan={13}>No {label.toLowerCase()} entries</td></tr>
+                  ) : sec.dates.map((d: string) => (
+                    <tr key={d}>
+                      <td style={dCell}>{fmtDM(d)}</td>
+                      {shiftCells(sec.byDate[d].morning)}
+                      {shiftCells(sec.byDate[d].evening)}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           );
-          const th: React.CSSProperties = { padding: '8px 10px', fontSize: '12px', fontWeight: 700, color: '#111', borderBottom: '2px solid #333', textAlign: 'left' };
-          const thR: React.CSSProperties = { ...th, textAlign: 'right' };
-          const td: React.CSSProperties = { padding: '7px 10px', fontSize: '13px', color: '#222', borderBottom: '1px solid #ddd' };
-          const tdR: React.CSSProperties = { ...td, textAlign: 'right' };
-          const selectedBmcName = bmcFilter === 'all' ? 'All BMCs' : (bmcList.find((b) => b.bmcId === bmcFilter)?.name || '');
 
           return (
             <div
               id="report-sheet"
-              style={{ background: '#fff', maxWidth: '920px', margin: '0 auto', padding: '28px 32px', borderRadius: '4px', boxShadow: '0 12px 48px rgba(0,0,0,0.45)', color: '#111' }}
+              style={{ background: '#fff', maxWidth: '920px', margin: '0 auto', padding: '24px 28px', borderRadius: '4px', boxShadow: '0 12px 48px rgba(0,0,0,0.45)', color: '#111' }}
             >
-              {/* Header with logos — same COMFED (left) / SUDHA (right) pattern as Reports */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', borderBottom: '2px solid #000', paddingBottom: '8px', marginBottom: 20 }}>
-                <div style={{ width: '96px', textAlign: 'center', flexShrink: 0 }}>
+              {/* Header with logos + union name */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, borderBottom: '2px solid #000', paddingBottom: 8 }}>
+                <div style={{ width: 88, textAlign: 'center', flexShrink: 0 }}>
                   {COMFED_LOGO
-                    ? <img src={COMFED_LOGO} alt="COMFED" style={{ maxWidth: '88px', maxHeight: '64px' }} />
-                    : <div style={{ border: '1px solid #777', borderRadius: '50%', width: '60px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', fontSize: '9px', fontWeight: 700 }}>COMFED</div>}
+                    ? <img src={COMFED_LOGO} alt="COMFED" style={{ maxWidth: 80, maxHeight: 60 }} />
+                    : <div style={{ border: '1px solid #777', borderRadius: '50%', width: 56, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', fontSize: 9, fontWeight: 700 }}>COMFED</div>}
                 </div>
                 <div style={{ textAlign: 'center', flex: 1 }}>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: '#111', textTransform: 'uppercase' }}>{dcsInfo.name || 'DCS Pro'}</div>
-                  {dcsInfo.code && <div style={{ fontSize: 13, fontWeight: 700, color: '#222' }}>{dcsInfo.code}</div>}
-                  {dcsInfo.address && <div style={{ fontSize: 11, fontStyle: 'italic', color: '#444' }}>{dcsInfo.address}</div>}
-                  <div style={{ fontSize: 14, fontWeight: 700, textDecoration: 'underline', marginTop: 3, color: '#111' }}>BMC Payment Register</div>
-                  <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>
-                    {bmcFromDate} to {bmcToDate} &nbsp;|&nbsp; BMC: {selectedBmcName} &nbsp;|&nbsp; Type: {milkTypeFilter === 'all' ? 'All' : milkTypeFilter}
-                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 800, textTransform: 'uppercase' }}>{bmcBill.unionName || dcsInfo.name || 'Union'}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, textDecoration: 'underline', marginTop: 2 }}>Milk Bill</div>
                 </div>
-                <div style={{ width: '96px', textAlign: 'center', flexShrink: 0 }}>
+                <div style={{ width: 88, textAlign: 'center', flexShrink: 0 }}>
                   {SUDHA_LOGO
-                    ? <img src={SUDHA_LOGO} alt="Sudha" style={{ maxWidth: '88px', maxHeight: '64px' }} />
-                    : <div style={{ border: '1px solid #c0392b', borderRadius: '4px', padding: '8px 6px', fontSize: '15px', fontWeight: 700, color: '#c0392b', fontStyle: 'italic' }}>Sudha</div>}
+                    ? <img src={SUDHA_LOGO} alt="Sudha" style={{ maxWidth: 80, maxHeight: 60 }} />
+                    : <div style={{ border: '1px solid #c0392b', borderRadius: 4, padding: '8px 6px', fontSize: 15, fontWeight: 700, color: '#c0392b', fontStyle: 'italic' }}>Sudha</div>}
                 </div>
               </div>
 
-              {/* Cow / Buffalo breakdown */}
-              <h3 style={{ fontSize: 13, fontWeight: 800, color: '#111', margin: '0 0 8px', textTransform: 'uppercase' }}>Milk Type Breakdown</h3>
-              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20 }}>
-                <thead>
-                  <tr>
-                    <th style={th}>Milk Type</th>
-                    <th style={thR}>Entries</th>
-                    <th style={thR}>Total Qty (KG)</th>
-                    <th style={thR}>Total Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {['cow', 'buffalo'].filter((k) => byType[k]).map((k) => (
-                    <tr key={k}>
-                      <td style={{ ...td, textTransform: 'capitalize', fontWeight: 700 }}>{k}</td>
-                      <td style={tdR}>{byType[k].count}</td>
-                      <td style={tdR}>{byType[k].qty.toFixed(2)}</td>
-                      <td style={tdR}>{formatIndianCurrency(byType[k].amount)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {/* Info lines (no bank / deduction fields) */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, margin: '8px 2px 0' }}>
+                <span><span style={infoLabel}>Society:</span> {dcsInfo.name || ''}{dcsInfo.code ? ` (${dcsInfo.code})` : ''}</span>
+                <span><span style={infoLabel}>Page:</span> 1</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, margin: '2px 2px' }}>
+                <span><span style={infoLabel}>Route:</span> {bmcBill.route || '—'}</span>
+                <span><span style={infoLabel}>Bill No.</span> {billNo ?? '—'}</span>
+              </div>
+              <div style={{ fontSize: 12, margin: '2px 2px' }}>
+                <span style={infoLabel}>Milk Bill Date From:</span> {fmtDMY(bmcFromDate)} &nbsp;&nbsp; <span style={infoLabel}>To:</span> {fmtDMY(bmcToDate)}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, margin: '2px 2px 10px' }}>
+                <span><span style={infoLabel}>Sales Sthan:</span> {bmcBill.salesSthan || '—'}{bmcFilter !== 'all' ? ` | BMC: ${selectedBmcName}` : ''}</span>
+                <span><span style={infoLabel}>Head Load Rate:</span> {bmcBill.headLoadRate || '—'}</span>
+              </div>
 
-              {/* Per-BMC subtotals (only meaningful when All BMCs selected) */}
-              {bmcFilter === 'all' && (
-                <>
-                  <h3 style={{ fontSize: 13, fontWeight: 800, color: '#111', margin: '0 0 8px', textTransform: 'uppercase' }}>Per-BMC Subtotals</h3>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 20 }}>
-                    <thead>
-                      <tr>
-                        <th style={th}>BMC</th>
-                        <th style={thR}>Entries</th>
-                        <th style={thR}>Total Qty (KG)</th>
-                        <th style={thR}>Total Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {byBmc.map((row: any, idx: number) => (
-                        <tr key={idx}>
-                          <td style={{ ...td, fontWeight: 700 }}>{row.bmcName}</td>
-                          <td style={tdR}>{row.count}</td>
-                          <td style={tdR}>{row.qty.toFixed(2)}</td>
-                          <td style={tdR}>{formatIndianCurrency(row.amount)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </>
-              )}
+              {/* Cow + Buffalo sections (Morning / Evening side-by-side) */}
+              {renderSection('Cow Milk', cow)}
+              {renderSection('Buff. Milk', buff)}
 
-              {/* Detailed entries */}
-              <h3 style={{ fontSize: 13, fontWeight: 800, color: '#111', margin: '0 0 8px', textTransform: 'uppercase' }}>Detailed Entries</h3>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr>
-                    <th style={th}>Date</th>
-                    <th style={th}>Shift</th>
-                    <th style={th}>Type</th>
-                    <th style={th}>BMC</th>
-                    <th style={thR}>Qty (KG)</th>
-                    <th style={thR}>FAT</th>
-                    <th style={thR}>SNF</th>
-                    <th style={thR}>Rate</th>
-                    <th style={thR}>Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bmcEntries.map((e: any) => (
-                    <tr key={e.entryId}>
-                      <td style={td}>{e.date}</td>
-                      <td style={{ ...td, textTransform: 'capitalize' }}>{e.shift}</td>
-                      <td style={{ ...td, textTransform: 'capitalize' }}>{e.milkType || 'cow'}</td>
-                      <td style={td}>{e.bmcName}</td>
-                      <td style={tdR}>{parseFloat(e.quantityKg || 0).toFixed(2)}</td>
-                      <td style={tdR}>{parseFloat(e.fat || 0).toFixed(1)}</td>
-                      <td style={tdR}>{parseFloat(e.snf || 0).toFixed(1)}</td>
-                      <td style={tdR}>₹{parseFloat(e.rate || 0).toFixed(2)}</td>
-                      <td style={{ ...tdR, fontWeight: 700 }}>{formatIndianCurrency(parseFloat(e.amount || 0))}</td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colSpan={4} style={{ ...td, fontWeight: 800, borderTop: '2px solid #333' }}>TOTAL</td>
-                    <td style={{ ...tdR, fontWeight: 800, borderTop: '2px solid #333' }}>{grandQty.toFixed(2)}</td>
-                    <td colSpan={3} style={{ borderTop: '2px solid #333' }}></td>
-                    <td style={{ ...tdR, fontWeight: 800, borderTop: '2px solid #333' }}>{formatIndianCurrency(grandAmt)}</td>
-                  </tr>
-                </tfoot>
-              </table>
+              {/* Totals — only milk quantity & value (no deduction / net payable) */}
+              <div style={{ marginTop: 12, borderTop: '2px solid #000', paddingTop: 8, fontSize: 13 }}>
+                <div style={{ display: 'flex', gap: 24 }}><span style={{ fontWeight: 700, width: 50 }}>Cow:</span><span>{cowQty.toFixed(1)} Kg</span></div>
+                <div style={{ display: 'flex', gap: 24 }}><span style={{ fontWeight: 700, width: 50 }}>Buf:</span><span>{bufQty.toFixed(1)} Kg</span></div>
+                <div style={{ display: 'flex', gap: 24, fontWeight: 800, marginTop: 2 }}>
+                  <span style={{ width: 50 }}>All:</span>
+                  <span>{allQty.toFixed(1)} Kg</span>
+                  <span>Value Rs. {grandValue.toFixed(2)}</span>
+                </div>
+              </div>
             </div>
           );
         })()}
