@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   LayoutDashboard,
   Users,
@@ -25,6 +26,22 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, isOpen, onClose }) => {
   const { t } = useLanguage();
 
+  // On mobile the sidebar is a fixed slide-in drawer. We render it through a
+  // portal to <body> so its `position: fixed` is always resolved against the
+  // viewport and can never be trapped by a transformed/filtered ancestor
+  // (which would make the drawer scroll along with the page). On desktop it
+  // stays in-flow as a normal layout column.
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
+  );
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    setIsMobile(mq.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
   const menuItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: t('dashboard') },
     { id: 'dcs-master', icon: Building2, label: t('dcsMaster') },
@@ -43,8 +60,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, isOpen, onCl
     menuItems.push({ id: 'admin-subscriptions', icon: Crown, label: 'Subscriptions' });
   }
 
-  return (
-    <aside 
+  const sidebar = (
+    <aside
       className={`sidebar ${isOpen ? 'open' : ''}`}
       style={{
         background: 'linear-gradient(180deg, #051208 0%, #0a1f0f 100%)',
@@ -119,6 +136,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, isOpen, onCl
       </div>
     </aside>
   );
+
+  // Portal the drawer to <body> on mobile; keep it in-flow on desktop.
+  return isMobile ? createPortal(sidebar, document.body) : sidebar;
 };
 
 export default Sidebar;
