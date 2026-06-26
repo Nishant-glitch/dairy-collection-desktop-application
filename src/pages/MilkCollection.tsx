@@ -252,7 +252,17 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     await set(entryRef, entryData);
 
     if (printEnabled) {
-      printSlip();
+      // On the last evening of a 10-day period (10th / 20th / month's last day),
+      // also print this farmer's evening period summary alongside the daily slip.
+      let periodSummary = null;
+      if (sessionShift === 'Evening') {
+        const [y, m, d] = sessionDate.split('-').map(Number);
+        const lastDay = new Date(y, m, 0).getDate();
+        if (d === 10 || d === 20 || d === lastDay) {
+          periodSummary = await buildPeriodEveningSummary();
+        }
+      }
+      printSlip(periodSummary);
     }
 
     if (smsEnabled) {
@@ -277,7 +287,53 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     farmerCodeRef.current?.focus();
   };
 
-  const printSlip = () => {
+  // Sum this farmer's EVENING entries for the current 10-day period
+  // (1–10 / 11–20 / 21–last day). Average Rate is weighted: Total Amount / Total Qty.
+  const buildPeriodEveningSummary = async () => {
+    const [y, m, d] = sessionDate.split('-').map(Number);
+    const startDay = d <= 10 ? 1 : d <= 20 ? 11 : 21;
+    const endDay = d; // we only reach here on the period's last day
+    const pad = (n: number) => String(n).padStart(2, '0');
+
+    let totalQty = 0;
+    let totalAmount = 0;
+    for (let dd = startDay; dd <= endDay; dd++) {
+      const dateStr = `${y}-${pad(m)}-${pad(dd)}`;
+      const snap = await get(ref(database, up(`milkCollection/${dateStr}/Evening/${farmerCode}`)));
+      if (snap.exists()) {
+        const e = snap.val();
+        totalQty += safeNum(e.qty);
+        totalAmount += safeNum(e.amount);
+      }
+    }
+    const avgRate = totalQty > 0 ? totalAmount / totalQty : 0;
+    const toDMY = (mm: number, day: number) => `${pad(day)}-${pad(mm)}-${y}`;
+    return {
+      periodFrom: toDMY(m, startDay),
+      periodTo: toDMY(m, endDay),
+      totalQty,
+      totalAmount,
+      avgRate,
+    };
+  };
+
+  const printSlip = (periodSummary: any = null) => {
+    const summaryHtml = periodSummary ? `
+        <div style="page-break-before: always; padding: 20px; font-family: Arial;">
+          <h2 style="text-align: center;">${dcsInfo.name || 'DCS Pro'}</h2>
+          <h3 style="text-align: center;">Period Summary — Evening Shift</h3>
+          <hr/>
+          <p><strong>Farmer:</strong> ${farmerName} (${farmerCode})</p>
+          <p><strong>Period:</strong> ${periodSummary.periodFrom} to ${periodSummary.periodTo}</p>
+          <hr/>
+          <p><strong>Total Qty:</strong> ${(periodSummary.totalQty || 0).toFixed(2)} L</p>
+          <p><strong>Average Rate:</strong> ₹${(periodSummary.avgRate || 0).toFixed(2)}</p>
+          <p style="font-size: 18px;"><strong>Total Amount:</strong> ₹${(periodSummary.totalAmount || 0).toFixed(2)}</p>
+          <hr/>
+          <p style="text-align: center; font-size: 12px;">Thank you!</p>
+        </div>
+    ` : '';
+
     const printContent = `
       <div id="milk-print-slip" style="padding: 20px; font-family: Arial;">
         <h2 style="text-align: center;">${dcsInfo.name || 'DCS Pro'}</h2>
@@ -295,8 +351,9 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
         <hr/>
         <p style="text-align: center; font-size: 12px;">Thank you!</p>
       </div>
+      ${summaryHtml}
     `;
-    
+
     const printWindow = window.open('', '', 'width=400,height=600');
     if (printWindow) {
       printWindow.document.write(printContent);
