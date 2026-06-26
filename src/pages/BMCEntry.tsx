@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ref, onValue, get, push, set, remove } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
@@ -45,6 +45,15 @@ const BMCEntry: React.FC = () => {
   const [rateConfig, setRateConfig] = useState<any>(null);
   const [todayEntries, setTodayEntries] = useState<BMCEntryRecord[]>([]);
   const [showSavedMessage, setShowSavedMessage] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  // Allowed FAT/SNF ranges (same convention as Milk Collection).
+  const FAT_MIN = 2.5, FAT_MAX = 15.0;
+  const SNF_MIN = 7.5, SNF_MAX = 15.0;
+
+  const qtyRef = useRef<HTMLInputElement>(null);
+  const fatRef = useRef<HTMLInputElement>(null);
+  const snfRef = useRef<HTMLInputElement>(null);
 
   const safeNum = (val: any): number => {
     const n = parseFloat(val);
@@ -141,6 +150,7 @@ const BMCEntry: React.FC = () => {
     setSnf('');
     setRate(0);
     setAmount(0);
+    setErrorMsg('');
   };
 
   const handleEdit = (entry: BMCEntryRecord) => {
@@ -171,6 +181,22 @@ const BMCEntry: React.FC = () => {
       alert('Quantity, FAT and SNF are required!');
       return;
     }
+
+    // Range validation — block save if FAT/SNF are outside the allowed range.
+    const fatVal = parseFloat(fat);
+    const snfVal = parseFloat(snf);
+    if (fatVal < FAT_MIN || fatVal > FAT_MAX) {
+      setErrorMsg(`FAT ${FAT_MIN} se ${FAT_MAX.toFixed(1)} ke beech hona chahiye`);
+      fatRef.current?.focus();
+      return;
+    }
+    if (snfVal < SNF_MIN || snfVal > SNF_MAX) {
+      setErrorMsg(`SNF ${SNF_MIN} se ${SNF_MAX.toFixed(1)} ke beech hona chahiye`);
+      snfRef.current?.focus();
+      return;
+    }
+    setErrorMsg('');
+
     if (!rateConfig) {
       alert('No rate chart found for this date. Please contact admin to upload a rate chart.');
       return;
@@ -325,10 +351,12 @@ const BMCEntry: React.FC = () => {
               <div>
                 <label className="label-text" style={labelStyle}>QUANTITY (KG)</label>
                 <input
+                  ref={qtyRef}
                   type="number"
                   step="0.1"
                   value={quantityKg}
                   onChange={(e) => setQuantityKg(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); fatRef.current?.focus(); } }}
                   className="input-field"
                   style={{ padding: '11px 14px', fontSize: '14px' }}
                   placeholder="0.0"
@@ -339,10 +367,12 @@ const BMCEntry: React.FC = () => {
                 <div>
                   <label className="label-text" style={labelStyle}>FAT (%)</label>
                   <input
+                    ref={fatRef}
                     type="number"
                     step="0.1"
                     value={fat}
-                    onChange={(e) => setFat(e.target.value)}
+                    onChange={(e) => { setFat(e.target.value); setErrorMsg(''); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); snfRef.current?.focus(); } }}
                     className="input-field"
                     style={{ padding: '11px 14px', fontSize: '14px' }}
                     placeholder="0.0"
@@ -351,16 +381,24 @@ const BMCEntry: React.FC = () => {
                 <div>
                   <label className="label-text" style={labelStyle}>SNF (%)</label>
                   <input
+                    ref={snfRef}
                     type="number"
                     step="0.1"
                     value={snf}
-                    onChange={(e) => setSnf(e.target.value)}
+                    onChange={(e) => { setSnf(e.target.value); setErrorMsg(''); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSave(); } }}
                     className="input-field"
                     style={{ padding: '11px 14px', fontSize: '14px' }}
                     placeholder="0.0"
                   />
                 </div>
               </div>
+
+              {errorMsg && (
+                <div className="rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold" style={{ padding: '10px 12px' }}>
+                  ⚠️ {errorMsg}
+                </div>
+              )}
 
               <div style={{ padding: '16px 18px', borderRadius: '14px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div className="flex justify-between items-center">

@@ -135,6 +135,8 @@ const Reports: React.FC = () => {
                     code,
                     name: e.farmerName || (farmers[code]?.farmerName || farmers[code]?.name) || 'Unknown',
                     count: 0,
+                    morningCount: 0,
+                    eveningCount: 0,
                     qty: 0,
                     fat: 0,
                     snf: 0,
@@ -143,6 +145,9 @@ const Reports: React.FC = () => {
                   };
                 }
                 farmerStats[code].count++;
+                // Per-farmer shift day counts (one entry == one day for that shift).
+                if (String(s).toLowerCase() === 'morning') farmerStats[code].morningCount++;
+                else if (String(s).toLowerCase() === 'evening') farmerStats[code].eveningCount++;
                 farmerStats[code].qty += e.qty;
                 farmerStats[code].fat += e.fat;
                 farmerStats[code].snf += (e.snf || e.clr || 0);
@@ -155,13 +160,15 @@ const Reports: React.FC = () => {
       });
 
       const rows = Object.values(farmerStats);
-      let totalQty = 0, totalAmt = 0, totalFat = 0, totalSnf = 0, totalEntries = 0;
+      let totalQty = 0, totalAmt = 0, totalFat = 0, totalSnf = 0, totalEntries = 0, totalMorning = 0, totalEvening = 0;
       rows.forEach((r: any) => {
         totalQty += r.qty;
         totalAmt += r.amount;
         totalFat += r.fat;
         totalSnf += r.snf;
         totalEntries += r.count;
+        totalMorning += r.morningCount;
+        totalEvening += r.eveningCount;
       });
 
       setReportData(rows);
@@ -172,7 +179,9 @@ const Reports: React.FC = () => {
         amount: totalAmt,
         fat: totalEntries > 0 ? totalFat / totalEntries : 0,
         snf: totalEntries > 0 ? totalSnf / totalEntries : 0,
-        count: totalEntries
+        count: totalEntries,
+        morningCount: totalMorning,
+        eveningCount: totalEvening
       });
       setShowFilterModal(false);
     } catch (e) {
@@ -529,6 +538,7 @@ const Reports: React.FC = () => {
             </>)}
             {activeReport === 'farmer' && (<>
               <th style={th}>Code</th><th style={th}>Member's Name</th><th style={thR}>Total Qty</th>
+              <th style={thR}>Mng Days</th><th style={thR}>Evn Days</th>
               <th style={thR}>Amount</th><th style={thSign}>Signature</th>
             </>)}
             {activeReport === 'farmer-periodical' && (<>
@@ -552,6 +562,7 @@ const Reports: React.FC = () => {
               </>)}
               {activeReport === 'farmer' && (<>
                 <td style={td}>{row.code}</td><td style={td}>{row.name}</td><td style={tdR}>{n(row.qty, 2)}</td>
+                <td style={tdR}>{row.morningCount || 0}</td><td style={tdR}>{row.eveningCount || 0}</td>
                 <td style={tdR}>{n(row.amount, 2)}</td><td style={tdSign}></td>
               </>)}
               {activeReport === 'farmer-periodical' && (<>
@@ -575,6 +586,7 @@ const Reports: React.FC = () => {
             </>)}
             {activeReport === 'farmer' && (<>
               <td style={ft} colSpan={2}>Grand Total</td><td style={ftR}>{n(grandTotal.qty, 2)}</td>
+              <td style={ftR}>{grandTotal.morningCount || 0}</td><td style={ftR}>{grandTotal.eveningCount || 0}</td>
               <td style={ftR}>{n(grandTotal.amount, 2)}</td><td style={ft}></td>
             </>)}
             {activeReport === 'farmer-periodical' && (<>
