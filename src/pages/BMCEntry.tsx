@@ -4,6 +4,7 @@ import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getRateFromMap } from '../utils/rateCalculator';
+import { handleEnterNav } from '../utils/formNav';
 import { Snowflake, Calendar, Clock, CheckCircle, Trash2, Edit2, History } from 'lucide-react';
 
 interface BMC {
@@ -356,7 +357,7 @@ const BMCEntry: React.FC = () => {
                   step="0.1"
                   value={quantityKg}
                   onChange={(e) => setQuantityKg(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); fatRef.current?.focus(); } }}
+                  onKeyDown={(e) => handleEnterNav(e, fatRef)}
                   className="input-field"
                   style={{ padding: '11px 14px', fontSize: '14px' }}
                   placeholder="0.0"
@@ -372,7 +373,7 @@ const BMCEntry: React.FC = () => {
                     step="0.1"
                     value={fat}
                     onChange={(e) => { setFat(e.target.value); setErrorMsg(''); }}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); snfRef.current?.focus(); } }}
+                    onKeyDown={(e) => handleEnterNav(e, snfRef)}
                     className="input-field"
                     style={{ padding: '11px 14px', fontSize: '14px' }}
                     placeholder="0.0"
@@ -386,7 +387,7 @@ const BMCEntry: React.FC = () => {
                     step="0.1"
                     value={snf}
                     onChange={(e) => { setSnf(e.target.value); setErrorMsg(''); }}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleSave(); } }}
+                    onKeyDown={(e) => handleEnterNav(e, handleSave)}
                     className="input-field"
                     style={{ padding: '11px 14px', fontSize: '14px' }}
                     placeholder="0.0"
