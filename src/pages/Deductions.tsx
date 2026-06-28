@@ -69,8 +69,10 @@ const Deductions: React.FC = () => {
     return unsubscribe;
   }, []);
 
-  // Live list of flat "Gross Collection" entries (grossEntries/{entryId}).
-  // These have a direct string `date`, unlike the nested per-farmer buckets.
+  // Live list of ALL Gross Entries (both old "New Entry" and new "Gross
+  // Collection") from the shared grossEntries node. Normal shape is a nested
+  // per-farmer bucket (grossEntries/{farmerCode}/{entryId}); any legacy flat
+  // entry (grossEntries/{entryId} with a direct string `date`) is tolerated.
   useEffect(() => {
     return onValue(ref(database, up('grossEntries')), (snap) => {
       const list: any[] = [];
@@ -78,10 +80,22 @@ const Deductions: React.FC = () => {
         const data = snap.val();
         Object.keys(data).forEach((key) => {
           const v = data[key];
-          if (v && typeof v.date === 'string') list.push({ id: key, ...v });
+          if (!v || typeof v !== 'object') return;
+          if (typeof v.date === 'string') {
+            // Legacy flat entry.
+            list.push({ _path: key, farmerCode: v.farmerCode || key, ...v });
+          } else {
+            // Per-farmer bucket: key is the farmer code.
+            Object.keys(v).forEach((entryId) => {
+              const e = v[entryId];
+              if (e && typeof e === 'object') {
+                list.push({ _path: `${key}/${entryId}`, farmerCode: key, ...e });
+              }
+            });
+          }
         });
       }
-      list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      list.sort((a, b) => (b.timestamp || b.createdAt || 0) - (a.timestamp || a.createdAt || 0));
       setGcList(list);
     });
   }, []);
@@ -204,20 +218,20 @@ const Deductions: React.FC = () => {
       return;
     }
 
+    // Save into the SAME structure as the existing Gross Entries
+    // (grossEntries/{farmerCode}/{entryId}) so old and new entries appear
+    // together everywhere — same field names: item, pcs, rate, amount, etc.
     const entry = {
       date: gcDate,
-      farmerId: gcCode,
-      farmerCode: gcCode,
-      farmerName: gcName,
-      itemName: gcItem,
+      item: gcItem,
       category: gcCategory,
-      qty: parseFloat(gcQty),
+      pcs: parseFloat(gcQty),
       rate: parseFloat(gcRate),
       amount: gcAmount,
-      createdAt: Date.now(),
+      timestamp: Date.now(),
     };
 
-    await push(ref(database, up('grossEntries')), entry);
+    await push(ref(database, up(`grossEntries/${gcCode}`)), entry);
 
     resetGrossCollection();
     setActiveSection(null);
@@ -225,9 +239,9 @@ const Deductions: React.FC = () => {
     setTimeout(() => setGcSaved(false), 2500);
   };
 
-  const handleDeleteGrossCollection = async (id: string) => {
-    if (confirm('Delete this gross collection entry?')) {
-      await remove(ref(database, up(`grossEntries/${id}`)));
+  const handleDeleteGrossEntry = async (path: string) => {
+    if (confirm('Delete this gross entry?')) {
+      await remove(ref(database, up(`grossEntries/${path}`)));
     }
   };
 
@@ -431,12 +445,12 @@ const Deductions: React.FC = () => {
           </div>
         </div>
 
-        {/* Saved Gross Collection entries */}
+        {/* All Gross Entries (old "New Entry" + new "Gross Collection") */}
         <div className="glass-card overflow-hidden" style={{ marginTop: 24 }}>
           <div className="border-b border-white/5 flex justify-between items-center" style={{ padding: '20px' }}>
             <h2 className="text-md font-bold text-white flex items-center gap-2">
               <ShoppingBag size={18} className="text-purple-400" />
-              Gross Collection Entries
+              Gross Entries
             </h2>
             <span className="rounded-md bg-white/5 text-white/40 text-[10px] font-bold uppercase tracking-wider" style={{ padding: '4px 10px' }}>
               {gcList.length} Records
@@ -452,31 +466,39 @@ const Deductions: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/5">
-                {gcList.map((e) => (
-                  <tr key={e.id} className="hover:bg-white/5 transition-colors">
-                    <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>{e.date}</td>
-                    <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700, color: 'white' }}>{e.farmerCode}</td>
-                    <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.85)' }}>{e.farmerName}</td>
-                    <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.85)' }}>{e.itemName}</td>
-                    <td style={{ padding: '12px 16px', fontSize: '14px' }}><span className="bg-white/5 rounded text-[10px] text-slate-400" style={{ padding: '4px 8px' }}>{e.category}</span></td>
-                    <td style={{ padding: '12px 16px', fontSize: '14px', color: 'white' }}>{e.qty}</td>
-                    <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>₹{(e.rate || 0).toFixed(2)}</td>
-                    <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 800, color: '#4ade80' }}>₹{(e.amount || 0).toFixed(2)}</td>
-                    <td style={{ padding: '12px 16px' }} className="text-right">
-                      <button
-                        onClick={() => handleDeleteGrossCollection(e.id)}
-                        className="rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
-                        style={{ padding: '8px' }}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {gcList.map((e) => {
+                  // Older entries may lack some fields — show "—" instead of erroring.
+                  const name = e.farmerName || farmers[e.farmerCode]?.farmerName || farmers[e.farmerCode]?.name || 'N/A';
+                  const item = e.item || e.itemName || '—';
+                  const qty = e.pcs ?? e.qty;
+                  const hasRate = e.rate !== undefined && e.rate !== null && e.rate !== '';
+                  const hasAmt = e.amount !== undefined && e.amount !== null && e.amount !== '';
+                  return (
+                    <tr key={e._path} className="hover:bg-white/5 transition-colors">
+                      <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>{e.date || '—'}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700, color: 'white' }}>{e.farmerCode || '—'}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.85)' }}>{name}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.85)' }}>{item}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '14px' }}>{e.category ? <span className="bg-white/5 rounded text-[10px] text-slate-400" style={{ padding: '4px 8px' }}>{e.category}</span> : '—'}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '14px', color: 'white' }}>{qty ?? '—'}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>{hasRate ? `₹${Number(e.rate).toFixed(2)}` : '—'}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 800, color: '#4ade80' }}>{hasAmt ? `₹${Number(e.amount).toFixed(2)}` : '—'}</td>
+                      <td style={{ padding: '12px 16px' }} className="text-right">
+                        <button
+                          onClick={() => handleDeleteGrossEntry(e._path)}
+                          className="rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                          style={{ padding: '8px' }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
                 {gcList.length === 0 && (
                   <tr>
                     <td colSpan={9} className="text-center text-white/20 text-sm font-medium" style={{ padding: '40px' }}>
-                      No gross collection entries yet.
+                      No gross entries yet.
                     </td>
                   </tr>
                 )}
