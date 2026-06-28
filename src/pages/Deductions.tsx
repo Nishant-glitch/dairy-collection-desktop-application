@@ -895,7 +895,10 @@ const Deductions: React.FC = () => {
   }
 
   if (activeSection === 'grossCollection') {
-    const gcTotalAmount = gcList.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    // Right-side table + stats show only the entries for the date currently
+    // selected in the form, so the table and the stat cards always match.
+    const gcDayList = gcList.filter((e) => e.date === gcDate);
+    const gcTotalAmount = gcDayList.reduce((s, e) => s + (Number(e.amount) || 0), 0);
 
     return (
       <div className="page-wrapper animate-fadeIn">
@@ -1060,7 +1063,7 @@ const Deductions: React.FC = () => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                 <div className="glass-card" style={{ padding: '16px 20px' }}>
                   <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>Total Entries</p>
-                  <p style={{ fontSize: '22px', fontWeight: 900, color: 'white' }}>{gcList.length}</p>
+                  <p style={{ fontSize: '22px', fontWeight: 900, color: 'white' }}>{gcDayList.length}</p>
                 </div>
                 <div className="glass-card" style={{ padding: '16px 20px' }}>
                   <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>Total Amount</p>
@@ -1075,7 +1078,7 @@ const Deductions: React.FC = () => {
                     Recent Entries
                   </h2>
                   <span className="rounded-md bg-white/5 text-white/40 text-[10px] font-bold uppercase tracking-wider" style={{ padding: '4px 10px' }}>
-                    {gcList.length} Records
+                    {gcDayList.length} Records
                   </span>
                 </div>
                 <div className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
@@ -1088,7 +1091,7 @@ const Deductions: React.FC = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5">
-                      {gcList.map((e) => {
+                      {gcDayList.map((e) => {
                         const name = e.farmerName || farmers[e.farmerCode]?.farmerName || farmers[e.farmerCode]?.name || 'N/A';
                         const item = e.item || e.itemName || '—';
                         const qty = e.pcs ?? e.qty;
@@ -1117,10 +1120,10 @@ const Deductions: React.FC = () => {
                           </tr>
                         );
                       })}
-                      {gcList.length === 0 && (
+                      {gcDayList.length === 0 && (
                         <tr>
                           <td colSpan={9} className="text-center text-white/20 text-sm font-medium" style={{ padding: '48px' }}>
-                            No entries yet. Add one from the form on the left.
+                            No entries for {gcDate}. Add one from the form on the left.
                           </td>
                         </tr>
                       )}
