@@ -38,6 +38,7 @@ const Deductions: React.FC = () => {
   const gcRateRef = useRef<HTMLInputElement>(null);
   const [gcList, setGcList] = useState<any[]>([]);
   const [gcSaved, setGcSaved] = useState(false);
+  const [gcEditPath, setGcEditPath] = useState<string | null>(null);
 
   // New Entry states
   const [step, setStep] = useState(1);
@@ -231,12 +232,53 @@ const Deductions: React.FC = () => {
       timestamp: Date.now(),
     };
 
-    await push(ref(database, up(`grossEntries/${gcCode}`)), entry);
+    if (gcEditPath) {
+      const origCode = gcEditPath.split('/')[0];
+      if (origCode === gcCode) {
+        await set(ref(database, up(`grossEntries/${gcEditPath}`)), entry);
+      } else {
+        // Farmer code changed — move the entry to the new farmer's bucket.
+        await remove(ref(database, up(`grossEntries/${gcEditPath}`)));
+        await push(ref(database, up(`grossEntries/${gcCode}`)), entry);
+      }
+    } else {
+      await push(ref(database, up(`grossEntries/${gcCode}`)), entry);
+    }
 
-    resetGrossCollection();
-    setActiveSection(null);
+    // Clear for the next entry (keep the Date), refocus Farmer Code — the
+    // form stays open so the user can keep entering, like Milk Collection.
+    clearGcForm();
     setGcSaved(true);
-    setTimeout(() => setGcSaved(false), 2500);
+    setTimeout(() => setGcSaved(false), 2000);
+  };
+
+  // Clear the entry fields but keep the selected Date; return focus to code.
+  const clearGcForm = () => {
+    setGcEditPath(null);
+    setGcCode('');
+    setGcName('');
+    setGcFound(false);
+    setGcItem('');
+    setGcCategory('Cattle Feed');
+    setGcQty('');
+    setGcRate('');
+    setTimeout(() => gcCodeRef.current?.focus(), 50);
+  };
+
+  const handleEditGrossEntry = (e: any) => {
+    setGcEditPath(e._path);
+    setGcDate(e.date || new Date().toISOString().split('T')[0]);
+    const code = e.farmerCode || '';
+    setGcCode(code);
+    setGcName(e.farmerName || farmers[code]?.farmerName || farmers[code]?.name || '');
+    setGcFound(!!farmers[code]);
+    setGcItem(e.item || e.itemName || '');
+    setGcCategory(e.category || 'Cattle Feed');
+    setGcQty((e.pcs ?? e.qty ?? '').toString());
+    setGcRate((e.rate ?? '').toString());
+    setGcStep(2);
+    setActiveSection('grossCollection');
+    setTimeout(() => gcCodeRef.current?.focus(), 100);
   };
 
   const handleDeleteGrossEntry = async (path: string) => {
@@ -484,13 +526,22 @@ const Deductions: React.FC = () => {
                       <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>{hasRate ? `₹${Number(e.rate).toFixed(2)}` : '—'}</td>
                       <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 800, color: '#4ade80' }}>{hasAmt ? `₹${Number(e.amount).toFixed(2)}` : '—'}</td>
                       <td style={{ padding: '12px 16px' }} className="text-right">
-                        <button
-                          onClick={() => handleDeleteGrossEntry(e._path)}
-                          className="rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
-                          style={{ padding: '8px' }}
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => handleEditGrossEntry(e)}
+                            className="rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all"
+                            style={{ padding: '8px' }}
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteGrossEntry(e._path)}
+                            className="rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                            style={{ padding: '8px' }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -844,8 +895,16 @@ const Deductions: React.FC = () => {
   }
 
   if (activeSection === 'grossCollection') {
+    const gcTotalAmount = gcList.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+
     return (
       <div className="page-wrapper animate-fadeIn">
+        {gcSaved && (
+          <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 rounded-2xl bg-green-500 text-white font-black shadow-2xl flex items-center gap-3 animate-bounce" style={{ padding: '12px 24px' }}>
+            <span style={{ fontSize: 18 }}>✓</span> Entry saved successfully
+          </div>
+        )}
+
         <div className="flex items-center gap-4 mb-6">
           <button onClick={() => { resetGrossCollection(); setActiveSection(null); }} className="p-2 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 transition-colors">
             <ArrowLeft size={20} />
@@ -853,18 +912,16 @@ const Deductions: React.FC = () => {
           <h1 className="page-title" style={{ marginBottom: 0 }}>New Gross Collection</h1>
         </div>
 
-        <div className="modal-overlay">
-          <div className="modal-3d animate-fadeIn" style={{ padding: '28px', maxWidth: '440px', width: '90%' }}>
-            <div className="flex justify-between items-center" style={{ marginBottom: '20px' }}>
-              <h2 style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>
-                {gcStep === 1 ? 'Select Date' : 'Gross Collection Entry'}
-              </h2>
-              <button onClick={() => { resetGrossCollection(); setActiveSection(null); }} style={{ color: 'rgba(255,255,255,0.6)', cursor: 'pointer', background: 'none', border: 'none' }}>
-                <X size={24} />
-              </button>
-            </div>
-
-            {gcStep === 1 && (
+        {/* Step 1 — small date popup */}
+        {gcStep === 1 && (
+          <div className="modal-overlay">
+            <div className="modal-3d animate-fadeIn" style={{ padding: '28px', maxWidth: '440px', width: '90%' }}>
+              <div className="flex justify-between items-center" style={{ marginBottom: '20px' }}>
+                <h2 style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>Select Date</h2>
+                <button onClick={() => { resetGrossCollection(); setActiveSection(null); }} style={{ color: 'rgba(255,255,255,0.6)', cursor: 'pointer', background: 'none', border: 'none' }}>
+                  <X size={24} />
+                </button>
+              </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 <div>
                   <label style={labelStyle}>Date</label>
@@ -880,10 +937,32 @@ const Deductions: React.FC = () => {
                 </div>
                 <button onClick={handleGcNext} className="btn-3d" style={{ padding: '12px', fontSize: '14px', fontWeight: 700 }}>Next →</button>
               </div>
-            )}
+            </div>
+          </div>
+        )}
 
-            {gcStep === 2 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {/* Step 2 — persistent split layout (form + live table) */}
+        {gcStep === 2 && (
+          <div style={{ display: 'grid', gridTemplateColumns: '400px 1fr', gap: '28px', alignItems: 'start' }}>
+            {/* Left: entry form */}
+            <div className="glass-card" style={{ padding: '28px' }}>
+              <h2 className="text-lg font-bold text-white flex items-center gap-2" style={{ marginBottom: '24px' }}>
+                <ShoppingBag size={20} className="text-purple-400" />
+                {gcEditPath ? 'Edit Entry' : 'New Entry'}
+              </h2>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                <div>
+                  <label style={labelStyle}>Date</label>
+                  <input
+                    type="date"
+                    value={gcDate}
+                    onChange={(e) => setGcDate(e.target.value)}
+                    className="input-3d"
+                    style={{ padding: '10px 14px', fontSize: '14px' }}
+                  />
+                </div>
+
                 <div>
                   <label style={labelStyle}>Farmer Code</label>
                   <input
@@ -962,21 +1041,96 @@ const Deductions: React.FC = () => {
                   </div>
                 </div>
 
-                <div style={{ padding: '14px', background: 'rgba(255,255,255,0.05)', borderRadius: '10px' }}>
+                <div style={{ padding: '16px 18px', borderRadius: '14px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.07)' }}>
                   <div className="flex justify-between items-center">
-                    <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '12px' }}>Amount (Qty × Rate):</span>
-                    <span style={{ color: '#4ade80', fontWeight: 800, fontSize: '18px' }}>₹{gcAmount.toFixed(2)}</span>
+                    <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.5)' }}>Amount (Qty × Rate)</span>
+                    <span className="text-2xl font-black text-green-500">₹{gcAmount.toFixed(2)}</span>
                   </div>
                 </div>
 
-                <div className="flex gap-2">
-                  <button onClick={() => setGcStep(1)} className="btn-secondary" style={{ flex: 1, padding: '12px' }}>← Back</button>
-                  <button onClick={handleSaveGrossCollection} className="btn-3d" style={{ flex: 2, padding: '12px', fontWeight: 700 }}>Save Entry</button>
+                <div style={{ display: 'flex', gap: '14px' }}>
+                  <button onClick={clearGcForm} className="btn-secondary" style={{ flex: 1, padding: '13px', fontSize: '14px', fontWeight: 700 }}>Clear</button>
+                  <button onClick={handleSaveGrossCollection} className="btn-3d" style={{ flex: 2, padding: '13px', fontSize: '14px', fontWeight: 800 }}>{gcEditPath ? 'Update Entry' : 'Save Entry'}</button>
                 </div>
               </div>
-            )}
+            </div>
+
+            {/* Right: stats + live table */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div className="glass-card" style={{ padding: '16px 20px' }}>
+                  <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>Total Entries</p>
+                  <p style={{ fontSize: '22px', fontWeight: 900, color: 'white' }}>{gcList.length}</p>
+                </div>
+                <div className="glass-card" style={{ padding: '16px 20px' }}>
+                  <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>Total Amount</p>
+                  <p style={{ fontSize: '22px', fontWeight: 900, color: '#4ade80' }}>₹{gcTotalAmount.toFixed(2)}</p>
+                </div>
+              </div>
+
+              <div className="glass-card overflow-hidden">
+                <div className="border-b border-white/5 flex justify-between items-center" style={{ padding: '20px' }}>
+                  <h2 className="text-md font-bold text-white flex items-center gap-2">
+                    <ShoppingBag size={18} className="text-purple-400" />
+                    Recent Entries
+                  </h2>
+                  <span className="rounded-md bg-white/5 text-white/40 text-[10px] font-bold uppercase tracking-wider" style={{ padding: '4px 10px' }}>
+                    {gcList.length} Records
+                  </span>
+                </div>
+                <div className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
+                  <table className="w-full text-left border-collapse">
+                    <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+                      <tr className="bg-[#0f172a]">
+                        {['Date', 'Code', 'Farmer Name', 'Item', 'Category', 'Qty', 'Rate', 'Amount', 'Actions'].map((h, i) => (
+                          <th key={i} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }} className={i === 8 ? 'text-right' : ''}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {gcList.map((e) => {
+                        const name = e.farmerName || farmers[e.farmerCode]?.farmerName || farmers[e.farmerCode]?.name || 'N/A';
+                        const item = e.item || e.itemName || '—';
+                        const qty = e.pcs ?? e.qty;
+                        const hasRate = e.rate !== undefined && e.rate !== null && e.rate !== '';
+                        const hasAmt = e.amount !== undefined && e.amount !== null && e.amount !== '';
+                        return (
+                          <tr key={e._path} className="hover:bg-white/5 transition-colors">
+                            <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>{e.date || '—'}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700, color: 'white' }}>{e.farmerCode || '—'}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.85)' }}>{name}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.85)' }}>{item}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px' }}>{e.category ? <span className="bg-white/5 rounded text-[10px] text-slate-400" style={{ padding: '4px 8px' }}>{e.category}</span> : '—'}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', color: 'white' }}>{qty ?? '—'}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>{hasRate ? `₹${Number(e.rate).toFixed(2)}` : '—'}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 800, color: '#4ade80' }}>{hasAmt ? `₹${Number(e.amount).toFixed(2)}` : '—'}</td>
+                            <td style={{ padding: '12px 16px' }} className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <button onClick={() => handleEditGrossEntry(e)} className="rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all" style={{ padding: '8px' }}>
+                                  <Edit2 size={14} />
+                                </button>
+                                <button onClick={() => handleDeleteGrossEntry(e._path)} className="rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all" style={{ padding: '8px' }}>
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {gcList.length === 0 && (
+                        <tr>
+                          <td colSpan={9} className="text-center text-white/20 text-sm font-medium" style={{ padding: '48px' }}>
+                            No entries yet. Add one from the form on the left.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
     );
   }
