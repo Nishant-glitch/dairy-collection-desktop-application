@@ -4,6 +4,7 @@ import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
 import { Plus, FileText, BarChart2, X, Edit2, Trash2, Calculator, ShoppingBag, ArrowLeft, Printer } from 'lucide-react';
 import { formatIndianCurrency } from '../utils/rateCalculator';
+import { handleEnterNav } from '../utils/formNav';
 
 interface GrossEntry {
   id: string;
@@ -17,8 +18,28 @@ interface GrossEntry {
 }
 
 const Deductions: React.FC = () => {
-  const [activeSection, setActiveSection] = useState<'newEntry' | 'grossReport' | 'deductionReport' | null>(null);
-  
+  const [activeSection, setActiveSection] = useState<'newEntry' | 'grossReport' | 'deductionReport' | 'grossCollection' | null>(null);
+
+  // New Gross Collection states (2-step popup, flat grossEntries/{entryId})
+  const CATEGORIES = ['Cattle Feed', 'Medicine', 'Advance', 'Store', 'Other'];
+  const [gcStep, setGcStep] = useState(1);
+  const [gcDate, setGcDate] = useState(new Date().toISOString().split('T')[0]);
+  const [gcCode, setGcCode] = useState('');
+  const [gcName, setGcName] = useState('');
+  const [gcFound, setGcFound] = useState(false);
+  const [gcItem, setGcItem] = useState('');
+  const [gcCategory, setGcCategory] = useState('Cattle Feed');
+  const [gcQty, setGcQty] = useState('');
+  const [gcRate, setGcRate] = useState('');
+  const gcCodeRef = useRef<HTMLInputElement>(null);
+  const gcItemRef = useRef<HTMLInputElement>(null);
+  const gcCategoryRef = useRef<HTMLSelectElement>(null);
+  const gcQtyRef = useRef<HTMLInputElement>(null);
+  const gcRateRef = useRef<HTMLInputElement>(null);
+  const [gcList, setGcList] = useState<any[]>([]);
+  const [gcSaved, setGcSaved] = useState(false);
+  const [gcEditPath, setGcEditPath] = useState<string | null>(null);
+
   // New Entry states
   const [step, setStep] = useState(1);
   const [selectedFarmerCode, setSelectedFarmerCode] = useState('');
@@ -47,6 +68,37 @@ const Deductions: React.FC = () => {
   useEffect(() => {
     const unsubscribe = loadFarmers();
     return unsubscribe;
+  }, []);
+
+  // Live list of ALL Gross Entries (both old "New Entry" and new "Gross
+  // Collection") from the shared grossEntries node. Normal shape is a nested
+  // per-farmer bucket (grossEntries/{farmerCode}/{entryId}); any legacy flat
+  // entry (grossEntries/{entryId} with a direct string `date`) is tolerated.
+  useEffect(() => {
+    return onValue(ref(database, up('grossEntries')), (snap) => {
+      const list: any[] = [];
+      if (snap.exists()) {
+        const data = snap.val();
+        Object.keys(data).forEach((key) => {
+          const v = data[key];
+          if (!v || typeof v !== 'object') return;
+          if (typeof v.date === 'string') {
+            // Legacy flat entry.
+            list.push({ _path: key, farmerCode: v.farmerCode || key, ...v });
+          } else {
+            // Per-farmer bucket: key is the farmer code.
+            Object.keys(v).forEach((entryId) => {
+              const e = v[entryId];
+              if (e && typeof e === 'object') {
+                list.push({ _path: `${key}/${entryId}`, farmerCode: key, ...e });
+              }
+            });
+          }
+        });
+      }
+      list.sort((a, b) => (b.timestamp || b.createdAt || 0) - (a.timestamp || a.createdAt || 0));
+      setGcList(list);
+    });
   }, []);
 
   useEffect(() => {
@@ -100,6 +152,139 @@ const Deductions: React.FC = () => {
     setActiveSection('deductionReport');
     setDeductionMonth(new Date().toISOString().substring(0, 7));
     setDeductionReportData([]);
+  };
+
+  // ---- New Gross Collection (2-step popup) ----
+  const resetGrossCollection = () => {
+    setGcStep(1);
+    setGcDate(new Date().toISOString().split('T')[0]);
+    setGcCode('');
+    setGcName('');
+    setGcFound(false);
+    setGcItem('');
+    setGcCategory('Cattle Feed');
+    setGcQty('');
+    setGcRate('');
+  };
+
+  const handleGrossCollectionClick = () => {
+    resetGrossCollection();
+    setActiveSection('grossCollection');
+  };
+
+  const handleGcNext = () => {
+    if (!gcDate) {
+      alert('Please select a date!');
+      return;
+    }
+    setGcStep(2);
+    setTimeout(() => gcCodeRef.current?.focus(), 100);
+  };
+
+  // Resolve farmer name as the code is typed so a wrong code is caught early.
+  const handleGcCodeChange = (code: string) => {
+    setGcCode(code);
+    const farmer = farmers[code];
+    if (farmer) {
+      setGcName(farmer.farmerName || farmer.name || '');
+      setGcFound(true);
+    } else {
+      setGcName('');
+      setGcFound(false);
+    }
+  };
+
+  // Enter on the Farmer Code field: only advance if the code is valid.
+  const handleGcCodeEnter = (e: React.KeyboardEvent) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    if (!gcFound) {
+      alert('Farmer not found! Please enter a valid farmer code.');
+      gcCodeRef.current?.focus();
+      return;
+    }
+    gcItemRef.current?.focus();
+  };
+
+  const gcAmount = (parseFloat(gcQty) || 0) * (parseFloat(gcRate) || 0);
+
+  const handleSaveGrossCollection = async () => {
+    if (!gcFound) {
+      alert('Farmer not found! Please enter a valid farmer code.');
+      gcCodeRef.current?.focus();
+      return;
+    }
+    if (!gcItem || !gcCategory || !gcQty || !gcRate) {
+      alert('All fields are required!');
+      return;
+    }
+
+    // Save into the SAME structure as the existing Gross Entries
+    // (grossEntries/{farmerCode}/{entryId}) so old and new entries appear
+    // together everywhere — same field names: item, pcs, rate, amount, etc.
+    const entry = {
+      date: gcDate,
+      item: gcItem,
+      category: gcCategory,
+      pcs: parseFloat(gcQty),
+      rate: parseFloat(gcRate),
+      amount: gcAmount,
+      timestamp: Date.now(),
+    };
+
+    if (gcEditPath) {
+      const origCode = gcEditPath.split('/')[0];
+      if (origCode === gcCode) {
+        await set(ref(database, up(`grossEntries/${gcEditPath}`)), entry);
+      } else {
+        // Farmer code changed — move the entry to the new farmer's bucket.
+        await remove(ref(database, up(`grossEntries/${gcEditPath}`)));
+        await push(ref(database, up(`grossEntries/${gcCode}`)), entry);
+      }
+    } else {
+      await push(ref(database, up(`grossEntries/${gcCode}`)), entry);
+    }
+
+    // Clear for the next entry (keep the Date), refocus Farmer Code — the
+    // form stays open so the user can keep entering, like Milk Collection.
+    clearGcForm();
+    setGcSaved(true);
+    setTimeout(() => setGcSaved(false), 2000);
+  };
+
+  // Clear the entry fields but keep the selected Date; return focus to code.
+  const clearGcForm = () => {
+    setGcEditPath(null);
+    setGcCode('');
+    setGcName('');
+    setGcFound(false);
+    setGcItem('');
+    setGcCategory('Cattle Feed');
+    setGcQty('');
+    setGcRate('');
+    setTimeout(() => gcCodeRef.current?.focus(), 50);
+  };
+
+  const handleEditGrossEntry = (e: any) => {
+    setGcEditPath(e._path);
+    setGcDate(e.date || new Date().toISOString().split('T')[0]);
+    const code = e.farmerCode || '';
+    setGcCode(code);
+    setGcName(e.farmerName || farmers[code]?.farmerName || farmers[code]?.name || '');
+    setGcFound(!!farmers[code]);
+    setGcItem(e.item || e.itemName || '');
+    setGcCategory(e.category || 'Cattle Feed');
+    setGcQty((e.pcs ?? e.qty ?? '').toString());
+    setGcRate((e.rate ?? '').toString());
+    setGcStep(2);
+    setActiveSection('grossCollection');
+    setTimeout(() => gcCodeRef.current?.focus(), 100);
+  };
+
+  const handleDeleteGrossEntry = async (path: string) => {
+    if (confirm('Delete this gross entry?')) {
+      await remove(ref(database, up(`grossEntries/${path}`)));
+    }
   };
 
   const handleNextStep = () => {
@@ -186,6 +371,9 @@ const Deductions: React.FC = () => {
       const allEntries = snapshot.val();
       Object.keys(allEntries).forEach((farmerId) => {
         const farmerEntries = allEntries[farmerId];
+        // Skip flat "Gross Collection" entries (grossEntries/{entryId}); this
+        // report is for the nested per-farmer deduction buckets only.
+        if (farmerEntries && typeof farmerEntries.date === 'string') return;
         Object.keys(farmerEntries).forEach((entryId) => {
           const entry = farmerEntries[entryId];
           if (reportFarmerCode && farmerId !== reportFarmerCode) return;
@@ -215,6 +403,8 @@ const Deductions: React.FC = () => {
       const allEntries = snapshot.val();
       Object.keys(allEntries).forEach((farmerId) => {
         const farmerEntries = allEntries[farmerId];
+        // Skip flat "Gross Collection" entries (grossEntries/{entryId}).
+        if (farmerEntries && typeof farmerEntries.date === 'string') return;
         let totalAmount = 0;
         let totalCount = 0;
 
@@ -248,6 +438,11 @@ const Deductions: React.FC = () => {
   if (activeSection === null) {
     return (
       <div className="page-wrapper animate-fadeIn">
+        {gcSaved && (
+          <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 rounded-2xl bg-green-500 text-white font-black shadow-2xl flex items-center gap-3 animate-bounce" style={{ padding: '12px 24px' }}>
+            <span style={{ fontSize: 18 }}>✓</span> Entry saved successfully
+          </div>
+        )}
         <h1 className="page-title">Deductions & Gross Entries</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 option-cards-grid">
@@ -258,6 +453,16 @@ const Deductions: React.FC = () => {
             <div style={{ textAlign: 'center' }}>
               <h2 style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>New Entry</h2>
               <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Add Farmer Gross Entry</p>
+            </div>
+          </div>
+
+          <div onClick={handleGrossCollectionClick} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ background: 'linear-gradient(135deg, #6d28d9, #9333ea)', height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
+            <div style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <ShoppingBag size={20} color="white" />
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <h2 style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>New Gross Collection</h2>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Quick 2-step entry</p>
             </div>
           </div>
 
@@ -279,6 +484,77 @@ const Deductions: React.FC = () => {
               <h2 style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>Monthly Summary</h2>
               <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Deduction Totals</p>
             </div>
+          </div>
+        </div>
+
+        {/* All Gross Entries (old "New Entry" + new "Gross Collection") */}
+        <div className="glass-card overflow-hidden" style={{ marginTop: 24 }}>
+          <div className="border-b border-white/5 flex justify-between items-center" style={{ padding: '20px' }}>
+            <h2 className="text-md font-bold text-white flex items-center gap-2">
+              <ShoppingBag size={18} className="text-purple-400" />
+              Gross Entries
+            </h2>
+            <span className="rounded-md bg-white/5 text-white/40 text-[10px] font-bold uppercase tracking-wider" style={{ padding: '4px 10px' }}>
+              {gcList.length} Records
+            </span>
+          </div>
+          <div className="overflow-x-auto" style={{ maxHeight: '420px', overflowY: 'auto' }}>
+            <table className="w-full text-left border-collapse">
+              <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+                <tr className="bg-[#0f172a]">
+                  {['Date', 'Code', 'Farmer Name', 'Item', 'Category', 'Qty', 'Rate', 'Amount', ''].map((h, i) => (
+                    <th key={i} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }} className={i === 8 ? 'text-right' : ''}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {gcList.map((e) => {
+                  // Older entries may lack some fields — show "—" instead of erroring.
+                  const name = e.farmerName || farmers[e.farmerCode]?.farmerName || farmers[e.farmerCode]?.name || 'N/A';
+                  const item = e.item || e.itemName || '—';
+                  const qty = e.pcs ?? e.qty;
+                  const hasRate = e.rate !== undefined && e.rate !== null && e.rate !== '';
+                  const hasAmt = e.amount !== undefined && e.amount !== null && e.amount !== '';
+                  return (
+                    <tr key={e._path} className="hover:bg-white/5 transition-colors">
+                      <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>{e.date || '—'}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700, color: 'white' }}>{e.farmerCode || '—'}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.85)' }}>{name}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.85)' }}>{item}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '14px' }}>{e.category ? <span className="bg-white/5 rounded text-[10px] text-slate-400" style={{ padding: '4px 8px' }}>{e.category}</span> : '—'}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '14px', color: 'white' }}>{qty ?? '—'}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>{hasRate ? `₹${Number(e.rate).toFixed(2)}` : '—'}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 800, color: '#4ade80' }}>{hasAmt ? `₹${Number(e.amount).toFixed(2)}` : '—'}</td>
+                      <td style={{ padding: '12px 16px' }} className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => handleEditGrossEntry(e)}
+                            className="rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all"
+                            style={{ padding: '8px' }}
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteGrossEntry(e._path)}
+                            className="rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                            style={{ padding: '8px' }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {gcList.length === 0 && (
+                  <tr>
+                    <td colSpan={9} className="text-center text-white/20 text-sm font-medium" style={{ padding: '40px' }}>
+                      No gross entries yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -612,6 +888,250 @@ const Deductions: React.FC = () => {
                 </tr>
               </tfoot>
             </table>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (activeSection === 'grossCollection') {
+    // Right-side table + stats show only the entries for the date currently
+    // selected in the form, so the table and the stat cards always match.
+    const gcDayList = gcList.filter((e) => e.date === gcDate);
+    const gcTotalAmount = gcDayList.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+
+    return (
+      <div className="page-wrapper animate-fadeIn">
+        {gcSaved && (
+          <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 rounded-2xl bg-green-500 text-white font-black shadow-2xl flex items-center gap-3 animate-bounce" style={{ padding: '12px 24px' }}>
+            <span style={{ fontSize: 18 }}>✓</span> Entry saved successfully
+          </div>
+        )}
+
+        <div className="flex items-center gap-4 mb-6">
+          <button onClick={() => { resetGrossCollection(); setActiveSection(null); }} className="p-2 rounded-lg bg-white/5 text-white/60 hover:bg-white/10 transition-colors">
+            <ArrowLeft size={20} />
+          </button>
+          <h1 className="page-title" style={{ marginBottom: 0 }}>New Gross Collection</h1>
+        </div>
+
+        {/* Step 1 — small date popup */}
+        {gcStep === 1 && (
+          <div className="modal-overlay">
+            <div className="modal-3d animate-fadeIn" style={{ padding: '28px', maxWidth: '440px', width: '90%' }}>
+              <div className="flex justify-between items-center" style={{ marginBottom: '20px' }}>
+                <h2 style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>Select Date</h2>
+                <button onClick={() => { resetGrossCollection(); setActiveSection(null); }} style={{ color: 'rgba(255,255,255,0.6)', cursor: 'pointer', background: 'none', border: 'none' }}>
+                  <X size={24} />
+                </button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div>
+                  <label style={labelStyle}>Date</label>
+                  <input
+                    type="date"
+                    value={gcDate}
+                    onChange={(e) => setGcDate(e.target.value)}
+                    onKeyDown={(e) => handleEnterNav(e, handleGcNext)}
+                    className="input-3d"
+                    style={{ padding: '10px 14px', fontSize: '14px' }}
+                    autoFocus
+                  />
+                </div>
+                <button onClick={handleGcNext} className="btn-3d" style={{ padding: '12px', fontSize: '14px', fontWeight: 700 }}>Next →</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2 — persistent split layout (form + live table) */}
+        {gcStep === 2 && (
+          <div style={{ display: 'grid', gridTemplateColumns: '400px 1fr', gap: '28px', alignItems: 'start' }}>
+            {/* Left: entry form */}
+            <div className="glass-card" style={{ padding: '28px' }}>
+              <h2 className="text-lg font-bold text-white flex items-center gap-2" style={{ marginBottom: '24px' }}>
+                <ShoppingBag size={20} className="text-purple-400" />
+                {gcEditPath ? 'Edit Entry' : 'New Entry'}
+              </h2>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                <div>
+                  <label style={labelStyle}>Date</label>
+                  <input
+                    type="date"
+                    value={gcDate}
+                    onChange={(e) => setGcDate(e.target.value)}
+                    className="input-3d"
+                    style={{ padding: '10px 14px', fontSize: '14px' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Farmer Code</label>
+                  <input
+                    ref={gcCodeRef}
+                    type="text"
+                    value={gcCode}
+                    onChange={(e) => handleGcCodeChange(e.target.value)}
+                    onKeyDown={handleGcCodeEnter}
+                    className="input-3d"
+                    style={{ padding: '10px 14px', fontSize: '14px' }}
+                    placeholder="e.g. F001"
+                    autoFocus
+                  />
+                  {gcCode && gcFound && (
+                    <p style={{ color: '#4ade80', fontSize: 13, fontWeight: 700, marginTop: 6 }}>✓ {gcName}</p>
+                  )}
+                  {gcCode && !gcFound && (
+                    <p style={{ color: '#f87171', fontSize: 13, fontWeight: 700, marginTop: 6 }}>✗ Farmer not found</p>
+                  )}
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Item Name</label>
+                  <input
+                    ref={gcItemRef}
+                    type="text"
+                    value={gcItem}
+                    onChange={(e) => setGcItem(e.target.value)}
+                    onKeyDown={(e) => handleEnterNav(e, gcCategoryRef)}
+                    className="input-3d"
+                    style={{ padding: '10px 14px', fontSize: '14px' }}
+                    placeholder="e.g. Cattle Feed 50kg"
+                  />
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Category</label>
+                  <select
+                    ref={gcCategoryRef}
+                    value={gcCategory}
+                    onChange={(e) => setGcCategory(e.target.value)}
+                    onKeyDown={(e) => handleEnterNav(e, gcQtyRef)}
+                    className="input-3d"
+                    style={{ padding: '10px 14px', fontSize: '14px' }}
+                  >
+                    {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2" style={{ gap: '12px' }}>
+                  <div>
+                    <label style={labelStyle}>Pcs / Qty</label>
+                    <input
+                      ref={gcQtyRef}
+                      type="number"
+                      value={gcQty}
+                      onChange={(e) => setGcQty(e.target.value)}
+                      onKeyDown={(e) => handleEnterNav(e, gcRateRef)}
+                      className="input-3d"
+                      style={{ padding: '10px 14px', fontSize: '14px' }}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Rate</label>
+                    <input
+                      ref={gcRateRef}
+                      type="number"
+                      value={gcRate}
+                      onChange={(e) => setGcRate(e.target.value)}
+                      onKeyDown={(e) => handleEnterNav(e, handleSaveGrossCollection)}
+                      className="input-3d"
+                      style={{ padding: '10px 14px', fontSize: '14px' }}
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+
+                <div style={{ padding: '16px 18px', borderRadius: '14px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  <div className="flex justify-between items-center">
+                    <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.5)' }}>Amount (Qty × Rate)</span>
+                    <span className="text-2xl font-black text-green-500">₹{gcAmount.toFixed(2)}</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '14px' }}>
+                  <button onClick={clearGcForm} className="btn-secondary" style={{ flex: 1, padding: '13px', fontSize: '14px', fontWeight: 700 }}>Clear</button>
+                  <button onClick={handleSaveGrossCollection} className="btn-3d" style={{ flex: 2, padding: '13px', fontSize: '14px', fontWeight: 800 }}>{gcEditPath ? 'Update Entry' : 'Save Entry'}</button>
+                </div>
+              </div>
+            </div>
+
+            {/* Right: stats + live table */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div className="glass-card" style={{ padding: '16px 20px' }}>
+                  <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>Total Entries</p>
+                  <p style={{ fontSize: '22px', fontWeight: 900, color: 'white' }}>{gcDayList.length}</p>
+                </div>
+                <div className="glass-card" style={{ padding: '16px 20px' }}>
+                  <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>Total Amount</p>
+                  <p style={{ fontSize: '22px', fontWeight: 900, color: '#4ade80' }}>₹{gcTotalAmount.toFixed(2)}</p>
+                </div>
+              </div>
+
+              <div className="glass-card overflow-hidden">
+                <div className="border-b border-white/5 flex justify-between items-center" style={{ padding: '20px' }}>
+                  <h2 className="text-md font-bold text-white flex items-center gap-2">
+                    <ShoppingBag size={18} className="text-purple-400" />
+                    Recent Entries
+                  </h2>
+                  <span className="rounded-md bg-white/5 text-white/40 text-[10px] font-bold uppercase tracking-wider" style={{ padding: '4px 10px' }}>
+                    {gcDayList.length} Records
+                  </span>
+                </div>
+                <div className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
+                  <table className="w-full text-left border-collapse">
+                    <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+                      <tr className="bg-[#0f172a]">
+                        {['Date', 'Code', 'Farmer Name', 'Item', 'Category', 'Qty', 'Rate', 'Amount', 'Actions'].map((h, i) => (
+                          <th key={i} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }} className={i === 8 ? 'text-right' : ''}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {gcDayList.map((e) => {
+                        const name = e.farmerName || farmers[e.farmerCode]?.farmerName || farmers[e.farmerCode]?.name || 'N/A';
+                        const item = e.item || e.itemName || '—';
+                        const qty = e.pcs ?? e.qty;
+                        const hasRate = e.rate !== undefined && e.rate !== null && e.rate !== '';
+                        const hasAmt = e.amount !== undefined && e.amount !== null && e.amount !== '';
+                        return (
+                          <tr key={e._path} className="hover:bg-white/5 transition-colors">
+                            <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>{e.date || '—'}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700, color: 'white' }}>{e.farmerCode || '—'}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.85)' }}>{name}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.85)' }}>{item}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px' }}>{e.category ? <span className="bg-white/5 rounded text-[10px] text-slate-400" style={{ padding: '4px 8px' }}>{e.category}</span> : '—'}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', color: 'white' }}>{qty ?? '—'}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>{hasRate ? `₹${Number(e.rate).toFixed(2)}` : '—'}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 800, color: '#4ade80' }}>{hasAmt ? `₹${Number(e.amount).toFixed(2)}` : '—'}</td>
+                            <td style={{ padding: '12px 16px' }} className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <button onClick={() => handleEditGrossEntry(e)} className="rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all" style={{ padding: '8px' }}>
+                                  <Edit2 size={14} />
+                                </button>
+                                <button onClick={() => handleDeleteGrossEntry(e._path)} className="rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all" style={{ padding: '8px' }}>
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {gcDayList.length === 0 && (
+                        <tr>
+                          <td colSpan={9} className="text-center text-white/20 text-sm font-medium" style={{ padding: '48px' }}>
+                            No entries for {gcDate}. Add one from the form on the left.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

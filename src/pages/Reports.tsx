@@ -285,6 +285,9 @@ const Reports: React.FC = () => {
       // Process Deductions
       Object.keys(allDeductions).forEach(code => {
         const entries = allDeductions[code];
+        // Skip flat "Gross Collection" entries (grossEntries/{entryId}); only the
+        // nested per-farmer deduction buckets feed the payment register.
+        if (entries && typeof entries.date === 'string') return;
         Object.keys(entries).forEach(id => {
           const d = entries[id];
           if (d.date.startsWith(month)) {

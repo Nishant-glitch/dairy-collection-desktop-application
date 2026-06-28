@@ -25,6 +25,7 @@ const PaymentRegister: React.FC = () => {
   const { t } = useLanguage();
   const [month, setMonth] = useState(new Date().toISOString().substring(0, 7));
   const [payments, setPayments] = useState<PaymentEntry[]>([]);
+  const [paidFilter, setPaidFilter] = useState<'all' | 'paid' | 'unpaid'>('all');
   const [farmers, setFarmers] = useState<any>({});
   const [dcsInfo, setDcsInfo] = useState<any>({});
   const [showQR, setShowQR] = useState<{ show: boolean; data: string; farmer: string }>({
@@ -199,6 +200,22 @@ const PaymentRegister: React.FC = () => {
       payment.customAmount = payment.netPayable;
     });
 
+    // Restore persisted paid status for this month (existing field:
+    // payments/{month}/{farmerId}.status === 'paid') so the Paid/Unpaid
+    // filter and the PAID badge reflect work done in earlier sessions.
+    const paidSnap = await get(ref(database, up(`payments/${month}`)));
+    if (paidSnap.exists()) {
+      const paidData = paidSnap.val();
+      Object.keys(paidData).forEach((farmerId) => {
+        if (farmerPayments[farmerId] && paidData[farmerId]?.status === 'paid') {
+          farmerPayments[farmerId].isPaid = true;
+          if (typeof paidData[farmerId].netAmount === 'number') {
+            farmerPayments[farmerId].customAmount = paidData[farmerId].netAmount;
+          }
+        }
+      });
+    }
+
     setPayments(Object.values(farmerPayments));
   };
 
@@ -268,6 +285,13 @@ const PaymentRegister: React.FC = () => {
 
   const labelStyle: React.CSSProperties = { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600, marginBottom: 8, display: 'block' };
 
+  // Paid/Unpaid filter for the Farmer Payments result table.
+  const visiblePayments = payments.filter((p) =>
+    paidFilter === 'all' ? true : paidFilter === 'paid' ? p.isPaid : !p.isPaid
+  );
+  const paidCount = payments.filter((p) => p.isPaid).length;
+  const unpaidCount = payments.length - paidCount;
+
   return (
     <div className="page-wrapper animate-fadeIn">
       <h1 className="page-title">{t('paymentRegister')}</h1>
@@ -317,6 +341,24 @@ const PaymentRegister: React.FC = () => {
 
       {payments.length > 0 && (
         <div className="glass-card" style={{ padding: '20px 24px' }}>
+          {/* Paid / Unpaid filter */}
+          <div className="flex gap-2 bg-white/5 rounded-xl border border-white/10" style={{ padding: '4px', marginBottom: '16px', maxWidth: '360px' }}>
+            {([
+              { id: 'all', label: `All (${payments.length})` },
+              { id: 'unpaid', label: `Unpaid (${unpaidCount})` },
+              { id: 'paid', label: `Paid (${paidCount})` },
+            ] as const).map((opt) => (
+              <button
+                key={opt.id}
+                onClick={() => setPaidFilter(opt.id)}
+                style={{ padding: '8px 12px' }}
+                className={`flex-1 rounded-lg text-xs font-black transition-all ${paidFilter === opt.id ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
           <div className="table-3d overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -331,7 +373,7 @@ const PaymentRegister: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {payments.map((payment) => (
+                {visiblePayments.map((payment) => (
                   <tr key={payment.farmerId} className="table-row">
                     <td className="px-4 py-[9px] font-bold" style={{ padding: '12px 16px', fontSize: '14px' }}>{payment.farmerId}</td>
                     <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '14px' }}>{payment.farmerName}</td>
@@ -374,18 +416,25 @@ const PaymentRegister: React.FC = () => {
                     </td>
                   </tr>
                 ))}
+                {visiblePayments.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="text-center" style={{ padding: '32px 16px', color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>
+                      No {paidFilter} farmers for this month.
+                    </td>
+                  </tr>
+                )}
               </tbody>
               <tfoot style={{ background: 'rgba(255, 255, 255, 0.05)', fontWeight: 700 }}>
                 <tr>
                   <td colSpan={2} className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'white', fontSize: '14px', fontWeight: 700 }}>TOTAL</td>
                   <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', color: '#4ade80', fontSize: '14px', fontWeight: 700 }}>
-                    {formatIndianCurrency(payments.reduce((sum, p) => sum + p.grossAmount, 0))}
+                    {formatIndianCurrency(visiblePayments.reduce((sum, p) => sum + p.grossAmount, 0))}
                   </td>
                   <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', color: '#ef4444', fontSize: '14px', fontWeight: 700 }}>
-                    {formatIndianCurrency(payments.reduce((sum, p) => sum + p.deductions, 0))}
+                    {formatIndianCurrency(visiblePayments.reduce((sum, p) => sum + p.deductions, 0))}
                   </td>
                   <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', color: 'white', fontSize: '14px', fontWeight: 700 }}>
-                    {formatIndianCurrency(payments.reduce((sum, p) => sum + p.netPayable, 0))}
+                    {formatIndianCurrency(visiblePayments.reduce((sum, p) => sum + p.netPayable, 0))}
                   </td>
                   <td colSpan={2}></td>
                 </tr>

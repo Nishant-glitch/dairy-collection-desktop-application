@@ -252,17 +252,9 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     await set(entryRef, entryData);
 
     if (printEnabled) {
-      // On the last evening of a 10-day period (10th / 20th / month's last day),
-      // also print this farmer's evening period summary alongside the daily slip.
-      let periodSummary = null;
-      if (sessionShift === 'Evening') {
-        const [y, m, d] = sessionDate.split('-').map(Number);
-        const lastDay = new Date(y, m, 0).getDate();
-        if (d === 10 || d === 20 || d === lastDay) {
-          periodSummary = await buildPeriodEveningSummary();
-        }
-      }
-      printSlip(periodSummary);
+      // Running total for today's same shift (whole DCS, this date + shift).
+      const shiftTotal = await buildShiftTotal();
+      printSlip(shiftTotal);
     }
 
     if (smsEnabled) {
@@ -287,51 +279,33 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     farmerCodeRef.current?.focus();
   };
 
-  // Sum this farmer's EVENING entries for the current 10-day period
-  // (1–10 / 11–20 / 21–last day). Average Rate is weighted: Total Amount / Total Qty.
-  const buildPeriodEveningSummary = async () => {
-    const [y, m, d] = sessionDate.split('-').map(Number);
-    const startDay = d <= 10 ? 1 : d <= 20 ? 11 : 21;
-    const endDay = d; // we only reach here on the period's last day
-    const pad = (n: number) => String(n).padStart(2, '0');
-
-    let totalQty = 0;
-    let totalAmount = 0;
-    for (let dd = startDay; dd <= endDay; dd++) {
-      const dateStr = `${y}-${pad(m)}-${pad(dd)}`;
-      const snap = await get(ref(database, up(`milkCollection/${dateStr}/Evening/${farmerCode}`)));
-      if (snap.exists()) {
-        const e = snap.val();
-        totalQty += safeNum(e.qty);
-        totalAmount += safeNum(e.amount);
-      }
+  // Running total for the whole DCS for today's date + shift. Read after the
+  // entry is saved so the just-saved entry is included. Morning and Evening are
+  // separate buckets (different shift key) and each date is its own node, so
+  // totals are per-shift and reset fresh each day.
+  const buildShiftTotal = async () => {
+    const snap = await get(ref(database, up(`milkCollection/${sessionDate}/${sessionShift}`)));
+    let count = 0;
+    let qty = 0;
+    let amount = 0;
+    if (snap.exists()) {
+      const data = snap.val();
+      Object.keys(data).forEach((code) => {
+        const e = data[code];
+        count++;
+        qty += safeNum(e.qty);
+        amount += safeNum(e.amount);
+      });
     }
-    const avgRate = totalQty > 0 ? totalAmount / totalQty : 0;
-    const toDMY = (mm: number, day: number) => `${pad(day)}-${pad(mm)}-${y}`;
-    return {
-      periodFrom: toDMY(m, startDay),
-      periodTo: toDMY(m, endDay),
-      totalQty,
-      totalAmount,
-      avgRate,
-    };
+    return { count, qty, amount };
   };
 
-  const printSlip = (periodSummary: any = null) => {
-    const summaryHtml = periodSummary ? `
-        <div style="page-break-before: always; padding: 20px; font-family: Arial;">
-          <h2 style="text-align: center;">${dcsInfo.name || 'DCS Pro'}</h2>
-          <h3 style="text-align: center;">Period Summary — Evening Shift</h3>
-          <hr/>
-          <p><strong>Farmer:</strong> ${farmerName} (${farmerCode})</p>
-          <p><strong>Period:</strong> ${periodSummary.periodFrom} to ${periodSummary.periodTo}</p>
-          <hr/>
-          <p><strong>Total Qty:</strong> ${(periodSummary.totalQty || 0).toFixed(2)} L</p>
-          <p><strong>Average Rate:</strong> ₹${(periodSummary.avgRate || 0).toFixed(2)}</p>
-          <p style="font-size: 18px;"><strong>Total Amount:</strong> ₹${(periodSummary.totalAmount || 0).toFixed(2)}</p>
-          <hr/>
-          <p style="text-align: center; font-size: 12px;">Thank you!</p>
-        </div>
+  const printSlip = (shiftTotal: { count: number; qty: number; amount: number } | null = null) => {
+    const totalHtml = shiftTotal ? `
+        <hr/>
+        <p><strong>Total Shift :</strong> ${shiftTotal.count}</p>
+        <p><strong>Total Qty   :</strong> ${shiftTotal.qty.toFixed(2)}</p>
+        <p><strong>Tot Amnt    :</strong> ₹${shiftTotal.amount.toFixed(2)}</p>
     ` : '';
 
     const printContent = `
@@ -348,10 +322,10 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
         <p><strong>${sessionMode}:</strong> ${snfClr}%</p>
         <p><strong>Rate:</strong> ₹${(rate || 0).toFixed(2)}/Liter</p>
         <p style="font-size: 18px;"><strong>Amount:</strong> ₹${(amount || 0).toFixed(2)}</p>
+        ${totalHtml}
         <hr/>
         <p style="text-align: center; font-size: 12px;">Thank you!</p>
       </div>
-      ${summaryHtml}
     `;
 
     const printWindow = window.open('', '', 'width=400,height=600');
