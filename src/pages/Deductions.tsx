@@ -36,6 +36,8 @@ const Deductions: React.FC = () => {
   const gcCategoryRef = useRef<HTMLSelectElement>(null);
   const gcQtyRef = useRef<HTMLInputElement>(null);
   const gcRateRef = useRef<HTMLInputElement>(null);
+  const [gcList, setGcList] = useState<any[]>([]);
+  const [gcSaved, setGcSaved] = useState(false);
 
   // New Entry states
   const [step, setStep] = useState(1);
@@ -65,6 +67,23 @@ const Deductions: React.FC = () => {
   useEffect(() => {
     const unsubscribe = loadFarmers();
     return unsubscribe;
+  }, []);
+
+  // Live list of flat "Gross Collection" entries (grossEntries/{entryId}).
+  // These have a direct string `date`, unlike the nested per-farmer buckets.
+  useEffect(() => {
+    return onValue(ref(database, up('grossEntries')), (snap) => {
+      const list: any[] = [];
+      if (snap.exists()) {
+        const data = snap.val();
+        Object.keys(data).forEach((key) => {
+          const v = data[key];
+          if (v && typeof v.date === 'string') list.push({ id: key, ...v });
+        });
+      }
+      list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      setGcList(list);
+    });
   }, []);
 
   useEffect(() => {
@@ -202,7 +221,14 @@ const Deductions: React.FC = () => {
 
     resetGrossCollection();
     setActiveSection(null);
-    alert('✅ Gross collection entry saved!');
+    setGcSaved(true);
+    setTimeout(() => setGcSaved(false), 2500);
+  };
+
+  const handleDeleteGrossCollection = async (id: string) => {
+    if (confirm('Delete this gross collection entry?')) {
+      await remove(ref(database, up(`grossEntries/${id}`)));
+    }
   };
 
   const handleNextStep = () => {
@@ -356,6 +382,11 @@ const Deductions: React.FC = () => {
   if (activeSection === null) {
     return (
       <div className="page-wrapper animate-fadeIn">
+        {gcSaved && (
+          <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 rounded-2xl bg-green-500 text-white font-black shadow-2xl flex items-center gap-3 animate-bounce" style={{ padding: '12px 24px' }}>
+            <span style={{ fontSize: 18 }}>✓</span> Entry saved successfully
+          </div>
+        )}
         <h1 className="page-title">Deductions & Gross Entries</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 option-cards-grid">
@@ -397,6 +428,60 @@ const Deductions: React.FC = () => {
               <h2 style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>Monthly Summary</h2>
               <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Deduction Totals</p>
             </div>
+          </div>
+        </div>
+
+        {/* Saved Gross Collection entries */}
+        <div className="glass-card overflow-hidden" style={{ marginTop: 24 }}>
+          <div className="border-b border-white/5 flex justify-between items-center" style={{ padding: '20px' }}>
+            <h2 className="text-md font-bold text-white flex items-center gap-2">
+              <ShoppingBag size={18} className="text-purple-400" />
+              Gross Collection Entries
+            </h2>
+            <span className="rounded-md bg-white/5 text-white/40 text-[10px] font-bold uppercase tracking-wider" style={{ padding: '4px 10px' }}>
+              {gcList.length} Records
+            </span>
+          </div>
+          <div className="overflow-x-auto" style={{ maxHeight: '420px', overflowY: 'auto' }}>
+            <table className="w-full text-left border-collapse">
+              <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+                <tr className="bg-[#0f172a]">
+                  {['Date', 'Code', 'Farmer Name', 'Item', 'Category', 'Qty', 'Rate', 'Amount', ''].map((h, i) => (
+                    <th key={i} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }} className={i === 8 ? 'text-right' : ''}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {gcList.map((e) => (
+                  <tr key={e.id} className="hover:bg-white/5 transition-colors">
+                    <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>{e.date}</td>
+                    <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700, color: 'white' }}>{e.farmerCode}</td>
+                    <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.85)' }}>{e.farmerName}</td>
+                    <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.85)' }}>{e.itemName}</td>
+                    <td style={{ padding: '12px 16px', fontSize: '14px' }}><span className="bg-white/5 rounded text-[10px] text-slate-400" style={{ padding: '4px 8px' }}>{e.category}</span></td>
+                    <td style={{ padding: '12px 16px', fontSize: '14px', color: 'white' }}>{e.qty}</td>
+                    <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>₹{(e.rate || 0).toFixed(2)}</td>
+                    <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 800, color: '#4ade80' }}>₹{(e.amount || 0).toFixed(2)}</td>
+                    <td style={{ padding: '12px 16px' }} className="text-right">
+                      <button
+                        onClick={() => handleDeleteGrossCollection(e.id)}
+                        className="rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                        style={{ padding: '8px' }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {gcList.length === 0 && (
+                  <tr>
+                    <td colSpan={9} className="text-center text-white/20 text-sm font-medium" style={{ padding: '40px' }}>
+                      No gross collection entries yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
