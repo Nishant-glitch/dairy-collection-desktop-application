@@ -20,7 +20,14 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate", // auto-update on new deploy, no user prompt
-      includeAssets: ["pwa-192x192.png", "pwa-512x512.png"],
+      includeAssets: [
+        "favicon.ico",
+        "favicon-16x16.png",
+        "favicon-32x32.png",
+        "apple-touch-icon.png",
+        "pwa-192x192.png",
+        "pwa-512x512.png",
+      ],
       manifest: {
         name: "DCS Pro - Dairy Collection System",
         short_name: "DCS Pro",
