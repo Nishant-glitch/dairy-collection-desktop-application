@@ -254,7 +254,7 @@ const FarmerMaster: React.FC = () => {
               background: 'rgba(56,189,248,0.15)',
               border: '1px solid rgba(56,189,248,0.3)',
               borderRadius: 10, padding: '9px 18px',
-              color: '#38bdf8', fontWeight: 600,
+              color: 'var(--blue)', fontWeight: 600,
               fontSize: 13, cursor: 'pointer',
               marginRight: 8,
               display: 'flex', alignItems: 'center', gap: 8
@@ -283,21 +283,21 @@ const FarmerMaster: React.FC = () => {
       {importing && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 9999,
-          background: 'rgba(0,0,0,0.7)',
+          background: 'var(--surface-2)',
           display: 'flex', flexDirection: 'column',
           alignItems: 'center', justifyContent: 'center',
           gap: 16
         }}>
           <div style={{
-            background: '#1e293b', borderRadius: 16,
+            background: 'var(--surface-2)', borderRadius: 16,
             padding: '32px 40px', textAlign: 'center',
             border: '1px solid rgba(148,163,184,0.2)'
           }}>
             <div style={{ fontSize: 40, marginBottom: 16 }}>⏳</div>
-            <div style={{ color: '#f1f5f9', fontSize: 16, fontWeight: 700 }}>
+            <div style={{ color: 'var(--ink)', fontSize: 16, fontWeight: 700 }}>
               Importing farmers...
             </div>
-            <div style={{ color: '#94a3b8', fontSize: 13, marginTop: 8 }}>
+            <div style={{ color: 'var(--ink-2)', fontSize: 13, marginTop: 8 }}>
               Please wait, do not close the page
             </div>
           </div>
@@ -307,7 +307,7 @@ const FarmerMaster: React.FC = () => {
       <div className="glass-card" style={{ padding: '20px 24px', marginBottom: '20px' }}>
         <div className="flex justify-between items-center gap-4" style={{ marginBottom: '16px' }}>
           <div className="relative flex-1" style={{ maxWidth: '400px' }}>
-            <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.6)' }}>
+            <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-2)' }}>
               <Search size={16} />
             </div>
             <input
@@ -338,13 +338,13 @@ const FarmerMaster: React.FC = () => {
             <tbody>
               {filteredFarmers.map((farmer) => (
                 <tr key={farmer.farmerCode} className="table-row" style={{ height: 'auto' }}>
-                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontWeight: 'bold', color: 'white', fontSize: '14px' }}>{farmer.farmerCode}</td>
-                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.85)', fontSize: '14px' }}>{farmer.farmerName}</td>
-                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.85)', fontSize: '14px' }}>{farmer.mobileNo}</td>
-                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.85)', fontSize: '14px' }}>{farmer.bankName}</td>
-                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.85)', fontSize: '14px' }}>{farmer.bankAC}</td>
-                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.85)', fontSize: '14px' }}>{farmer.ifscCode}</td>
-                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.85)', fontSize: '14px' }}>{farmer.upiId}</td>
+                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontWeight: 'bold', color: 'var(--ink)', fontSize: '14px' }}>{farmer.farmerCode}</td>
+                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'var(--ink)', fontSize: '14px' }}>{farmer.farmerName}</td>
+                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'var(--ink)', fontSize: '14px' }}>{farmer.mobileNo}</td>
+                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'var(--ink)', fontSize: '14px' }}>{farmer.bankName}</td>
+                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'var(--ink)', fontSize: '14px' }}>{farmer.bankAC}</td>
+                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'var(--ink)', fontSize: '14px' }}>{farmer.ifscCode}</td>
+                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'var(--ink)', fontSize: '14px' }}>{farmer.upiId}</td>
                   <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '14px' }}>
                     <div className="flex justify-center gap-2">
                       <button onClick={() => handleView(farmer)} className="btn-info" style={{ width: '28px', height: '28px', padding: 0 }} title="View"><Eye size={14} /></button>
@@ -357,14 +357,14 @@ const FarmerMaster: React.FC = () => {
               {filteredFarmers.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-4 py-20 text-center">
-                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 16 }}>No farmers found.</p>
+                    <p style={{ color: 'var(--ink-2)', fontSize: 16 }}>No farmers found.</p>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-        <div style={{ marginTop: '12px', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
+        <div style={{ marginTop: '12px', fontSize: '12px', color: 'var(--ink-2)' }}>
           Showing {filteredFarmers.length} farmers
         </div>
       </div>
@@ -374,10 +374,10 @@ const FarmerMaster: React.FC = () => {
         <div className="modal-overlay">
           <div className="modal-3d animate-fadeIn" style={{ maxWidth: 800, padding: '28px', width: '90%' }}>
             <div className="flex justify-between items-center" style={{ marginBottom: '20px' }}>
-              <h2 style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>
+              <h2 style={{ fontSize: 20, fontWeight: 'bold', color: 'var(--ink)' }}>
                 {isEditing ? 'Edit Farmer' : 'Add New Farmer'}
               </h2>
-              <button onClick={() => setShowModal(false)} style={{ color: 'rgba(255,255,255,0.6)', cursor: 'pointer', background: 'none', border: 'none' }}>
+              <button onClick={() => setShowModal(false)} style={{ color: 'var(--ink-2)', cursor: 'pointer', background: 'none', border: 'none' }}>
                 <X size={24} />
               </button>
             </div>
@@ -444,8 +444,8 @@ const FarmerMaster: React.FC = () => {
                 />
               </div>
 
-              <div className="md:col-span-2" style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                <h3 style={{ color: '#4ade80', fontSize: 14, fontWeight: 800, marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>BANK DETAILS</h3>
+              <div className="md:col-span-2" style={{ marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--line)' }}>
+                <h3 style={{ color: 'var(--brand)', fontSize: 14, fontWeight: 800, marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>BANK DETAILS</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: '16px' }}>
                   <div>
                     <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Bank Name</label>
@@ -479,9 +479,9 @@ const FarmerMaster: React.FC = () => {
       {showViewModal && viewFarmer && (
         <div className="modal-overlay">
           <div className="modal-3d animate-fadeIn" style={{ padding: '28px', width: '90%', maxWidth: '600px' }}>
-            <div className="flex justify-between items-center" style={{ marginBottom: '20px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '16px' }}>
-              <h2 style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>Farmer Details</h2>
-              <button onClick={() => setShowViewModal(false)} style={{ color: 'rgba(255,255,255,0.6)', cursor: 'pointer', background: 'none', border: 'none' }}>
+            <div className="flex justify-between items-center" style={{ marginBottom: '20px', borderBottom: '1px solid var(--line)', paddingBottom: '16px' }}>
+              <h2 style={{ fontSize: 20, fontWeight: 'bold', color: 'var(--ink)' }}>Farmer Details</h2>
+              <button onClick={() => setShowViewModal(false)} style={{ color: 'var(--ink-2)', cursor: 'pointer', background: 'none', border: 'none' }}>
                 <X size={24} />
               </button>
             </div>
@@ -489,49 +489,49 @@ const FarmerMaster: React.FC = () => {
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, textTransform: 'uppercase' }}>Farmer Code</p>
-                  <p style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>{viewFarmer.farmerCode}</p>
+                  <p style={{ color: 'var(--ink-2)', fontSize: 12, textTransform: 'uppercase' }}>Farmer Code</p>
+                  <p style={{ color: 'var(--ink)', fontSize: 16, fontWeight: 'bold' }}>{viewFarmer.farmerCode}</p>
                 </div>
                 <div>
-                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, textTransform: 'uppercase' }}>Farmer Name</p>
-                  <p style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>{viewFarmer.farmerName}</p>
+                  <p style={{ color: 'var(--ink-2)', fontSize: 12, textTransform: 'uppercase' }}>Farmer Name</p>
+                  <p style={{ color: 'var(--ink)', fontSize: 16, fontWeight: 'bold' }}>{viewFarmer.farmerName}</p>
                 </div>
               </div>
 
               <div>
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, textTransform: 'uppercase' }}>Address</p>
-                <p style={{ color: 'white', fontSize: 14 }}>{viewFarmer.address || 'N/A'}</p>
+                <p style={{ color: 'var(--ink-2)', fontSize: 12, textTransform: 'uppercase' }}>Address</p>
+                <p style={{ color: 'var(--ink)', fontSize: 14 }}>{viewFarmer.address || 'N/A'}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, textTransform: 'uppercase' }}>Aadhar No</p>
-                  <p style={{ color: 'white', fontSize: 14 }}>{viewFarmer.aadharNo || 'N/A'}</p>
+                  <p style={{ color: 'var(--ink-2)', fontSize: 12, textTransform: 'uppercase' }}>Aadhar No</p>
+                  <p style={{ color: 'var(--ink)', fontSize: 14 }}>{viewFarmer.aadharNo || 'N/A'}</p>
                 </div>
                 <div>
-                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, textTransform: 'uppercase' }}>Mobile No</p>
-                  <p style={{ color: 'white', fontSize: 14 }}>{viewFarmer.mobileNo || 'N/A'}</p>
+                  <p style={{ color: 'var(--ink-2)', fontSize: 12, textTransform: 'uppercase' }}>Mobile No</p>
+                  <p style={{ color: 'var(--ink)', fontSize: 14 }}>{viewFarmer.mobileNo || 'N/A'}</p>
                 </div>
               </div>
 
-              <div style={{ paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                <h3 style={{ color: '#4ade80', fontSize: 13, fontWeight: 800, marginBottom: '12px' }}>BANK INFORMATION</h3>
+              <div style={{ paddingTop: '16px', borderTop: '1px solid var(--line)' }}>
+                <h3 style={{ color: 'var(--brand)', fontSize: 13, fontWeight: 800, marginBottom: '12px' }}>BANK INFORMATION</h3>
                 <div className="grid grid-cols-2 gap-y-4 gap-x-4">
                   <div>
-                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>BANK NAME</p>
-                    <p style={{ color: 'white', fontSize: 14 }}>{viewFarmer.bankName || 'N/A'}</p>
+                    <p style={{ color: 'var(--ink-2)', fontSize: 11 }}>BANK NAME</p>
+                    <p style={{ color: 'var(--ink)', fontSize: 14 }}>{viewFarmer.bankName || 'N/A'}</p>
                   </div>
                   <div>
-                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>ACCOUNT NO</p>
-                    <p style={{ color: 'white', fontSize: 14 }}>{viewFarmer.bankAC || 'N/A'}</p>
+                    <p style={{ color: 'var(--ink-2)', fontSize: 11 }}>ACCOUNT NO</p>
+                    <p style={{ color: 'var(--ink)', fontSize: 14 }}>{viewFarmer.bankAC || 'N/A'}</p>
                   </div>
                   <div>
-                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>IFSC CODE</p>
-                    <p style={{ color: 'white', fontSize: 14 }}>{viewFarmer.ifscCode || 'N/A'}</p>
+                    <p style={{ color: 'var(--ink-2)', fontSize: 11 }}>IFSC CODE</p>
+                    <p style={{ color: 'var(--ink)', fontSize: 14 }}>{viewFarmer.ifscCode || 'N/A'}</p>
                   </div>
                   <div>
-                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11 }}>UPI ID</p>
-                    <p style={{ color: 'white', fontSize: 14 }}>{viewFarmer.upiId || 'N/A'}</p>
+                    <p style={{ color: 'var(--ink-2)', fontSize: 11 }}>UPI ID</p>
+                    <p style={{ color: 'var(--ink)', fontSize: 14 }}>{viewFarmer.upiId || 'N/A'}</p>
                   </div>
                 </div>
               </div>

@@ -346,44 +346,44 @@ const Reports: React.FC = () => {
         <h1 className="page-title"><BarChart3 color="#f59e0b" /> Reports Module</h1>
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 option-cards-grid">
-          <div onClick={() => handleOpenFilter('collection')} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ background: 'linear-gradient(135deg, #1e3a5f, #2563eb)', height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
-            <div style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Calendar className="text-white" size={20} />
+          <div onClick={() => handleOpenFilter('collection')} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
+            <div style={{ width: 36, height: 36, background: 'var(--surface-2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Calendar className="text-[#11211A]" size={20} />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <h3 style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>Collection Shift Wise</h3>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Daily and shift-wise summary</p>
+              <h3 style={{ color: 'var(--ink)', fontSize: 16, fontWeight: 700 }}>Collection Shift Wise</h3>
+              <p style={{ color: 'var(--ink-2)', fontSize: 12, opacity: 0.7 }}>Daily and shift-wise summary</p>
             </div>
           </div>
 
-          <div onClick={() => handleOpenFilter('farmer')} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ background: 'linear-gradient(135deg, #1a5c2e, #16a34a)', height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
-            <div style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Users className="text-white" size={20} />
+          <div onClick={() => handleOpenFilter('farmer')} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
+            <div style={{ width: 36, height: 36, background: 'var(--surface-2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Users className="text-[#11211A]" size={20} />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <h3 style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>Payment Register (Without Deduction)</h3>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Net payment, no deductions</p>
+              <h3 style={{ color: 'var(--ink)', fontSize: 16, fontWeight: 700 }}>Payment Register (Without Deduction)</h3>
+              <p style={{ color: 'var(--ink-2)', fontSize: 12, opacity: 0.7 }}>Net payment, no deductions</p>
             </div>
           </div>
 
-          <div onClick={() => handleOpenFilter('payment')} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ background: 'linear-gradient(135deg, #7c2d12, #ea580c)', height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
-            <div style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Wallet className="text-white" size={20} />
+          <div onClick={() => handleOpenFilter('payment')} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
+            <div style={{ width: 36, height: 36, background: 'var(--surface-2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Wallet className="text-[#11211A]" size={20} />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <h3 style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>Payment Register (With Deduction)</h3>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Monthly payment after deductions</p>
+              <h3 style={{ color: 'var(--ink)', fontSize: 16, fontWeight: 700 }}>Payment Register (With Deduction)</h3>
+              <p style={{ color: 'var(--ink-2)', fontSize: 12, opacity: 0.7 }}>Monthly payment after deductions</p>
             </div>
           </div>
 
           {/* CHANGE 2: Farmer Wise Periodical Card */}
-          <div onClick={() => handleOpenFilter('farmer-periodical')} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ background: 'linear-gradient(135deg, #4c1d95, #7c3aed)', height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
-            <div style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.1)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Users className="text-white" size={20} />
+          <div onClick={() => handleOpenFilter('farmer-periodical')} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
+            <div style={{ width: 36, height: 36, background: 'var(--surface-2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Users className="text-[#11211A]" size={20} />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <h3 style={{ color: 'white', fontSize: 16, fontWeight: 700 }}>Farmer Wise Periodical</h3>
-              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, opacity: 0.7 }}>Date range farmer report</p>
+              <h3 style={{ color: 'var(--ink)', fontSize: 16, fontWeight: 700 }}>Farmer Wise Periodical</h3>
+              <p style={{ color: 'var(--ink-2)', fontSize: 12, opacity: 0.7 }}>Date range farmer report</p>
             </div>
           </div>
         </div>
@@ -391,13 +391,13 @@ const Reports: React.FC = () => {
         {showFilterModal && (
           <div className="modal-overlay">
             <div className="modal-3d animate-fadeIn" style={{ padding: '28px', maxWidth: '450px', width: '90%' }}>
-              <div className="flex justify-between items-center" style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                <h2 style={{ fontSize: 18, fontWeight: 800, color: 'white' }}>
+              <div className="flex justify-between items-center" style={{ marginBottom: '20px', paddingBottom: '16px', borderBottom: '1px solid var(--line)' }}>
+                <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink)' }}>
                   {activeReport === 'collection' ? 'Collection Filters' :
                    activeReport === 'farmer' ? 'Payment (Without Deduction) Filters' :
                    activeReport === 'farmer-periodical' ? 'Farmer Periodical Filters' : 'Payment (With Deduction) Filters'}
                 </h2>
-                <button onClick={() => setShowFilterModal(false)} style={{ color: 'rgba(255,255,255,0.6)' }}>
+                <button onClick={() => setShowFilterModal(false)} style={{ color: 'var(--ink-2)' }}>
                   <X size={24} />
                 </button>
               </div>
@@ -416,9 +416,9 @@ const Reports: React.FC = () => {
                           onClick={() => setCollectionShift('Morning')}
                           className="flex-1 py-2 rounded-lg font-bold transition-all"
                           style={{ 
-                            background: collectionShift === 'Morning' ? '#2563eb' : 'rgba(255,255,255,0.05)',
-                            color: 'white',
-                            border: '1px solid rgba(255,255,255,0.1)'
+                            background: collectionShift === 'Morning' ? '#2563eb' : 'var(--line)',
+                            color: 'var(--ink)',
+                            border: '1px solid var(--line)'
                           }}
                         >
                           Morning
@@ -427,9 +427,9 @@ const Reports: React.FC = () => {
                           onClick={() => setCollectionShift('Evening')}
                           className="flex-1 py-2 rounded-lg font-bold transition-all"
                           style={{ 
-                            background: collectionShift === 'Evening' ? '#2563eb' : 'rgba(255,255,255,0.05)',
-                            color: 'white',
-                            border: '1px solid rgba(255,255,255,0.1)'
+                            background: collectionShift === 'Evening' ? '#2563eb' : 'var(--line)',
+                            color: 'var(--ink)',
+                            border: '1px solid var(--line)'
                           }}
                         >
                           Evening
@@ -622,7 +622,7 @@ const Reports: React.FC = () => {
   return (
     <div className="page-wrapper animate-fadeIn">
       <div className="flex justify-between items-center mb-6 no-print">
-        <button onClick={() => setActiveReport(null)} className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors">
+        <button onClick={() => setActiveReport(null)} className="flex items-center gap-2 text-slate-400 hover:text-[#11211A] transition-colors">
           <ArrowLeft size={20} /> Back to Reports
         </button>
         <button onClick={handlePrint} className="btn-3d flex items-center gap-2 px-6">

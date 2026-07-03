@@ -113,7 +113,7 @@ const BMCMaster: React.FC = () => {
       <div className="glass-card" style={{ padding: '20px 24px', marginBottom: '20px' }}>
         <div className="flex justify-between items-center gap-4" style={{ marginBottom: '16px' }}>
           <div className="relative flex-1" style={{ maxWidth: '400px' }}>
-            <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.6)' }}>
+            <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-2)' }}>
               <Search size={16} />
             </div>
             <input
@@ -140,9 +140,9 @@ const BMCMaster: React.FC = () => {
             <tbody>
               {filteredBMCs.map((bmc) => (
                 <tr key={bmc.bmcId} className="table-row" style={{ height: 'auto' }}>
-                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontWeight: 'bold', color: 'white', fontSize: '14px' }}>{bmc.name}</td>
-                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.85)', fontSize: '14px' }}>{bmc.code || '—'}</td>
-                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'rgba(255,255,255,0.85)', fontSize: '14px' }}>{bmc.address || '—'}</td>
+                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontWeight: 'bold', color: 'var(--ink)', fontSize: '14px' }}>{bmc.name}</td>
+                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'var(--ink)', fontSize: '14px' }}>{bmc.code || '—'}</td>
+                  <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'var(--ink)', fontSize: '14px' }}>{bmc.address || '—'}</td>
                   <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '14px' }}>
                     <div className="flex justify-center gap-2">
                       <button onClick={() => handleEdit(bmc)} className="btn-success" style={{ width: '28px', height: '28px', padding: 0 }} title="Edit"><Edit2 size={14} /></button>
@@ -154,14 +154,14 @@ const BMCMaster: React.FC = () => {
               {filteredBMCs.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-4 py-20 text-center">
-                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 16 }}>No BMCs found.</p>
+                    <p style={{ color: 'var(--ink-2)', fontSize: 16 }}>No BMCs found.</p>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-        <div style={{ marginTop: '12px', fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
+        <div style={{ marginTop: '12px', fontSize: '12px', color: 'var(--ink-2)' }}>
           Showing {filteredBMCs.length} BMCs
         </div>
       </div>
@@ -171,10 +171,10 @@ const BMCMaster: React.FC = () => {
         <div className="modal-overlay">
           <div className="modal-3d animate-fadeIn" style={{ maxWidth: 560, padding: '28px', width: '90%' }}>
             <div className="flex justify-between items-center" style={{ marginBottom: '20px' }}>
-              <h2 style={{ fontSize: 20, fontWeight: 'bold', color: 'white' }}>
+              <h2 style={{ fontSize: 20, fontWeight: 'bold', color: 'var(--ink)' }}>
                 {isEditing ? 'Edit BMC' : 'Add New BMC'}
               </h2>
-              <button onClick={() => setShowModal(false)} style={{ color: 'rgba(255,255,255,0.6)', cursor: 'pointer', background: 'none', border: 'none' }}>
+              <button onClick={() => setShowModal(false)} style={{ color: 'var(--ink-2)', cursor: 'pointer', background: 'none', border: 'none' }}>
                 <X size={24} />
               </button>
             </div>

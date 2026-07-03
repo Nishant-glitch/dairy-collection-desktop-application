@@ -44,8 +44,8 @@ const DCSMaster: React.FC = () => {
             <Building2 color="#0a1f0f" size={20} />
           </div>
           <div>
-            <h2 style={{ color: 'white', fontSize: 18, fontWeight: 800 }}>Society Information</h2>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>Configure your dairy collection center details</p>
+            <h2 style={{ color: 'var(--ink)', fontSize: 18, fontWeight: 800 }}>Society Information</h2>
+            <p style={{ color: 'var(--ink-2)', fontSize: 11 }}>Configure your dairy collection center details</p>
           </div>
         </div>
 
@@ -107,7 +107,7 @@ const DCSMaster: React.FC = () => {
             </div>
             
             <div className="col-span-1 md:col-span-2">
-              <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', margin: '8px 0' }}></div>
+              <div style={{ height: '1px', background: 'var(--surface-2)', margin: '8px 0' }}></div>
             </div>
 
             <div className="col-span-1 md:col-span-2">

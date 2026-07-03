@@ -130,15 +130,15 @@ const Settings: React.FC = () => {
 
   return (
     <div style={{ padding: 24 }}>
-      <h1 style={{ color: '#f1f5f9', fontSize: 26, fontWeight: 800, marginBottom: 24 }}>
+      <h1 style={{ color: 'var(--ink)', fontSize: 26, fontWeight: 800, marginBottom: 24 }}>
         ⚙️ Settings
       </h1>
 
       {/* SMS Configuration */}
       <div className="glass-card" style={{ padding: 24, marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-          <MessageSquare style={{ color: '#4ade80', width: 22, height: 22 }} />
-          <h2 style={{ color: '#f1f5f9', fontSize: 18, fontWeight: 700 }}>SMS Configuration</h2>
+          <MessageSquare style={{ color: 'var(--brand)', width: 22, height: 22 }} />
+          <h2 style={{ color: 'var(--ink)', fontSize: 18, fontWeight: 700 }}>SMS Configuration</h2>
         </div>
 
         <div style={{ marginBottom: 16 }}>
@@ -182,7 +182,7 @@ const Settings: React.FC = () => {
                   background: 'rgba(74,222,128,0.2)',
                   border: '1px solid rgba(74,222,128,0.4)',
                   borderRadius: 10, padding: '0 14px',
-                  color: '#4ade80', cursor: 'pointer',
+                  color: 'var(--brand)', cursor: 'pointer',
                   display: 'flex', alignItems: 'center',
                 }}
               >
@@ -205,7 +205,7 @@ const Settings: React.FC = () => {
 
       {/* App Preferences */}
       <div className="glass-card" style={{ padding: 24, marginBottom: 20 }}>
-        <h2 style={{ color: '#f1f5f9', fontSize: 18, fontWeight: 700, marginBottom: 20 }}>
+        <h2 style={{ color: 'var(--ink)', fontSize: 18, fontWeight: 700, marginBottom: 20 }}>
           🌐 App Preferences
         </h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginBottom: 20 }}>
@@ -237,10 +237,10 @@ const Settings: React.FC = () => {
 
       {/* BMC Bill Header Settings */}
       <div className="glass-card" style={{ padding: 24, marginBottom: 20 }}>
-        <h2 style={{ color: '#f1f5f9', fontSize: 18, fontWeight: 700, marginBottom: 4 }}>
+        <h2 style={{ color: 'var(--ink)', fontSize: 18, fontWeight: 700, marginBottom: 4 }}>
           🧾 BMC Bill (Union Format) Settings
         </h2>
-        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginBottom: 20 }}>
+        <p style={{ color: 'var(--ink-2)', fontSize: 12, marginBottom: 20 }}>
           Header fields for the BMC Payment Register printout. Society name/code come from DCS Master.
         </p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginBottom: 16 }}>
@@ -293,7 +293,7 @@ const Settings: React.FC = () => {
               placeholder="1"
               className="input-field"
             />
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, marginTop: 4 }}>
+            <p style={{ color: 'var(--muted)', fontSize: 11, marginTop: 4 }}>
               Auto-increments each time a BMC bill is generated.
             </p>
           </div>
@@ -314,7 +314,7 @@ const Settings: React.FC = () => {
         <div className="glass-card" style={{ padding: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
             <Shield style={{ color: '#f59e0b', width: 22, height: 22 }} />
-            <h2 style={{ color: '#f1f5f9', fontSize: 18, fontWeight: 700 }}>Account Information</h2>
+            <h2 style={{ color: 'var(--ink)', fontSize: 18, fontWeight: 700 }}>Account Information</h2>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <div>
