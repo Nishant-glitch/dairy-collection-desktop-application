@@ -115,6 +115,51 @@ body {
 }
 .stat-card-3d:hover, .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
 
+/* Colorful stat card variants — Dashboard mein use hote hain */
+.stat-card-blue {
+  background: linear-gradient(135deg, #1D4ED8, #2563EB);
+  border: none;
+  color: #fff;
+  border-radius: var(--r-lg);
+  padding: 20px 22px;
+  box-shadow: 0 8px 24px rgba(37,99,235,0.35);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.stat-card-blue:hover { transform: translateY(-3px); box-shadow: 0 14px 32px rgba(37,99,235,0.45); }
+
+.stat-card-green {
+  background: linear-gradient(135deg, #15803D, #16A34A);
+  border: none;
+  color: #fff;
+  border-radius: var(--r-lg);
+  padding: 20px 22px;
+  box-shadow: 0 8px 24px rgba(21,128,61,0.35);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.stat-card-green:hover { transform: translateY(-3px); box-shadow: 0 14px 32px rgba(21,128,61,0.45); }
+
+.stat-card-purple {
+  background: linear-gradient(135deg, #6D28D9, #7C3AED);
+  border: none;
+  color: #fff;
+  border-radius: var(--r-lg);
+  padding: 20px 22px;
+  box-shadow: 0 8px 24px rgba(109,40,217,0.35);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.stat-card-purple:hover { transform: translateY(-3px); box-shadow: 0 14px 32px rgba(109,40,217,0.45); }
+
+.stat-card-orange {
+  background: linear-gradient(135deg, #B45309, #D97706);
+  border: none;
+  color: #fff;
+  border-radius: var(--r-lg);
+  padding: 20px 22px;
+  box-shadow: 0 8px 24px rgba(180,83,9,0.35);
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+.stat-card-orange:hover { transform: translateY(-3px); box-shadow: 0 14px 32px rgba(180,83,9,0.45); }
+
 /* Tables */
 .table-3d, .table-container {
   background: var(--surface);

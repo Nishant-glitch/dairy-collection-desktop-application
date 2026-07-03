@@ -168,49 +168,49 @@ const Dashboard: React.FC = () => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 stats-grid" style={{ gap: '20px' }}>
-        <div className="stat-card-3d" style={{ height: 'auto', padding: '22px 24px' }}>
+        <div className="stat-card-blue" style={{ height: 'auto', padding: '22px 24px' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="label-text" style={{ color: 'var(--ink-2)', fontSize: '11px' }}>{t('todayCollection')}</p>
-              <p style={{ fontSize: 28, fontWeight: 800, color: 'var(--ink)', lineHeight: 1 }}>{stats.todayQty.toFixed(2)}</p>
-              <p style={{ color: 'var(--ink-2)', fontSize: 11, marginTop: 2 }}>{t('liters')}</p>
-              <p style={{ color: 'var(--brand)', fontSize: 14, fontWeight: 700, marginTop: 4 }}>{formatIndianCurrency(stats.todayAmount)}</p>
+              <p className="label-text" style={{ color: 'rgba(255,255,255,0.8)', fontSize: '11px' }}>{t('todayCollection')}</p>
+              <p style={{ fontSize: 28, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{stats.todayQty.toFixed(2)}</p>
+              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, marginTop: 2 }}>{t('liters')}</p>
+              <p style={{ color: '#fff', fontSize: 14, fontWeight: 700, marginTop: 4 }}>{formatIndianCurrency(stats.todayAmount)}</p>
             </div>
-            <Droplet className="w-8 h-8" style={{ color: 'var(--muted)' }} />
+            <Droplet className="w-8 h-8" style={{ color: 'rgba(255,255,255,0.85)' }} />
           </div>
         </div>
 
-        <div className="stat-card-3d" style={{ height: 'auto', padding: '22px 24px' }}>
+        <div className="stat-card-green" style={{ height: 'auto', padding: '22px 24px' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="label-text" style={{ color: 'var(--ink-2)', fontSize: '11px' }}>{t('thisMonth')}</p>
-              <p style={{ fontSize: 28, fontWeight: 800, color: 'var(--ink)', lineHeight: 1 }}>{stats.monthQty.toFixed(2)}</p>
-              <p style={{ color: 'var(--ink-2)', fontSize: 11, marginTop: 2 }}>{t('liters')}</p>
-              <p style={{ color: 'var(--brand)', fontSize: 14, fontWeight: 700, marginTop: 4 }}>{formatIndianCurrency(stats.monthAmount)}</p>
+              <p className="label-text" style={{ color: 'rgba(255,255,255,0.8)', fontSize: '11px' }}>{t('thisMonth')}</p>
+              <p style={{ fontSize: 28, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{stats.monthQty.toFixed(2)}</p>
+              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, marginTop: 2 }}>{t('liters')}</p>
+              <p style={{ color: '#fff', fontSize: 14, fontWeight: 700, marginTop: 4 }}>{formatIndianCurrency(stats.monthAmount)}</p>
             </div>
-            <TrendingUp className="w-8 h-8" style={{ color: 'var(--muted)' }} />
+            <TrendingUp className="w-8 h-8" style={{ color: 'rgba(255,255,255,0.85)' }} />
           </div>
         </div>
 
-        <div className="stat-card-3d" style={{ height: 'auto', padding: '22px 24px' }}>
+        <div className="stat-card-purple" style={{ height: 'auto', padding: '22px 24px' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="label-text" style={{ color: 'var(--ink-2)', fontSize: '11px' }}>{t('totalFarmers')}</p>
-              <p style={{ fontSize: 28, fontWeight: 800, color: 'var(--ink)', lineHeight: 1 }}>{stats.totalFarmers}</p>
-              <p style={{ color: 'var(--ink-2)', fontSize: 11, marginTop: 2 }}>Registered</p>
+              <p className="label-text" style={{ color: 'rgba(255,255,255,0.8)', fontSize: '11px' }}>{t('totalFarmers')}</p>
+              <p style={{ fontSize: 28, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{stats.totalFarmers}</p>
+              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, marginTop: 2 }}>Registered</p>
             </div>
-            <Users className="w-8 h-8" style={{ color: 'var(--muted)' }} />
+            <Users className="w-8 h-8" style={{ color: 'rgba(255,255,255,0.85)' }} />
           </div>
         </div>
 
-        <div className="stat-card-3d" style={{ height: 'auto', padding: '22px 24px' }}>
+        <div className="stat-card-orange" style={{ height: 'auto', padding: '22px 24px' }}>
           <div className="flex items-center justify-between">
             <div>
-              <p className="label-text" style={{ color: 'var(--ink-2)', fontSize: '11px' }}>{t('pendingPayments')}</p>
-              <p style={{ fontSize: 28, fontWeight: 800, color: 'var(--ink)', lineHeight: 1 }}>{stats.pendingPayments}</p>
-              <p style={{ color: 'var(--ink-2)', fontSize: 11, marginTop: 2 }}>Farmers</p>
+              <p className="label-text" style={{ color: 'rgba(255,255,255,0.8)', fontSize: '11px' }}>{t('pendingPayments')}</p>
+              <p style={{ fontSize: 28, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{stats.pendingPayments}</p>
+              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, marginTop: 2 }}>Farmers</p>
             </div>
-            <Clock className="w-8 h-8" style={{ color: 'var(--muted)' }} />
+            <Clock className="w-8 h-8" style={{ color: 'rgba(255,255,255,0.85)' }} />
           </div>
         </div>
       </div>
