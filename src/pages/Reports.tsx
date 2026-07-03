@@ -346,44 +346,44 @@ const Reports: React.FC = () => {
         <h1 className="page-title"><BarChart3 color="#f59e0b" /> Reports Module</h1>
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 option-cards-grid">
-          <div onClick={() => handleOpenFilter('collection')} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
-            <div style={{ width: 36, height: 36, background: 'var(--surface-2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Calendar className="text-[#11211A]" size={20} />
+          <div onClick={() => handleOpenFilter('collection')} className="stat-card-blue cursor-pointer" style={{ height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '20px' }}>
+            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.18)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Calendar size={22} color="rgba(255,255,255,0.9)" />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <h3 style={{ color: 'var(--ink)', fontSize: 16, fontWeight: 700 }}>Collection Shift Wise</h3>
-              <p style={{ color: 'var(--ink-2)', fontSize: 12, opacity: 0.7 }}>Daily and shift-wise summary</p>
+              <h3 style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>Collection Shift Wise</h3>
+              <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12 }}>Daily and shift-wise summary</p>
             </div>
           </div>
 
-          <div onClick={() => handleOpenFilter('farmer')} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
-            <div style={{ width: 36, height: 36, background: 'var(--surface-2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Users className="text-[#11211A]" size={20} />
+          <div onClick={() => handleOpenFilter('farmer')} className="stat-card-green cursor-pointer" style={{ height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '20px' }}>
+            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.18)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Users size={22} color="rgba(255,255,255,0.9)" />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <h3 style={{ color: 'var(--ink)', fontSize: 16, fontWeight: 700 }}>Payment Register (Without Deduction)</h3>
-              <p style={{ color: 'var(--ink-2)', fontSize: 12, opacity: 0.7 }}>Net payment, no deductions</p>
+              <h3 style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>Payment Register (Without Deduction)</h3>
+              <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12 }}>Net payment, no deductions</p>
             </div>
           </div>
 
-          <div onClick={() => handleOpenFilter('payment')} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
-            <div style={{ width: 36, height: 36, background: 'var(--surface-2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Wallet className="text-[#11211A]" size={20} />
+          <div onClick={() => handleOpenFilter('payment')} className="stat-card-purple cursor-pointer" style={{ height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '20px' }}>
+            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.18)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Wallet size={22} color="rgba(255,255,255,0.9)" />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <h3 style={{ color: 'var(--ink)', fontSize: 16, fontWeight: 700 }}>Payment Register (With Deduction)</h3>
-              <p style={{ color: 'var(--ink-2)', fontSize: 12, opacity: 0.7 }}>Monthly payment after deductions</p>
+              <h3 style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>Payment Register (With Deduction)</h3>
+              <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12 }}>Monthly payment after deductions</p>
             </div>
           </div>
 
           {/* CHANGE 2: Farmer Wise Periodical Card */}
-          <div onClick={() => handleOpenFilter('farmer-periodical')} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
-            <div style={{ width: 36, height: 36, background: 'var(--surface-2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Users className="text-[#11211A]" size={20} />
+          <div onClick={() => handleOpenFilter('farmer-periodical')} className="stat-card-orange cursor-pointer" style={{ height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '20px' }}>
+            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.18)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Users size={22} color="rgba(255,255,255,0.9)" />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <h3 style={{ color: 'var(--ink)', fontSize: 16, fontWeight: 700 }}>Farmer Wise Periodical</h3>
-              <p style={{ color: 'var(--ink-2)', fontSize: 12, opacity: 0.7 }}>Date range farmer report</p>
+              <h3 style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>Farmer Wise Periodical</h3>
+              <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12 }}>Date range farmer report</p>
             </div>
           </div>
         </div>

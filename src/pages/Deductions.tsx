@@ -446,43 +446,43 @@ const Deductions: React.FC = () => {
         <h1 className="page-title">Deductions & Gross Entries</h1>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 option-cards-grid">
-          <div onClick={handleNewEntryClick} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
-            <div style={{ width: 36, height: 36, background: 'var(--surface-2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Plus size={22} color="var(--brand-strong)" />
+          <div onClick={handleNewEntryClick} className="stat-card-blue cursor-pointer" style={{ height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '20px' }}>
+            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.18)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Plus size={22} color="rgba(255,255,255,0.9)" />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <h2 style={{ color: 'var(--ink)', fontSize: 16, fontWeight: 700 }}>New Entry</h2>
-              <p style={{ color: 'var(--ink-2)', fontSize: 12, opacity: 0.7 }}>Add Farmer Gross Entry</p>
+              <h2 style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>New Entry</h2>
+              <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12 }}>Add Farmer Gross Entry</p>
             </div>
           </div>
 
-          <div onClick={handleGrossCollectionClick} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
-            <div style={{ width: 36, height: 36, background: 'var(--surface-2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <ShoppingBag size={22} color="#7C3AED" />
+          <div onClick={handleGrossCollectionClick} className="stat-card-green cursor-pointer" style={{ height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '20px' }}>
+            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.18)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <ShoppingBag size={22} color="rgba(255,255,255,0.9)" />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <h2 style={{ color: 'var(--ink)', fontSize: 16, fontWeight: 700 }}>New Gross Collection</h2>
-              <p style={{ color: 'var(--ink-2)', fontSize: 12, opacity: 0.7 }}>Quick 2-step entry</p>
+              <h2 style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>New Gross Collection</h2>
+              <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12 }}>Quick 2-step entry</p>
             </div>
           </div>
 
-          <div onClick={handleGrossReportClick} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
-            <div style={{ width: 36, height: 36, background: 'var(--surface-2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <FileText size={22} color="#2563EB" />
+          <div onClick={handleGrossReportClick} className="stat-card-purple cursor-pointer" style={{ height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '20px' }}>
+            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.18)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <FileText size={22} color="rgba(255,255,255,0.9)" />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <h2 style={{ color: 'var(--ink)', fontSize: 16, fontWeight: 700 }}>Farmer Gross</h2>
-              <p style={{ color: 'var(--ink-2)', fontSize: 12, opacity: 0.7 }}>Detailed Report</p>
+              <h2 style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>Farmer Gross</h2>
+              <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12 }}>Detailed Report</p>
             </div>
           </div>
 
-          <div onClick={handleDeductionReportClick} className="stat-card-3d cursor-pointer hover:translate-y-[-2px]" style={{ height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', borderRadius: '12px', padding: '20px' }}>
-            <div style={{ width: 36, height: 36, background: 'var(--surface-2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <BarChart2 size={22} color="#D97706" />
+          <div onClick={handleDeductionReportClick} className="stat-card-orange cursor-pointer" style={{ height: '140px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '20px' }}>
+            <div style={{ width: 44, height: 44, background: 'rgba(255,255,255,0.18)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <BarChart2 size={22} color="rgba(255,255,255,0.9)" />
             </div>
             <div style={{ textAlign: 'center' }}>
-              <h2 style={{ color: 'var(--ink)', fontSize: 16, fontWeight: 700 }}>Monthly Summary</h2>
-              <p style={{ color: 'var(--ink-2)', fontSize: 12, opacity: 0.7 }}>Deduction Totals</p>
+              <h2 style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>Monthly Summary</h2>
+              <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12 }}>Deduction Totals</p>
             </div>
           </div>
         </div>
