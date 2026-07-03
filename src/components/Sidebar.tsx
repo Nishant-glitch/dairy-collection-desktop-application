@@ -64,9 +64,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, isOpen, onCl
     <aside
       className={`sidebar ${isOpen ? 'open' : ''}`}
       style={{
-        background: 'linear-gradient(180deg, #051208 0%, #0a1f0f 100%)',
-        borderRight: '1px solid rgba(255,255,255,0.08)',
-        boxShadow: '4px 0 24px rgba(0,0,0,0.5)',
+        background: 'var(--surface)',
+        borderRight: '1px solid var(--line)',
+        boxShadow: 'var(--shadow-sm)',
         width: 200, minHeight: 'calc(100vh - 56px)',
         padding: '20px 12px',
         display: 'flex', flexDirection: 'column', gap: 4
@@ -88,16 +88,12 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, isOpen, onCl
                 display: 'flex', alignItems: 'center', gap: 12,
                 padding: '10px 14px', borderRadius: 8,
                 height: '40px',
-                background: isActive
-                  ? 'linear-gradient(135deg, rgba(74,222,128,0.3), rgba(45,158,79,0.25))'
-                  : 'transparent',
+                background: isActive ? 'var(--brand-soft)' : 'transparent',
                 border: isActive
-                  ? '1px solid rgba(74,222,128,0.4)'
+                  ? '1px solid rgba(24,165,88,0.3)'
                   : '1px solid transparent',
-                boxShadow: isActive
-                  ? '0 4px 16px rgba(74,222,128,0.2), inset 0 1px 0 rgba(255,255,255,0.1)'
-                  : 'none',
-                color: isActive ? '#4ade80' : 'rgba(255,255,255,0.6)',
+                boxShadow: 'none',
+                color: isActive ? 'var(--brand-strong)' : 'var(--ink-2)',
                 fontWeight: isActive ? 700 : 500,
                 fontSize: 13,
                 cursor: 'pointer',
@@ -107,31 +103,31 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, isOpen, onCl
               }}
               onMouseEnter={(e) => {
                 if (!isActive) {
-                  e.currentTarget.style.color = 'rgba(255,255,255,0.8)';
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                  e.currentTarget.style.color = 'var(--ink)';
+                  e.currentTarget.style.background = 'var(--surface-2)';
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isActive) {
-                  e.currentTarget.style.color = 'rgba(255,255,255,0.6)';
+                  e.currentTarget.style.color = 'var(--ink-2)';
                   e.currentTarget.style.background = 'transparent';
                 }
               }}
             >
-              <Icon style={{ width: 16, height: 16, color: isActive ? '#4ade80' : 'inherit' }} />
+              <Icon style={{ width: 16, height: 16, color: isActive ? 'var(--brand)' : 'inherit' }} />
               {item.label}
               {isActive && (
                 <div style={{
                   marginLeft: 'auto', width: 6, height: 6,
-                  borderRadius: '50%', background: '#4ade80',
-                  boxShadow: '0 0 8px #4ade80'
+                  borderRadius: '50%', background: 'var(--brand)',
+                  boxShadow: '0 0 8px var(--brand-ring)'
                 }} />
               )}
             </button>
           );
         })}
       </nav>
-      <div style={{ marginTop: 'auto', padding: '10px', textAlign: 'center', color: 'rgba(255,255,255,0.3)', fontSize: '11px' }}>
+      <div style={{ marginTop: 'auto', padding: '10px', textAlign: 'center', color: 'var(--muted)', fontSize: '11px' }}>
         v1.0.0
       </div>
     </aside>

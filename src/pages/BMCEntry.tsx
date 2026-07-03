@@ -242,7 +242,7 @@ const BMCEntry: React.FC = () => {
 
   const labelStyle: React.CSSProperties = {
     display: 'block', marginBottom: '8px', fontSize: '11px', fontWeight: 700,
-    letterSpacing: '0.5px', color: 'rgba(255,255,255,0.5)',
+    letterSpacing: '0.5px', color: 'var(--ink-2)',
   };
 
   return (
@@ -262,7 +262,7 @@ const BMCEntry: React.FC = () => {
         {/* Left Panel: New Entry Form */}
         <div>
           <div className="glass-card" style={{ padding: '28px' }}>
-            <h2 className="text-lg font-bold text-white flex items-center gap-2" style={{ marginBottom: '24px' }}>
+            <h2 className="text-lg font-bold text-[#11211A] flex items-center gap-2" style={{ marginBottom: '24px' }}>
               <Snowflake size={20} className="text-sky-400" />
               New BMC Entry
             </h2>
@@ -285,12 +285,12 @@ const BMCEntry: React.FC = () => {
                 <label className="label-text flex items-center gap-2" style={labelStyle}>
                   <Clock size={14} className="text-amber-400" /> SHIFT
                 </label>
-                <div className="flex gap-2 bg-white/5 rounded-xl border border-white/10" style={{ padding: '4px' }}>
+                <div className="flex gap-2 bg-black/5 rounded-xl border border-slate-200" style={{ padding: '4px' }}>
                   <button
                     type="button"
                     onClick={() => setShift('morning')}
                     style={{ padding: '10px 0' }}
-                    className={`flex-1 rounded-lg text-xs font-black transition-all ${shift === 'morning' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+                    className={`flex-1 rounded-lg text-xs font-black transition-all ${shift === 'morning' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-[#11211A]'}`}
                   >
                     MORNING
                   </button>
@@ -298,7 +298,7 @@ const BMCEntry: React.FC = () => {
                     type="button"
                     onClick={() => setShift('evening')}
                     style={{ padding: '10px 0' }}
-                    className={`flex-1 rounded-lg text-xs font-black transition-all ${shift === 'evening' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+                    className={`flex-1 rounded-lg text-xs font-black transition-all ${shift === 'evening' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-[#11211A]'}`}
                   >
                     EVENING
                   </button>
@@ -307,12 +307,12 @@ const BMCEntry: React.FC = () => {
 
               <div>
                 <label className="label-text" style={labelStyle}>MILK TYPE</label>
-                <div className="flex gap-2 bg-white/5 rounded-xl border border-white/10" style={{ padding: '4px' }}>
+                <div className="flex gap-2 bg-black/5 rounded-xl border border-slate-200" style={{ padding: '4px' }}>
                   <button
                     type="button"
                     onClick={() => setMilkType('cow')}
                     style={{ padding: '10px 0' }}
-                    className={`flex-1 rounded-lg text-xs font-black transition-all ${milkType === 'cow' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+                    className={`flex-1 rounded-lg text-xs font-black transition-all ${milkType === 'cow' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:text-[#11211A]'}`}
                   >
                     COW
                   </button>
@@ -320,7 +320,7 @@ const BMCEntry: React.FC = () => {
                     type="button"
                     onClick={() => setMilkType('buffalo')}
                     style={{ padding: '10px 0' }}
-                    className={`flex-1 rounded-lg text-xs font-black transition-all ${milkType === 'buffalo' ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+                    className={`flex-1 rounded-lg text-xs font-black transition-all ${milkType === 'buffalo' ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-500 hover:text-[#11211A]'}`}
                   >
                     BUFFALO
                   </button>
@@ -401,13 +401,13 @@ const BMCEntry: React.FC = () => {
                 </div>
               )}
 
-              <div style={{ padding: '16px 18px', borderRadius: '14px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ padding: '16px 18px', borderRadius: '14px', background: 'var(--surface-2)', border: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">Rate</span>
-                  <span className="text-white font-black text-lg">₹{safeNum(rate).toFixed(2)}</span>
+                  <span className="text-[#11211A] font-black text-lg">₹{safeNum(rate).toFixed(2)}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px' }} className="border-t border-white/5">
-                  <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'rgba(255,255,255,0.5)' }}>Total Amount</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px' }} className="border-t border-slate-200">
+                  <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--ink-2)' }}>Total Amount</span>
                   <span className="text-2xl font-black text-green-500">₹{safeNum(amount).toFixed(2)}</span>
                 </div>
               </div>
@@ -424,57 +424,57 @@ const BMCEntry: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
             <div className="glass-card" style={{ padding: '16px 20px' }}>
-              <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>Total QTY</p>
-              <p style={{ fontSize: '22px', fontWeight: 900, color: 'white' }}>{totalQty.toFixed(2)} <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>KG</span></p>
+              <p style={{ fontSize: '10px', color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>Total QTY</p>
+              <p style={{ fontSize: '22px', fontWeight: 900, color: 'var(--ink)' }}>{totalQty.toFixed(2)} <span style={{ fontSize: '12px', color: 'var(--muted)' }}>KG</span></p>
             </div>
             <div className="glass-card" style={{ padding: '16px 20px' }}>
-              <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>Total Amount</p>
-              <p style={{ fontSize: '22px', fontWeight: 900, color: '#4ade80' }}>₹{totalAmount.toFixed(2)}</p>
+              <p style={{ fontSize: '10px', color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', marginBottom: '4px' }}>Total Amount</p>
+              <p style={{ fontSize: '22px', fontWeight: 900, color: 'var(--brand)' }}>₹{totalAmount.toFixed(2)}</p>
             </div>
           </div>
 
           <div className="glass-card overflow-hidden">
-            <div className="border-b border-white/5 flex justify-between items-center" style={{ padding: '20px' }}>
-              <h2 className="text-md font-bold text-white flex items-center gap-2">
+            <div className="border-b border-slate-200 flex justify-between items-center" style={{ padding: '20px' }}>
+              <h2 className="text-md font-bold text-[#11211A] flex items-center gap-2">
                 <History size={18} className="text-amber-500" />
                 Entries for {new Date(date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
               </h2>
-              <span className="rounded-md bg-white/5 text-white/40 text-[10px] font-bold uppercase tracking-wider" style={{ padding: '4px 10px' }}>
+              <span className="rounded-md bg-black/5 text-slate-500 text-[10px] font-bold uppercase tracking-wider" style={{ padding: '4px 10px' }}>
                 {todayEntries.length} Records
               </span>
             </div>
             <div className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
               <table className="w-full text-left border-collapse">
                 <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-                  <tr className="bg-[#0f172a]">
+                  <tr className="bg-[#F8FAF9]">
                     {['Shift', 'Type', 'BMC', 'Qty (KG)', 'FAT', 'SNF', 'Rate', 'Amount', ''].map((h, i) => (
-                      <th key={i} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700, color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.5px' }} className={i === 8 ? 'text-right' : ''}>{h}</th>
+                      <th key={i} style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }} className={i === 8 ? 'text-right' : ''}>{h}</th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody className="divide-y divide-slate-200">
                   {todayEntries.sort((a, b) => safeNum(b?.createdAt) - safeNum(a?.createdAt)).map((entry) => (
-                    <tr key={entry.entryId} className="hover:bg-white/5 transition-colors">
-                      <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 600, color: 'rgba(255,255,255,0.8)', textTransform: 'capitalize' }}>{entry.shift}</td>
+                    <tr key={entry.entryId} className="hover:bg-black/5 transition-colors">
+                      <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 600, color: 'var(--ink)', textTransform: 'capitalize' }}>{entry.shift}</td>
                       <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700, textTransform: 'capitalize', color: (entry.milkType || 'cow') === 'cow' ? '#34d399' : '#a78bfa' }}>{entry.milkType || 'cow'}</td>
-                      <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 600, color: 'white' }}>{entry.bmcName}</td>
-                      <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700, color: 'white' }}>{safeNum(entry?.quantityKg).toFixed(2)}</td>
-                      <td style={{ padding: '12px 16px', fontSize: '14px', color: '#60a5fa', fontWeight: 700 }}>{safeNum(entry?.fat).toFixed(1)}</td>
-                      <td style={{ padding: '12px 16px', fontSize: '14px', color: '#4ade80', fontWeight: 700 }}>{safeNum(entry?.snf).toFixed(1)}</td>
-                      <td style={{ padding: '12px 16px', fontSize: '14px', color: 'rgba(255,255,255,0.6)' }}>₹{safeNum(entry?.rate).toFixed(2)}</td>
-                      <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 800, color: '#4ade80' }}>₹{safeNum(entry?.amount).toFixed(2)}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 600, color: 'var(--ink)' }}>{entry.bmcName}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 700, color: 'var(--ink)' }}>{safeNum(entry?.quantityKg).toFixed(2)}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--blue)', fontWeight: 700 }}>{safeNum(entry?.fat).toFixed(1)}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--brand)', fontWeight: 700 }}>{safeNum(entry?.snf).toFixed(1)}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--ink-2)' }}>₹{safeNum(entry?.rate).toFixed(2)}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '14px', fontWeight: 800, color: 'var(--brand)' }}>₹{safeNum(entry?.amount).toFixed(2)}</td>
                       <td style={{ padding: '12px 16px' }} className="text-right">
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={() => handleEdit(entry)}
-                            className="rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-white transition-all"
+                            className="rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500 hover:text-[#11211A] transition-all"
                             style={{ padding: '8px' }}
                           >
                             <Edit2 size={14} />
                           </button>
                           <button
                             onClick={() => handleDelete(entry.entryId)}
-                            className="rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all"
+                            className="rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-[#11211A] transition-all"
                             style={{ padding: '8px' }}
                           >
                             <Trash2 size={14} />
@@ -485,7 +485,7 @@ const BMCEntry: React.FC = () => {
                   ))}
                   {todayEntries.length === 0 && (
                     <tr>
-                      <td colSpan={9} className="text-center text-white/20 text-sm font-medium" style={{ padding: '48px' }}>
+                      <td colSpan={9} className="text-center text-slate-500 text-sm font-medium" style={{ padding: '48px' }}>
                         No BMC entries found for this date
                       </td>
                     </tr>

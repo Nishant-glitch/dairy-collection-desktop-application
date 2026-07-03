@@ -283,7 +283,7 @@ const PaymentRegister: React.FC = () => {
     alert('Payment marked as paid and SMS sent!');
   };
 
-  const labelStyle: React.CSSProperties = { color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: 600, marginBottom: 8, display: 'block' };
+  const labelStyle: React.CSSProperties = { color: 'var(--ink-2)', fontSize: 13, fontWeight: 600, marginBottom: 8, display: 'block' };
 
   // Paid/Unpaid filter for the Farmer Payments result table.
   const visiblePayments = payments.filter((p) =>
@@ -297,18 +297,18 @@ const PaymentRegister: React.FC = () => {
       <h1 className="page-title">{t('paymentRegister')}</h1>
 
       {/* Tabs: Farmer vs BMC */}
-      <div className="flex gap-2 bg-white/5 rounded-xl border border-white/10" style={{ padding: '4px', marginBottom: '20px', maxWidth: '420px' }}>
+      <div className="flex gap-2 bg-black/5 rounded-xl border border-slate-200" style={{ padding: '4px', marginBottom: '20px', maxWidth: '420px' }}>
         <button
           onClick={() => setActiveTab('farmer')}
           style={{ padding: '10px 16px' }}
-          className={`flex-1 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 ${activeTab === 'farmer' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+          className={`flex-1 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 ${activeTab === 'farmer' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-[#11211A]'}`}
         >
           <Users size={14} /> FARMER PAYMENTS
         </button>
         <button
           onClick={() => setActiveTab('bmc')}
           style={{ padding: '10px 16px' }}
-          className={`flex-1 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 ${activeTab === 'bmc' ? 'bg-sky-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+          className={`flex-1 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2 ${activeTab === 'bmc' ? 'bg-sky-600 text-white shadow-lg' : 'text-slate-500 hover:text-[#11211A]'}`}
         >
           <Snowflake size={14} /> BMC PAYMENTS
         </button>
@@ -342,7 +342,7 @@ const PaymentRegister: React.FC = () => {
       {payments.length > 0 && (
         <div className="glass-card" style={{ padding: '20px 24px' }}>
           {/* Paid / Unpaid filter */}
-          <div className="flex gap-2 bg-white/5 rounded-xl border border-white/10" style={{ padding: '4px', marginBottom: '16px', maxWidth: '360px' }}>
+          <div className="flex gap-2 bg-black/5 rounded-xl border border-slate-200" style={{ padding: '4px', marginBottom: '16px', maxWidth: '360px' }}>
             {([
               { id: 'all', label: `All (${payments.length})` },
               { id: 'unpaid', label: `Unpaid (${unpaidCount})` },
@@ -352,7 +352,7 @@ const PaymentRegister: React.FC = () => {
                 key={opt.id}
                 onClick={() => setPaidFilter(opt.id)}
                 style={{ padding: '8px 12px' }}
-                className={`flex-1 rounded-lg text-xs font-black transition-all ${paidFilter === opt.id ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'}`}
+                className={`flex-1 rounded-lg text-xs font-black transition-all ${paidFilter === opt.id ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500 hover:text-[#11211A]'}`}
               >
                 {opt.label}
               </button>
@@ -377,13 +377,13 @@ const PaymentRegister: React.FC = () => {
                   <tr key={payment.farmerId} className="table-row">
                     <td className="px-4 py-[9px] font-bold" style={{ padding: '12px 16px', fontSize: '14px' }}>{payment.farmerId}</td>
                     <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '14px' }}>{payment.farmerName}</td>
-                    <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: '#4ade80', fontWeight: 600 }}>
+                    <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--brand)', fontWeight: 600 }}>
                       {formatIndianCurrency(payment.grossAmount)}
                     </td>
                     <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: '#ef4444' }}>
                       {formatIndianCurrency(payment.deductions)}
                     </td>
-                    <td className="px-4 py-[9px] text-right font-bold" style={{ padding: '12px 16px', fontSize: '14px', color: 'white' }}>
+                    <td className="px-4 py-[9px] text-right font-bold" style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--ink)' }}>
                       {formatIndianCurrency(payment.netPayable)}
                     </td>
                     <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '14px' }}>
@@ -400,7 +400,7 @@ const PaymentRegister: React.FC = () => {
                     </td>
                     <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '14px' }}>
                       {payment.isPaid ? (
-                        <div style={{ color: '#4ade80', fontWeight: 800, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        <div style={{ color: 'var(--brand)', fontWeight: 800, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                           <div style={{ width: 18, height: 18, background: 'rgba(74,222,128,0.2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <Check size={10} />
                           </div>
@@ -418,22 +418,22 @@ const PaymentRegister: React.FC = () => {
                 ))}
                 {visiblePayments.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="text-center" style={{ padding: '32px 16px', color: 'rgba(255,255,255,0.4)', fontSize: 14 }}>
+                    <td colSpan={7} className="text-center" style={{ padding: '32px 16px', color: 'var(--muted)', fontSize: 14 }}>
                       No {paidFilter} farmers for this month.
                     </td>
                   </tr>
                 )}
               </tbody>
-              <tfoot style={{ background: 'rgba(255, 255, 255, 0.05)', fontWeight: 700 }}>
+              <tfoot style={{ background: 'var(--surface-2)', fontWeight: 700 }}>
                 <tr>
-                  <td colSpan={2} className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'white', fontSize: '14px', fontWeight: 700 }}>TOTAL</td>
-                  <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', color: '#4ade80', fontSize: '14px', fontWeight: 700 }}>
+                  <td colSpan={2} className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'var(--ink)', fontSize: '14px', fontWeight: 700 }}>TOTAL</td>
+                  <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', color: 'var(--brand)', fontSize: '14px', fontWeight: 700 }}>
                     {formatIndianCurrency(visiblePayments.reduce((sum, p) => sum + p.grossAmount, 0))}
                   </td>
                   <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', color: '#ef4444', fontSize: '14px', fontWeight: 700 }}>
                     {formatIndianCurrency(visiblePayments.reduce((sum, p) => sum + p.deductions, 0))}
                   </td>
-                  <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', color: 'white', fontSize: '14px', fontWeight: 700 }}>
+                  <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', color: 'var(--ink)', fontSize: '14px', fontWeight: 700 }}>
                     {formatIndianCurrency(visiblePayments.reduce((sum, p) => sum + p.netPayable, 0))}
                   </td>
                   <td colSpan={2}></td>
@@ -520,7 +520,7 @@ const PaymentRegister: React.FC = () => {
 
         {bmcCalculated && bmcEntries.length === 0 && (
           <div className="glass-card no-print" style={{ padding: '20px 24px' }}>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15, textAlign: 'center', padding: '32px 0' }}>
+            <p style={{ color: 'var(--ink-2)', fontSize: 15, textAlign: 'center', padding: '32px 0' }}>
               No BMC entries found for the selected range.
             </p>
           </div>
@@ -693,16 +693,16 @@ const PaymentRegister: React.FC = () => {
         <div className="modal-overlay">
           <div className="modal-3d animate-fadeIn" style={{ padding: 32, maxWidth: 400, textAlign: 'center' }}>
             <div className="flex justify-between items-center mb-6">
-              <h2 style={{ fontSize: 18, fontWeight: 800, color: 'white' }}>Scan to Pay</h2>
-              <button onClick={() => setShowQR({ ...showQR, show: false })} style={{ color: 'rgba(255,255,255,0.6)' }}>
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--ink)' }}>Scan to Pay</h2>
+              <button onClick={() => setShowQR({ ...showQR, show: false })} style={{ color: 'var(--ink-2)' }}>
                 <X size={24} />
               </button>
             </div>
             <div style={{ background: 'white', padding: 20, borderRadius: 16, display: 'inline-block', marginBottom: 20 }}>
               <QRCodeSVG value={showQR.data} size={240} />
             </div>
-            <p style={{ color: 'white', fontWeight: 700, fontSize: 16 }}>{showQR.farmer}</p>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 8 }}>Scan using any UPI App (PhonePe, Google Pay, etc.)</p>
+            <p style={{ color: 'var(--ink)', fontWeight: 700, fontSize: 16 }}>{showQR.farmer}</p>
+            <p style={{ color: 'var(--ink-2)', fontSize: 12, marginTop: 8 }}>Scan using any UPI App (PhonePe, Google Pay, etc.)</p>
             <button
               onClick={() => setShowQR({ ...showQR, show: false })}
               className="btn-3d w-full mt-8"

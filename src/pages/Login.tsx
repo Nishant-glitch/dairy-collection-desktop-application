@@ -129,32 +129,32 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #0f172a, #1a1f35)' }}>
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'linear-gradient(135deg, #E7F6EE 0%, #F4F7F5 55%, #EAF7F0 100%)' }}>
       <div className="max-w-md w-full animate-fadeUp">
         {/* Logo and Branding */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-24 h-24 glass-card mb-6" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', borderRadius: 24, boxShadow: '0 20px 40px rgba(245,158,11,0.2)' }}>
             <Milk className="w-14 h-14 text-[#0f172a]" />
           </div>
-          <h1 className="text-5xl font-black text-white mb-2 tracking-tighter" style={{ textShadow: '0 0 20px rgba(245,158,11,0.3)' }}>DCS Pro</h1>
+          <h1 className="text-5xl font-black text-[#11211A] mb-2 tracking-tighter" style={{ textShadow: '0 0 20px rgba(245,158,11,0.3)' }}>DCS Pro</h1>
           <p className="text-amber-500 font-bold text-lg uppercase tracking-widest">Dairy Collection System</p>
         </div>
 
         {/* Auth Card */}
         <div className="glass-card" style={{ padding: '28px 32px' }}>
           {/* Toggle Buttons */}
-          <div className="flex p-1 glass-card" style={{ background: 'rgba(0,0,0,0.3)', borderRadius: 14, marginBottom: '24px' }}>
+          <div className="flex p-1 glass-card" style={{ background: 'var(--surface-2)', borderRadius: 14, marginBottom: '24px' }}>
             <button
               type="button"
               onClick={() => { setIsCreateAccount(false); setError(''); setSuccess(''); }}
-              className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm transition-all ${!isCreateAccount ? 'btn-primary' : 'text-slate-400 hover:text-white'}`}
+              className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm transition-all ${!isCreateAccount ? 'btn-primary' : 'text-slate-400 hover:text-[#11211A]'}`}
             >
               LOGIN
             </button>
             <button
               type="button"
               onClick={() => { setIsCreateAccount(true); setError(''); setSuccess(''); }}
-              className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm transition-all ${isCreateAccount ? 'btn-primary' : 'text-slate-400 hover:text-white'}`}
+              className={`flex-1 py-3 px-4 rounded-xl font-bold text-sm transition-all ${isCreateAccount ? 'btn-primary' : 'text-slate-400 hover:text-[#11211A]'}`}
             >
               SIGN UP
             </button>
@@ -165,7 +165,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               <div style={{ marginBottom: '18px' }}>
                 <label className="label-text" style={{ marginBottom: '8px', fontSize: '12px' }}>Full Name</label>
                 <div className="relative">
-                  <User size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                  <User size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-2)' }} />
                   <input
                     type="text"
                     value={name}
@@ -182,7 +182,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <div style={{ marginBottom: '18px' }}>
               <label className="label-text" style={{ marginBottom: '8px', fontSize: '12px' }}>Mobile Number / Admin ID</label>
               <div className="relative">
-                <Phone size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <Phone size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-2)' }} />
                 <input
                   type="text"
                   value={mobileNumber}
@@ -198,7 +198,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <div style={{ marginBottom: '18px' }}>
               <label className="label-text" style={{ marginBottom: '8px', fontSize: '12px' }}>Password</label>
               <div className="relative">
-                <Lock size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <Lock size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--ink-2)' }} />
                 <input
                   type="password"
                   value={password}
@@ -227,7 +227,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             )}
 
             {error && <div className="error-box" style={{ marginBottom: '18px' }}>{error}</div>}
-            {success && <div className="farmer-found-box" style={{ color: '#4ade80', fontSize: 13, whiteSpace: 'pre-line', marginBottom: '18px' }}>{success}</div>}
+            {success && <div className="farmer-found-box" style={{ color: 'var(--brand)', fontSize: 13, whiteSpace: 'pre-line', marginBottom: '18px' }}>{success}</div>}
 
             <button
               type="submit"

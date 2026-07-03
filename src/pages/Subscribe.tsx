@@ -42,7 +42,7 @@ const Subscribe: React.FC = () => {
   };
 
   const sectionTitle: React.CSSProperties = {
-    fontSize: 12, fontWeight: 800, color: 'rgba(255,255,255,0.5)',
+    fontSize: 12, fontWeight: 800, color: 'var(--ink-2)',
     textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 12,
   };
 
@@ -60,7 +60,7 @@ const Subscribe: React.FC = () => {
             <Crown color="#0a1f0f" size={28} />
           </div>
           <h1 className="page-title" style={{ justifyContent: 'center', marginBottom: 6 }}>Subscribe to DCS Pro</h1>
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>
+          <p style={{ color: 'var(--ink-2)', fontSize: 13 }}>
             Aapka account abhi active nahi hai. App use karne ke liye subscription activate karwayein.
           </p>
         </div>
@@ -78,7 +78,7 @@ const Subscribe: React.FC = () => {
                   style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     padding: '14px 16px', borderRadius: 12, marginBottom: 10, cursor: 'pointer',
-                    border: selected ? '2px solid #4ade80' : '1px solid rgba(255,255,255,0.15)',
+                    border: selected ? '2px solid #4ade80' : '1px solid var(--line)',
                     background: selected ? 'rgba(74,222,128,0.1)' : 'rgba(0,0,0,0.25)',
                     transition: 'all 0.2s',
                   }}
@@ -86,24 +86,24 @@ const Subscribe: React.FC = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div style={{
                       width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                      border: selected ? 'none' : '2px solid rgba(255,255,255,0.3)',
+                      border: selected ? 'none' : '2px solid var(--line)',
                       background: selected ? '#4ade80' : 'transparent',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
                       {selected && <Check size={14} color="#0a1f0f" strokeWidth={3} />}
                     </div>
                     <div>
-                      <div style={{ color: 'white', fontWeight: 700, fontSize: 15 }}>{PLANS[k].label}</div>
-                      <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>{PLANS[k].days} days validity</div>
+                      <div style={{ color: 'var(--ink)', fontWeight: 700, fontSize: 15 }}>{PLANS[k].label}</div>
+                      <div style={{ color: 'var(--muted)', fontSize: 11 }}>{PLANS[k].days} days validity</div>
                     </div>
                   </div>
-                  <div style={{ color: '#4ade80', fontWeight: 800, fontSize: 18 }}>₹{PLANS[k].price}</div>
+                  <div style={{ color: 'var(--brand)', fontWeight: 800, fontSize: 18 }}>₹{PLANS[k].price}</div>
                 </div>
               );
             })}
 
             <div style={{ ...sectionTitle, marginTop: 22 }}>Kaise activate hoga</div>
-            <ol style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
+            <ol style={{ color: 'var(--ink-2)', fontSize: 13, lineHeight: 1.9, paddingLeft: 18, margin: 0 }}>
               <li>Apna plan select karein.</li>
               <li>QR scan karke UPI app se payment karein.</li>
               <li>Payment screenshot WhatsApp par bhejein.</li>
@@ -152,8 +152,8 @@ const Subscribe: React.FC = () => {
         </div>
 
         {/* Footer / logout */}
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', marginTop: 28, paddingTop: 18, textAlign: 'center' }}>
-          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, marginRight: 12 }}>
+        <div style={{ borderTop: '1px solid var(--line)', marginTop: 28, paddingTop: 18, textAlign: 'center' }}>
+          <span style={{ color: 'var(--muted)', fontSize: 12, marginRight: 12 }}>
             Logged in as {user?.email}
           </span>
           <button onClick={handleLogout} className="btn-secondary" style={{ padding: '8px 18px' }}>

@@ -109,7 +109,7 @@ const AdminSubscriptions: React.FC = () => {
       <div className="glass-card" style={{ padding: 18, marginBottom: 18 }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
           <div style={{ position: 'relative', flex: 1, minWidth: 220 }}>
-            <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }} />
+            <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
             <input
               className="input-field"
               style={{ paddingLeft: 36 }}
@@ -150,14 +150,14 @@ const AdminSubscriptions: React.FC = () => {
               return (
                 <tr key={r.uid} className="table-row">
                   <td>
-                    <div style={{ color: 'white', fontWeight: 600 }}>{r.name}</div>
-                    <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>{r.email}</div>
+                    <div style={{ color: 'var(--ink)', fontWeight: 600 }}>{r.name}</div>
+                    <div style={{ color: 'var(--muted)', fontSize: 11 }}>{r.email}</div>
                   </td>
                   <td>{r.mobile || '-'}</td>
                   <td>
                     {active
                       ? <span className="success-chip">Active · {daysLeft(r.sub)}d left</span>
-                      : <span style={{ color: '#f87171', fontSize: 12, fontWeight: 600 }}>Inactive</span>}
+                      : <span style={{ color: 'var(--red)', fontSize: 12, fontWeight: 600 }}>Inactive</span>}
                   </td>
                   <td>{r.sub?.expiresAt ? new Date(r.sub.expiresAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
                   <td>
@@ -177,7 +177,7 @@ const AdminSubscriptions: React.FC = () => {
             })}
             {filtered.length === 0 && (
               <tr className="table-row">
-                <td colSpan={5} style={{ textAlign: 'center', padding: 32, color: 'rgba(255,255,255,0.4)' }}>
+                <td colSpan={5} style={{ textAlign: 'center', padding: 32, color: 'var(--muted)' }}>
                   {loading ? 'Loading...' : 'No users found.'}
                 </td>
               </tr>
