@@ -156,7 +156,7 @@ dcs-pro/
 ### Current Setup
 ```javascript
 {
-  apiKey: "AIzaSyCTliTeD9vAv1Di5paG6v_ovoJaKHdNgbI",
+  apiKey: "",
   authDomain: "farmerdb-ba9b0.firebaseapp.com",
   databaseURL: "https://farmerdb-ba9b0-default-rtdb.firebaseio.com",
   projectId: "farmerdb-ba9b0",
