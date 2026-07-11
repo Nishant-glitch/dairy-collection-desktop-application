@@ -5,7 +5,7 @@ import { up } from '../utils/userDb';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatIndianCurrency } from '../utils/rateCalculator';
 import { sendPaymentSMS } from '../services/sms';
-import { Smartphone, QrCode, Check, Calculator, X, Users, Snowflake, Printer } from 'lucide-react';
+import { Smartphone, QrCode, Check, Calculator, X, Users, Snowflake, Printer, Lock } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { COMFED_LOGO, SUDHA_LOGO } from '../utils/reportLogos';
 
@@ -16,16 +16,25 @@ interface PaymentEntry {
   upiId: string;
   grossAmount: number;
   deductions: number;
+  bfAmount: number;
   netPayable: number;
   customAmount: number;
   isPaid: boolean;
 }
+
+// "YYYY-MM" of the calendar month immediately before the given month.
+const prevMonthOf = (m: string): string => {
+  const [y, mo] = m.split('-').map(Number);
+  const d = new Date(y, mo - 2, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
 
 const PaymentRegister: React.FC = () => {
   const { t } = useLanguage();
   const [month, setMonth] = useState(new Date().toISOString().substring(0, 7));
   const [payments, setPayments] = useState<PaymentEntry[]>([]);
   const [paidFilter, setPaidFilter] = useState<'all' | 'paid' | 'unpaid'>('all');
+  const [locking, setLocking] = useState(false);
   const [farmers, setFarmers] = useState<any>({});
   const [dcsInfo, setDcsInfo] = useState<any>({});
   const [showQR, setShowQR] = useState<{ show: boolean; data: string; farmer: string }>({
@@ -166,6 +175,7 @@ const PaymentRegister: React.FC = () => {
                   upiId: farmer.upiId || `${farmer.mobileNo}@ybl`,
                   grossAmount: 0,
                   deductions: 0,
+                  bfAmount: 0,
                   netPayable: 0,
                   customAmount: 0,
                   isPaid: false,
@@ -178,6 +188,31 @@ const PaymentRegister: React.FC = () => {
       });
     }
 
+    // Balance Forward: a farmer's balance from the immediately-preceding month
+    // carries into this month. Read it up-front so we can also surface farmers
+    // who carry a debt/credit but have no milk this month.
+    const bfMonth = prevMonthOf(month);
+    const balSnap = await get(ref(database, up('farmerBalances')));
+    const balances: any = balSnap.exists() ? balSnap.val() : {};
+    Object.keys(balances).forEach((farmerId) => {
+      const bal = balances[farmerId];
+      if (bal && bal.forMonth === bfMonth && bal.balance && !farmerPayments[farmerId]) {
+        const farmer = farmers[farmerId] || {};
+        farmerPayments[farmerId] = {
+          farmerId,
+          farmerName: farmer.farmerName || 'Unknown',
+          mobile: farmer.mobileNo || '',
+          upiId: farmer.upiId || `${farmer.mobileNo}@ybl`,
+          grossAmount: 0,
+          deductions: 0,
+          bfAmount: 0,
+          netPayable: 0,
+          customAmount: 0,
+          isPaid: false,
+        };
+      }
+    });
+
     const grossEntriesRef = ref(database, up('grossEntries'));
     const grossEntriesSnapshot = await get(grossEntriesRef);
     if (grossEntriesSnapshot.exists()) {
@@ -187,7 +222,11 @@ const PaymentRegister: React.FC = () => {
           const entries = grossEntriesData[farmerId];
           let totalDeduction = 0;
           Object.values(entries).forEach((entry: any) => {
-            totalDeduction += parseFloat(entry.amount || 0);
+            // Only count deductions/gross-collection entries dated within the
+            // selected month (same startDate..endDate window as grossAmount).
+            if (entry.date && entry.date >= startDate && entry.date <= endDate) {
+              totalDeduction += parseFloat(entry.amount || 0);
+            }
           });
           farmerPayments[farmerId].deductions = totalDeduction;
         }
@@ -196,7 +235,11 @@ const PaymentRegister: React.FC = () => {
 
     Object.keys(farmerPayments).forEach((farmerId) => {
       const payment = farmerPayments[farmerId];
-      payment.netPayable = payment.grossAmount - payment.deductions;
+      const bal = balances[farmerId];
+      // Carry the prior month's balance forward (only if it's exactly the
+      // previous month — a gap breaks the chain and B/F resets to 0).
+      payment.bfAmount = (bal && bal.forMonth === bfMonth && typeof bal.balance === 'number') ? bal.balance : 0;
+      payment.netPayable = payment.grossAmount - payment.deductions + payment.bfAmount;
       payment.customAmount = payment.netPayable;
     });
 
@@ -217,6 +260,34 @@ const PaymentRegister: React.FC = () => {
     }
 
     setPayments(Object.values(farmerPayments));
+  };
+
+  // Finalize the month: store each farmer's Net Payable as their carry-forward
+  // balance. The EXACT value carries — positive (credit) or negative (debt) —
+  // so it becomes next month's B/F Amount.
+  const lockMonth = async () => {
+    if (payments.length === 0) return;
+    if (!confirm(`Finalize ${month}? Each farmer's Net Payable (positive or negative) will carry forward as next month's Balance Forward (B/F). You can re-finalize after recalculating.`)) {
+      return;
+    }
+    setLocking(true);
+    try {
+      await Promise.all(
+        payments.map((p) =>
+          set(ref(database, up(`farmerBalances/${p.farmerId}`)), {
+            balance: p.netPayable,
+            forMonth: month,
+            updatedAt: Date.now(),
+          })
+        )
+      );
+      alert('✅ Month finalized. Balances will carry forward to next month.');
+    } catch (err) {
+      console.error('Finalize month failed:', err);
+      alert('❌ Failed to finalize month. Please try again.');
+    } finally {
+      setLocking(false);
+    }
   };
 
   const handleCustomAmount = (farmerId: string, amount: number) => {
@@ -336,6 +407,18 @@ const PaymentRegister: React.FC = () => {
             <Calculator size={16} />
             Calculate
           </button>
+          {payments.length > 0 && (
+            <button
+              onClick={lockMonth}
+              disabled={locking}
+              className="btn-secondary"
+              style={{ padding: '10px 20px', height: '40px', minHeight: '40px' }}
+              title="Store each farmer's Net Payable as next month's Balance Forward"
+            >
+              <Lock size={16} />
+              {locking ? 'Finalizing…' : 'Finalize Month'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -366,6 +449,7 @@ const PaymentRegister: React.FC = () => {
                   <th className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Farmer Code</th>
                   <th className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Name</th>
                   <th className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Gross Amount</th>
+                  <th className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>B/F Amt</th>
                   <th className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Deductions</th>
                   <th className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Net Payable</th>
                   <th className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Pay Amount</th>
@@ -380,10 +464,13 @@ const PaymentRegister: React.FC = () => {
                     <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--brand)', fontWeight: 600 }}>
                       {formatIndianCurrency(payment.grossAmount)}
                     </td>
+                    <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: payment.bfAmount < 0 ? '#ef4444' : payment.bfAmount > 0 ? '#16a34a' : 'var(--ink-2)', fontWeight: payment.bfAmount !== 0 ? 700 : 400 }}>
+                      {payment.bfAmount === 0 ? '—' : `${payment.bfAmount > 0 ? '+' : ''}${formatIndianCurrency(payment.bfAmount)}`}
+                    </td>
                     <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: '#ef4444' }}>
                       {formatIndianCurrency(payment.deductions)}
                     </td>
-                    <td className="px-4 py-[9px] text-right font-bold" style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--ink)' }}>
+                    <td className="px-4 py-[9px] text-right font-bold" style={{ padding: '12px 16px', fontSize: '14px', color: payment.netPayable < 0 ? '#ef4444' : '#16a34a' }}>
                       {formatIndianCurrency(payment.netPayable)}
                     </td>
                     <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '14px' }}>
@@ -418,7 +505,7 @@ const PaymentRegister: React.FC = () => {
                 ))}
                 {visiblePayments.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="text-center" style={{ padding: '32px 16px', color: 'var(--muted)', fontSize: 14 }}>
+                    <td colSpan={8} className="text-center" style={{ padding: '32px 16px', color: 'var(--muted)', fontSize: 14 }}>
                       No {paidFilter} farmers for this month.
                     </td>
                   </tr>
@@ -429,6 +516,9 @@ const PaymentRegister: React.FC = () => {
                   <td colSpan={2} className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'var(--ink)', fontSize: '14px', fontWeight: 700 }}>TOTAL</td>
                   <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', color: 'var(--brand)', fontSize: '14px', fontWeight: 700 }}>
                     {formatIndianCurrency(visiblePayments.reduce((sum, p) => sum + p.grossAmount, 0))}
+                  </td>
+                  <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', color: 'var(--ink-2)', fontSize: '14px', fontWeight: 700 }}>
+                    {formatIndianCurrency(visiblePayments.reduce((sum, p) => sum + p.bfAmount, 0))}
                   </td>
                   <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', color: '#ef4444', fontSize: '14px', fontWeight: 700 }}>
                     {formatIndianCurrency(visiblePayments.reduce((sum, p) => sum + p.deductions, 0))}
