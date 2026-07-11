@@ -196,7 +196,7 @@ const PaymentRegister: React.FC = () => {
     const balances: any = balSnap.exists() ? balSnap.val() : {};
     Object.keys(balances).forEach((farmerId) => {
       const bal = balances[farmerId];
-      if (bal && bal.month === bfMonth && bal.balance && !farmerPayments[farmerId]) {
+      if (bal && bal.forMonth === bfMonth && bal.balance && !farmerPayments[farmerId]) {
         const farmer = farmers[farmerId] || {};
         farmerPayments[farmerId] = {
           farmerId,
@@ -234,7 +234,7 @@ const PaymentRegister: React.FC = () => {
       const bal = balances[farmerId];
       // Carry the prior month's balance forward (only if it's exactly the
       // previous month — a gap breaks the chain and B/F resets to 0).
-      payment.bfAmount = (bal && bal.month === bfMonth && typeof bal.balance === 'number') ? bal.balance : 0;
+      payment.bfAmount = (bal && bal.forMonth === bfMonth && typeof bal.balance === 'number') ? bal.balance : 0;
       payment.netPayable = payment.grossAmount - payment.deductions + payment.bfAmount;
       payment.customAmount = payment.netPayable;
     });
@@ -258,11 +258,12 @@ const PaymentRegister: React.FC = () => {
     setPayments(Object.values(farmerPayments));
   };
 
-  // Finalize the month: store each farmer's carry-forward balance. A negative
-  // Net Payment becomes next month's B/F; anything >= 0 clears the account.
+  // Finalize the month: store each farmer's Net Payable as their carry-forward
+  // balance. The EXACT value carries — positive (credit) or negative (debt) —
+  // so it becomes next month's B/F Amount.
   const lockMonth = async () => {
     if (payments.length === 0) return;
-    if (!confirm(`Lock ${month}? Each farmer's negative Net Payment will carry forward as next month's Balance Forward (B/F). You can re-lock after recalculating.`)) {
+    if (!confirm(`Finalize ${month}? Each farmer's Net Payable (positive or negative) will carry forward as next month's Balance Forward (B/F). You can re-finalize after recalculating.`)) {
       return;
     }
     setLocking(true);
@@ -270,16 +271,16 @@ const PaymentRegister: React.FC = () => {
       await Promise.all(
         payments.map((p) =>
           set(ref(database, up(`farmerBalances/${p.farmerId}`)), {
-            balance: p.netPayable < 0 ? p.netPayable : 0,
-            month,
+            balance: p.netPayable,
+            forMonth: month,
             updatedAt: Date.now(),
           })
         )
       );
-      alert('✅ Month locked. Negative balances will carry forward to next month.');
+      alert('✅ Month finalized. Balances will carry forward to next month.');
     } catch (err) {
-      console.error('Lock month failed:', err);
-      alert('❌ Failed to lock month. Please try again.');
+      console.error('Finalize month failed:', err);
+      alert('❌ Failed to finalize month. Please try again.');
     } finally {
       setLocking(false);
     }
@@ -408,10 +409,10 @@ const PaymentRegister: React.FC = () => {
               disabled={locking}
               className="btn-secondary"
               style={{ padding: '10px 20px', height: '40px', minHeight: '40px' }}
-              title="Store carry-forward balances for next month"
+              title="Store each farmer's Net Payable as next month's Balance Forward"
             >
               <Lock size={16} />
-              {locking ? 'Locking…' : 'Lock Month'}
+              {locking ? 'Finalizing…' : 'Finalize Month'}
             </button>
           )}
         </div>
@@ -459,13 +460,13 @@ const PaymentRegister: React.FC = () => {
                     <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: 'var(--brand)', fontWeight: 600 }}>
                       {formatIndianCurrency(payment.grossAmount)}
                     </td>
-                    <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: payment.bfAmount < 0 ? '#ef4444' : 'var(--ink-2)', fontWeight: payment.bfAmount < 0 ? 700 : 400 }}>
-                      {payment.bfAmount === 0 ? '—' : formatIndianCurrency(payment.bfAmount)}
+                    <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: payment.bfAmount < 0 ? '#ef4444' : payment.bfAmount > 0 ? '#16a34a' : 'var(--ink-2)', fontWeight: payment.bfAmount !== 0 ? 700 : 400 }}>
+                      {payment.bfAmount === 0 ? '—' : `${payment.bfAmount > 0 ? '+' : ''}${formatIndianCurrency(payment.bfAmount)}`}
                     </td>
                     <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: '#ef4444' }}>
                       {formatIndianCurrency(payment.deductions)}
                     </td>
-                    <td className="px-4 py-[9px] text-right font-bold" style={{ padding: '12px 16px', fontSize: '14px', color: payment.netPayable < 0 ? '#ef4444' : 'var(--ink)' }}>
+                    <td className="px-4 py-[9px] text-right font-bold" style={{ padding: '12px 16px', fontSize: '14px', color: payment.netPayable < 0 ? '#ef4444' : '#16a34a' }}>
                       {formatIndianCurrency(payment.netPayable)}
                     </td>
                     <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '14px' }}>

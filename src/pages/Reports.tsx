@@ -263,7 +263,7 @@ const Reports: React.FC = () => {
       const bfMonth = `${bfd.getFullYear()}-${String(bfd.getMonth() + 1).padStart(2, '0')}`;
       const bfFor = (code: string) => {
         const bal = balances[code];
-        return (bal && bal.month === bfMonth && typeof bal.balance === 'number') ? bal.balance : 0;
+        return (bal && bal.forMonth === bfMonth && typeof bal.balance === 'number') ? bal.balance : 0;
       };
 
       const stats: any = {};
@@ -321,7 +321,7 @@ const Reports: React.FC = () => {
       // this month, so their debt/credit still shows on the register.
       Object.keys(balances).forEach(code => {
         const bal = balances[code];
-        if (bal && bal.month === bfMonth && bal.balance && !stats[code]) {
+        if (bal && bal.forMonth === bfMonth && bal.balance && !stats[code]) {
           stats[code] = {
             code,
             name: (farmers[code]?.farmerName || farmers[code]?.name) || 'Unknown',
@@ -601,9 +601,9 @@ const Reports: React.FC = () => {
               {activeReport === 'payment' && (<>
                 <td style={td}>{row.code}</td><td style={td}>{row.name}</td><td style={tdR}>{n(row.qty, 2)}</td>
                 <td style={tdR}>{n(row.gross, 2)}</td>
-                <td style={{ ...tdR, color: row.bf < 0 ? '#c0392b' : '#222' }}>{row.bf ? n(row.bf, 2) : '-'}</td>
+                <td style={{ ...tdR, fontWeight: row.bf ? 700 : 400, color: row.bf < 0 ? '#c0392b' : row.bf > 0 ? '#128046' : '#222' }}>{row.bf ? `${row.bf > 0 ? '+' : ''}${n(row.bf, 2)}` : '-'}</td>
                 <td style={tdR}>{n(row.deductions, 2)}</td>
-                <td style={{ ...tdR, fontWeight: row.net < 0 ? 700 : 400, color: row.net < 0 ? '#c0392b' : '#222' }}>{n(row.net, 2)}</td>
+                <td style={{ ...tdR, fontWeight: 700, color: row.net < 0 ? '#c0392b' : '#128046' }}>{n(row.net, 2)}</td>
                 <td style={tdSign}></td>
               </>)}
             </tr>
