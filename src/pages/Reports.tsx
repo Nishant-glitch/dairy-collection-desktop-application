@@ -250,11 +250,22 @@ const Reports: React.FC = () => {
       const collectionSnap = await get(ref(database, up('milkCollection')));
       const farmersSnap = await get(ref(database, up('farmers')));
       const deductionsSnap = await get(ref(database, up('grossEntries')));
-      
+      const balancesSnap = await get(ref(database, up('farmerBalances')));
+
       const farmers = farmersSnap.exists() ? farmersSnap.val() : {};
       const allCollection = collectionSnap.exists() ? collectionSnap.val() : {};
       const allDeductions = deductionsSnap.exists() ? deductionsSnap.val() : {};
-      
+      const balances: any = balancesSnap.exists() ? balancesSnap.val() : {};
+
+      // Balance-Forward month = the calendar month immediately before `month`.
+      const [by, bm] = month.split('-').map(Number);
+      const bfd = new Date(by, bm - 2, 1);
+      const bfMonth = `${bfd.getFullYear()}-${String(bfd.getMonth() + 1).padStart(2, '0')}`;
+      const bfFor = (code: string) => {
+        const bal = balances[code];
+        return (bal && bal.month === bfMonth && typeof bal.balance === 'number') ? bal.balance : 0;
+      };
+
       const stats: any = {};
       
       // Process Collection
@@ -306,16 +317,30 @@ const Reports: React.FC = () => {
         });
       });
 
-      const rows = Object.values(stats).map((r: any) => ({
-        ...r,
-        net: r.gross - r.deductions
-      }));
+      // Include farmers who carry a prior-month balance but had no activity
+      // this month, so their debt/credit still shows on the register.
+      Object.keys(balances).forEach(code => {
+        const bal = balances[code];
+        if (bal && bal.month === bfMonth && bal.balance && !stats[code]) {
+          stats[code] = {
+            code,
+            name: (farmers[code]?.farmerName || farmers[code]?.name) || 'Unknown',
+            qty: 0, gross: 0, deductions: 0, net: 0,
+          };
+        }
+      });
 
-      let totalQty = 0, totalGross = 0, totalDed = 0, totalNet = 0;
+      const rows = Object.values(stats).map((r: any) => {
+        const bf = bfFor(r.code);
+        return { ...r, bf, net: r.gross - r.deductions + bf };
+      });
+
+      let totalQty = 0, totalGross = 0, totalDed = 0, totalNet = 0, totalBf = 0;
       rows.forEach((r: any) => {
         totalQty += r.qty;
         totalGross += r.gross;
         totalDed += r.deductions;
+        totalBf += r.bf;
         totalNet += r.net;
       });
 
@@ -326,6 +351,7 @@ const Reports: React.FC = () => {
         qty: totalQty,
         gross: totalGross,
         deductions: totalDed,
+        bf: totalBf,
         net: totalNet
       });
       setShowFilterModal(false);
@@ -550,7 +576,7 @@ const Reports: React.FC = () => {
             </>)}
             {activeReport === 'payment' && (<>
               <th style={th}>Code</th><th style={th}>Member's Name</th><th style={thR}>Total Qty</th>
-              <th style={thR}>Gross Amt</th><th style={thR}>Deductions</th><th style={thR}>Net Payment</th>
+              <th style={thR}>Gross Amt</th><th style={thR}>B/F Amt</th><th style={thR}>Deductions</th><th style={thR}>Net Payment</th>
               <th style={thSign}>Signature</th>
             </>)}
           </tr>
@@ -574,7 +600,10 @@ const Reports: React.FC = () => {
               </>)}
               {activeReport === 'payment' && (<>
                 <td style={td}>{row.code}</td><td style={td}>{row.name}</td><td style={tdR}>{n(row.qty, 2)}</td>
-                <td style={tdR}>{n(row.gross, 2)}</td><td style={tdR}>{n(row.deductions, 2)}</td><td style={tdR}>{n(row.net, 2)}</td>
+                <td style={tdR}>{n(row.gross, 2)}</td>
+                <td style={{ ...tdR, color: row.bf < 0 ? '#c0392b' : '#222' }}>{row.bf ? n(row.bf, 2) : '-'}</td>
+                <td style={tdR}>{n(row.deductions, 2)}</td>
+                <td style={{ ...tdR, fontWeight: row.net < 0 ? 700 : 400, color: row.net < 0 ? '#c0392b' : '#222' }}>{n(row.net, 2)}</td>
                 <td style={tdSign}></td>
               </>)}
             </tr>
@@ -598,7 +627,7 @@ const Reports: React.FC = () => {
             </>)}
             {activeReport === 'payment' && (<>
               <td style={ft} colSpan={2}>Grand Total</td><td style={ftR}>{n(grandTotal.qty, 2)}</td>
-              <td style={ftR}>{n(grandTotal.gross, 2)}</td><td style={ftR}>{n(grandTotal.deductions, 2)}</td><td style={ftR}>{n(grandTotal.net, 2)}</td>
+              <td style={ftR}>{n(grandTotal.gross, 2)}</td><td style={ftR}>{grandTotal.bf ? n(grandTotal.bf, 2) : '-'}</td><td style={ftR}>{n(grandTotal.deductions, 2)}</td><td style={ftR}>{n(grandTotal.net, 2)}</td>
               <td style={ft}></td>
             </>)}
           </tr>
