@@ -222,7 +222,11 @@ const PaymentRegister: React.FC = () => {
           const entries = grossEntriesData[farmerId];
           let totalDeduction = 0;
           Object.values(entries).forEach((entry: any) => {
-            totalDeduction += parseFloat(entry.amount || 0);
+            // Only count deductions/gross-collection entries dated within the
+            // selected month (same startDate..endDate window as grossAmount).
+            if (entry.date && entry.date >= startDate && entry.date <= endDate) {
+              totalDeduction += parseFloat(entry.amount || 0);
+            }
           });
           farmerPayments[farmerId].deductions = totalDeduction;
         }
