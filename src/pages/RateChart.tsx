@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ref, get, set, push } from 'firebase/database';
+import { ref, get, set, push, remove } from 'firebase/database';
 import { database } from '../firebase/config';
 import { isAdmin } from '../utils/userDb';
-import { FileSpreadsheet, History, X, Table as TableIcon, ShieldCheck, Upload } from 'lucide-react';
+import { FileSpreadsheet, History, X, Table as TableIcon, ShieldCheck, Upload, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 export const getRateFromMap = (fat: number, snf: number, config: any): number => {
@@ -41,25 +41,52 @@ const RateChart: React.FC = () => {
   const userIsAdmin = isAdmin();
 
   useEffect(() => {
-    loadCurrentConfig();
+    (async () => {
+      const cur = await loadCurrentConfig();
+      const hist = await fetchHistory();
+      // Migration: if a current chart exists but the versioned history is empty
+      // (older deployments), seed history with it so it's always a fallback.
+      if (userIsAdmin && cur && hist.length === 0) {
+        await push(ref(database, 'globalRateConfig/history'), cur);
+        await fetchHistory();
+      }
+    })();
   }, []);
 
   const loadCurrentConfig = async () => {
     const snap = await get(ref(database, 'globalRateConfig/current'));
     if (snap.exists()) {
       setCurrentConfig(snap.val());
+      return snap.val();
     }
+    return null;
+  };
+
+  // Fetch all versioned charts, newest (latest effectiveFrom) first. Keep each
+  // entry's Firebase key (_key) so an individual version can be deleted.
+  const fetchHistory = async (): Promise<any[]> => {
+    const snap = await get(ref(database, 'globalRateConfig/history'));
+    const list = snap.exists()
+      ? Object.entries(snap.val() as Record<string, any>)
+          .map(([_key, v]) => ({ _key, ...v }))
+          .sort((a: any, b: any) => String(b.effectiveFrom).localeCompare(String(a.effectiveFrom)))
+      : [];
+    setHistory(list);
+    return list;
+  };
+
+  // Delete a single past rate-chart version (admin only). The active chart is
+  // never deletable (guarded in the UI too). Data lives in globalRateConfig/
+  // history, so we remove that key and refresh the list live.
+  const handleDeleteChart = async (chartKey: string) => {
+    if (!chartKey) return;
+    if (!confirm('Kya aap sure hain? Ye rate chart permanently delete ho jaayega.')) return;
+    await remove(ref(database, `globalRateConfig/history/${chartKey}`));
+    await fetchHistory();
   };
 
   const loadHistory = async () => {
-    const snap = await get(ref(database, 'globalRateConfig/history'));
-    if (snap.exists()) {
-      const data = snap.val();
-      const historyList = Object.values(data).sort((a: any, b: any) => 
-        new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime()
-      );
-      setHistory(historyList);
-    }
+    await fetchHistory();
     setShowHistoryModal(true);
   };
 
@@ -134,9 +161,10 @@ const RateChart: React.FC = () => {
         await push(ref(database, 'globalRateConfig/history'), config);
 
         setCurrentConfig(config);
+        await fetchHistory();
         setSelectedFile(null);
         setShowImportPopup(false);
-        alert(`✅ Rate chart published!\nFAT rows: ${fatValues.length} | SNF cols: ${snfValues.length}`);
+        alert(`✅ Rate chart published!\nEffective from ${effectiveFrom}\nFAT rows: ${fatValues.length} | SNF cols: ${snfValues.length}`);
 
       } catch (err: any) {
         console.error('Import error:', err);
@@ -281,6 +309,58 @@ const RateChart: React.FC = () => {
           {userIsAdmin && (
             <button onClick={() => setShowImportPopup(true)} className="btn-primary" style={{ padding: '12px 32px', fontSize: 16 }}>Import Now</button>
           )}
+        </div>
+      )}
+
+      {/* Rate Chart History (versioned — active + previous). Admin only. */}
+      {userIsAdmin && history.length > 0 && (
+        <div style={{ marginTop: 32, width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink-2)', fontWeight: 800, fontSize: 14, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>
+            <History size={18} />
+            Rate Chart History
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {history.map((cfg, idx) => {
+              const isActive = currentConfig && cfg.importedAt === currentConfig.importedAt;
+              return (
+                <div
+                  key={idx}
+                  className="glass-card"
+                  style={{
+                    padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    border: isActive ? '1.5px solid var(--brand)' : '1px solid var(--line)',
+                    background: isActive ? 'var(--brand-soft)' : 'var(--surface)',
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontWeight: 700, color: 'var(--ink)', fontSize: 15 }}>{cfg.label || cfg.fileName || 'Rate Chart'}</span>
+                      {isActive && <span className="badge-3d" style={{ background: 'var(--brand)', color: '#fff', border: 'none' }}>ACTIVE</span>}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--ink-2)', marginTop: 3 }}>
+                      Effective from {cfg.effectiveFrom}
+                      {cfg.importedAt ? ` · Imported ${new Date(cfg.importedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}` : ''}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <button onClick={() => setViewingConfig(cfg)} className="btn-secondary" style={{ padding: '7px 14px', fontSize: 13 }}>
+                      View
+                    </button>
+                    {!isActive && (
+                      <button
+                        onClick={() => handleDeleteChart(cfg._key)}
+                        className="btn-danger"
+                        style={{ padding: '6px 10px' }}
+                        title="Delete this rate chart version"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

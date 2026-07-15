@@ -21,6 +21,10 @@
       ".read": "auth != null",
       ".write": "auth != null && auth.token.email === 'admin@nishant.com'"
     },
+    "rateCharts": {
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.email === 'admin@nishant.com'"
+    },
     ".read": false,
     ".write": false
   }
