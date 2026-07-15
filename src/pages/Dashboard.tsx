@@ -69,7 +69,7 @@ const Dashboard: React.FC = () => {
     const unsubMonth = onValue(collectionRef, (snapshot) => {
       let monthQty = 0;
       let monthAmount = 0;
-      const last7Days: any[] = [];
+      const last10Days: any[] = [];
       const entries: any[] = [];
 
       if (snapshot.exists()) {
@@ -97,7 +97,7 @@ const Dashboard: React.FC = () => {
             });
           }
 
-          if (index < 7) {
+          if (index < 10) {
             let dayQty = 0;
             const shifts = data[date];
             Object.values(shifts).forEach((shift: any) => {
@@ -106,7 +106,7 @@ const Dashboard: React.FC = () => {
               });
             });
 
-            last7Days.push({
+            last10Days.push({
               date: date.substring(8, 10),
               qty: dayQty,
             });
@@ -116,7 +116,7 @@ const Dashboard: React.FC = () => {
 
       setStats((prev) => ({ ...prev, monthQty, monthAmount }));
       setRecentEntries(entries);
-      setChartData(last7Days.reverse());
+      setChartData(last10Days.reverse());
     });
 
     // Load total farmers
@@ -218,12 +218,12 @@ const Dashboard: React.FC = () => {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" style={{ marginTop: '20px' }}>
         <div className="glass-card" style={{ padding: '20px 24px' }}>
-          <h2 style={{ color: 'var(--ink)', fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Last 7 Days Collection</h2>
+          <h2 style={{ color: 'var(--ink)', fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Last 10 Days Collection</h2>
           <ResponsiveContainer width="100%" height={240}>
             <LineChart data={chartData} style={{ padding: '16px' }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" vertical={false} />
-              <XAxis dataKey="date" stroke="var(--line)" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="var(--line)" fontSize={12} tickLine={false} axisLine={false} />
+              <XAxis dataKey="date" tick={{ fill: '#475569', fontSize: 12 }} tickLine={false} axisLine={false} />
+              <YAxis tick={{ fill: '#475569', fontSize: 12 }} tickLine={false} axisLine={false} />
               <Tooltip 
                 contentStyle={{ background: 'var(--surface-2)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 12, color: 'var(--ink)' }}
                 itemStyle={{ color: 'var(--brand)' }}
@@ -235,12 +235,12 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="glass-card" style={{ padding: '20px 24px' }}>
-          <h2 style={{ color: 'var(--ink)', fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Monthly Comparison</h2>
+          <h2 style={{ color: 'var(--ink)', fontSize: 18, fontWeight: 700, marginBottom: 20 }}>Last 10 Days Comparison</h2>
           <ResponsiveContainer width="100%" height={240}>
             <BarChart data={chartData} style={{ padding: '16px' }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--line)" vertical={false} />
-              <XAxis dataKey="date" stroke="var(--line)" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="var(--line)" fontSize={12} tickLine={false} axisLine={false} />
+              <XAxis dataKey="date" tick={{ fill: '#475569', fontSize: 12 }} tickLine={false} axisLine={false} />
+              <YAxis tick={{ fill: '#475569', fontSize: 12 }} tickLine={false} axisLine={false} />
               <Tooltip 
                 contentStyle={{ background: 'var(--surface-2)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 12, color: 'var(--ink)' }}
                 itemStyle={{ color: 'var(--brand)' }}
