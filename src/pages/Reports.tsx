@@ -21,7 +21,6 @@ const Reports: React.FC = () => {
   const [shift, setShift] = useState<'All' | 'Morning' | 'Evening'>('All');
   const [collectionShift, setCollectionShift] = useState('Morning');
   const [farmerCode, setFarmerCode] = useState('');
-  const [month, setMonth] = useState(new Date().toISOString().slice(0, 7)); // yyyy-mm
 
   // Report data
   const [reportData, setReportData] = useState<any[]>([]);
@@ -257,10 +256,16 @@ const Reports: React.FC = () => {
       const allDeductions = deductionsSnap.exists() ? deductionsSnap.val() : {};
       const balances: any = balancesSnap.exists() ? balancesSnap.val() : {};
 
-      // Balance-Forward month = the calendar month immediately before `month`.
-      const [by, bm] = month.split('-').map(Number);
-      const bfd = new Date(by, bm - 2, 1);
-      const bfMonth = `${bfd.getFullYear()}-${String(bfd.getMonth() + 1).padStart(2, '0')}`;
+      // Balance-Forward month = the calendar month immediately before the
+      // selected range's start month (from `fromDate`). For the usual full-month
+      // range this matches the old month-based behaviour.
+      const rangeMonth = (fromDate || toDate || '').substring(0, 7);
+      let bfMonth = '';
+      if (/^\d{4}-\d{2}$/.test(rangeMonth)) {
+        const [by, bm] = rangeMonth.split('-').map(Number);
+        const bfd = new Date(by, bm - 2, 1);
+        bfMonth = `${bfd.getFullYear()}-${String(bfd.getMonth() + 1).padStart(2, '0')}`;
+      }
       const bfFor = (code: string) => {
         const bal = balances[code];
         return (bal && bal.forMonth === bfMonth && typeof bal.balance === 'number') ? bal.balance : 0;
@@ -268,13 +273,14 @@ const Reports: React.FC = () => {
 
       const stats: any = {};
       
-      // Process Collection
+      // Process Collection (date range, optional farmer code)
       Object.keys(allCollection).forEach(date => {
-        if (date.startsWith(month)) {
+        if (date >= fromDate && date <= toDate) {
           const shifts = allCollection[date];
           Object.keys(shifts).forEach(s => {
             const entries = shifts[s];
             Object.keys(entries).forEach(code => {
+              if (farmerCode && code !== farmerCode) return;
               const e = entries[code];
               if (!stats[code]) {
                 stats[code] = {
@@ -293,15 +299,16 @@ const Reports: React.FC = () => {
         }
       });
 
-      // Process Deductions
+      // Process Deductions (date range, optional farmer code)
       Object.keys(allDeductions).forEach(code => {
+        if (farmerCode && code !== farmerCode) return;
         const entries = allDeductions[code];
         // Skip flat "Gross Collection" entries (grossEntries/{entryId}); only the
         // nested per-farmer deduction buckets feed the payment register.
         if (entries && typeof entries.date === 'string') return;
         Object.keys(entries).forEach(id => {
           const d = entries[id];
-          if (d.date.startsWith(month)) {
+          if (d.date >= fromDate && d.date <= toDate) {
             if (!stats[code]) {
               stats[code] = {
                 code,
@@ -320,8 +327,9 @@ const Reports: React.FC = () => {
       // Include farmers who carry a prior-month balance but had no activity
       // this month, so their debt/credit still shows on the register.
       Object.keys(balances).forEach(code => {
+        if (farmerCode && code !== farmerCode) return;
         const bal = balances[code];
-        if (bal && bal.forMonth === bfMonth && bal.balance && !stats[code]) {
+        if (bfMonth && bal && bal.forMonth === bfMonth && bal.balance && !stats[code]) {
           stats[code] = {
             code,
             name: (farmers[code]?.farmerName || farmers[code]?.name) || 'Unknown',
@@ -346,7 +354,7 @@ const Reports: React.FC = () => {
 
       setReportData(rows);
       setReportTitle('Payment Register');
-      setPeriod(month);
+      setPeriod(`${fromDate} to ${toDate}`);
       setGrandTotal({
         qty: totalQty,
         gross: totalGross,
@@ -463,7 +471,7 @@ const Reports: React.FC = () => {
                       </div>
                     </div>
                   </>
-                ) : activeReport !== 'payment' ? (
+                ) : (
                   <>
                     <div style={{ marginBottom: '16px' }}>
                       <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>From Date</label>
@@ -473,18 +481,13 @@ const Reports: React.FC = () => {
                       <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>To Date</label>
                       <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} className="input-3d" style={{ padding: '10px 14px', fontSize: '14px' }} />
                     </div>
-                    {(activeReport === 'farmer' || activeReport === 'farmer-periodical') && (
+                    {(activeReport === 'farmer' || activeReport === 'farmer-periodical' || activeReport === 'payment') && (
                       <div style={{ marginBottom: '16px' }}>
                         <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Farmer Code {activeReport === 'farmer-periodical' ? '(Required)' : '(Optional)'}</label>
                         <input type="text" value={farmerCode} onChange={(e) => setFarmerCode(e.target.value)} className="input-3d" style={{ padding: '10px 14px', fontSize: '14px' }} placeholder={activeReport === 'farmer-periodical' ? "e.g. F001" : "All Farmers"} />
                       </div>
                     )}
                   </>
-                ) : (
-                  <div style={{ marginBottom: '16px' }}>
-                    <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>Select Month</label>
-                    <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="input-3d" style={{ padding: '10px 14px', fontSize: '14px' }} />
-                  </div>
                 )}
 
                 <button 

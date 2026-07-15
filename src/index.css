@@ -244,6 +244,18 @@ select:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 4px 
   body * { visibility: hidden !important; }
   #report-sheet, #report-sheet * { visibility: visible !important; }
   #report-sheet { position: absolute !important; left: 0; top: 0; width: 100%; margin: 0; padding: 16px; box-shadow: none; background: #fff; color: #000; }
+
+  /* Keep table/row dividers visible on paper (light #ddd borders otherwise
+     print nearly invisible). Force solid black, collapsed borders. */
+  #report-sheet table { border-collapse: collapse !important; }
+  #report-sheet table,
+  #report-sheet th,
+  #report-sheet td {
+    border: 1px solid #000 !important;
+  }
+  #report-sheet tr {
+    border-bottom: 1px solid #000 !important;
+  }
 }
 
 /* Mobile / responsive (functional layout rules preserved from previous theme) */
