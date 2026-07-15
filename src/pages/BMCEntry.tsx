@@ -61,23 +61,22 @@ const BMCEntry: React.FC = () => {
     return isNaN(n) ? 0 : n;
   };
 
-  // Same rate-chart resolution as MilkCollection: prefer the live "current"
-  // config, otherwise fall back to the dated history entry.
+  // Same date-aware rate-chart resolution as MilkCollection: pick the chart
+  // effective on the entry's date from the versioned history, so a back-dated
+  // entry uses the era-appropriate rate. Falls back to /current if no history.
   const getConfigForDate = async (collectionDate: string) => {
-    const currentSnap = await get(ref(database, 'globalRateConfig/current'));
-    if (currentSnap.exists()) {
-      return currentSnap.val();
-    }
-
     const historySnap = await get(ref(database, 'globalRateConfig/history'));
-    if (!historySnap.exists()) return null;
-
-    const configs = Object.values(historySnap.val()) as any[];
-    configs.sort((a: any, b: any) =>
-      new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime()
-    );
-    return configs.find((c: any) => c.effectiveFrom <= collectionDate)
-      || configs[configs.length - 1];
+    if (historySnap.exists()) {
+      const configs = (Object.values(historySnap.val()) as any[])
+        .filter((c: any) => c && c.effectiveFrom)
+        .sort((a: any, b: any) => String(a.effectiveFrom).localeCompare(String(b.effectiveFrom)));
+      if (configs.length > 0) {
+        const valid = [...configs].reverse().find((c: any) => c.effectiveFrom <= collectionDate);
+        return valid || configs[0];
+      }
+    }
+    const currentSnap = await get(ref(database, 'globalRateConfig/current'));
+    return currentSnap.exists() ? currentSnap.val() : null;
   };
 
   useEffect(() => {

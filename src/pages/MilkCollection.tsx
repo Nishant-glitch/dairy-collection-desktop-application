@@ -100,21 +100,24 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     }
   }, [qty, fat, snfClr, activeRateConfig]);
 
+  // Pick the rate chart that was effective on the ENTRY's date (not today's).
+  // This protects back-dated entries: e.g. a 10-Jun entry always uses the chart
+  // effective on 10 Jun, never a chart published later. Uses the versioned
+  // globalRateConfig/history; falls back to /current only if no history exists.
   const getConfigForDate = async (collectionDate: string) => {
-    const currentSnap = await get(ref(database, 'globalRateConfig/current'));
-    if (currentSnap.exists()) {
-      return currentSnap.val();
-    }
-
     const historySnap = await get(ref(database, 'globalRateConfig/history'));
-    if (!historySnap.exists()) return null;
-
-    const configs = Object.values(historySnap.val()) as any[];
-    configs.sort((a: any, b: any) =>
-      new Date(b.effectiveFrom).getTime() - new Date(a.effectiveFrom).getTime()
-    );
-    return configs.find((c: any) => c.effectiveFrom <= collectionDate)
-      || configs[configs.length - 1];
+    if (historySnap.exists()) {
+      const configs = (Object.values(historySnap.val()) as any[])
+        .filter((c: any) => c && c.effectiveFrom)
+        .sort((a: any, b: any) => String(a.effectiveFrom).localeCompare(String(b.effectiveFrom)));
+      if (configs.length > 0) {
+        // Latest chart whose effectiveFrom is on/before the entry date.
+        const valid = [...configs].reverse().find((c: any) => c.effectiveFrom <= collectionDate);
+        return valid || configs[0]; // date before all charts -> earliest chart
+      }
+    }
+    const currentSnap = await get(ref(database, 'globalRateConfig/current'));
+    return currentSnap.exists() ? currentSnap.val() : null;
   };
 
   const loadDCSInfo = async () => {
