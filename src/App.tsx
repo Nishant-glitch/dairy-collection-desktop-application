@@ -20,6 +20,7 @@ import Subscribe from './pages/Subscribe';
 import AdminSubscriptions from './pages/AdminSubscriptions';
 import { hasAccess } from './utils/subscription';
 import { Milk } from 'lucide-react';
+import { Analytics } from '@vercel/analytics/react';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -66,6 +67,7 @@ function App() {
     return (
       <LanguageProvider>
         <Login onLogin={() => setIsAuthenticated(true)} />
+        <Analytics />
       </LanguageProvider>
     );
   }
@@ -78,6 +80,7 @@ function App() {
     return (
       <LanguageProvider>
         <Subscribe />
+        <Analytics />
       </LanguageProvider>
     );
   }
@@ -135,6 +138,7 @@ function App() {
           </main>
         </div>
       </div>
+      <Analytics />
     </LanguageProvider>
   );
 }
