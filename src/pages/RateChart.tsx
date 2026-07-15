@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ref, get, set, push } from 'firebase/database';
+import { ref, get, set, push, remove } from 'firebase/database';
 import { database } from '../firebase/config';
 import { isAdmin } from '../utils/userDb';
-import { FileSpreadsheet, History, X, Table as TableIcon, ShieldCheck, Upload } from 'lucide-react';
+import { FileSpreadsheet, History, X, Table as TableIcon, ShieldCheck, Upload, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 export const getRateFromMap = (fat: number, snf: number, config: any): number => {
@@ -62,15 +62,27 @@ const RateChart: React.FC = () => {
     return null;
   };
 
-  // Fetch all versioned charts, newest (latest effectiveFrom) first.
+  // Fetch all versioned charts, newest (latest effectiveFrom) first. Keep each
+  // entry's Firebase key (_key) so an individual version can be deleted.
   const fetchHistory = async (): Promise<any[]> => {
     const snap = await get(ref(database, 'globalRateConfig/history'));
     const list = snap.exists()
-      ? (Object.values(snap.val()) as any[]).sort((a: any, b: any) =>
-          String(b.effectiveFrom).localeCompare(String(a.effectiveFrom)))
+      ? Object.entries(snap.val() as Record<string, any>)
+          .map(([_key, v]) => ({ _key, ...v }))
+          .sort((a: any, b: any) => String(b.effectiveFrom).localeCompare(String(a.effectiveFrom)))
       : [];
     setHistory(list);
     return list;
+  };
+
+  // Delete a single past rate-chart version (admin only). The active chart is
+  // never deletable (guarded in the UI too). Data lives in globalRateConfig/
+  // history, so we remove that key and refresh the list live.
+  const handleDeleteChart = async (chartKey: string) => {
+    if (!chartKey) return;
+    if (!confirm('Kya aap sure hain? Ye rate chart permanently delete ho jaayega.')) return;
+    await remove(ref(database, `globalRateConfig/history/${chartKey}`));
+    await fetchHistory();
   };
 
   const loadHistory = async () => {
@@ -330,9 +342,21 @@ const RateChart: React.FC = () => {
                       {cfg.importedAt ? ` · Imported ${new Date(cfg.importedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}` : ''}
                     </div>
                   </div>
-                  <button onClick={() => setViewingConfig(cfg)} className="btn-secondary" style={{ padding: '7px 14px', fontSize: 13 }}>
-                    View
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <button onClick={() => setViewingConfig(cfg)} className="btn-secondary" style={{ padding: '7px 14px', fontSize: 13 }}>
+                      View
+                    </button>
+                    {!isActive && (
+                      <button
+                        onClick={() => handleDeleteChart(cfg._key)}
+                        className="btn-danger"
+                        style={{ padding: '6px 10px' }}
+                        title="Delete this rate chart version"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
