@@ -300,8 +300,8 @@ const RateChart: React.FC = () => {
         </div>
       )}
 
-      {/* Rate Chart History (versioned — active + previous) */}
-      {history.length > 0 && (
+      {/* Rate Chart History (versioned — active + previous). Admin only. */}
+      {userIsAdmin && history.length > 0 && (
         <div style={{ marginTop: 32, width: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--ink-2)', fontWeight: 800, fontSize: 14, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>
             <History size={18} />
