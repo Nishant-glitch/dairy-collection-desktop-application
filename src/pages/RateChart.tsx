@@ -75,12 +75,33 @@ const RateChart: React.FC = () => {
     return list;
   };
 
-  // Delete a single past rate-chart version (admin only). The active chart is
-  // never deletable (guarded in the UI too). Data lives in globalRateConfig/
-  // history, so we remove that key and refresh the list live.
-  const handleDeleteChart = async (chartKey: string) => {
+  // Delete a rate-chart version (admin only). Charts live in globalRateConfig/
+  // history/{key}; the active one is mirrored at globalRateConfig/current.
+  // Deleting the ACTIVE chart cascades: the most recent remaining chart (latest
+  // effectiveFrom) is promoted to active. The single/only chart cannot be
+  // deleted (there must always be an active chart).
+  const handleDeleteChart = async (chartKey: string, isActive: boolean) => {
     if (!chartKey) return;
-    if (!confirm('Kya aap sure hain? Ye rate chart permanently delete ho jaayega.')) return;
+
+    const remaining = history.filter(c => c._key !== chartKey);
+
+    if (isActive) {
+      if (remaining.length === 0) {
+        alert('Ye eklauta rate chart hai — ise delete nahi kar sakte. Pehle naya rate chart add karein.');
+        return;
+      }
+      if (!confirm('Ye ACTIVE rate chart hai. Delete karne par pichla rate chart automatically active ho jaayega. Continue?')) return;
+
+      // Promote the most recent remaining chart to active.
+      const newActive = [...remaining].sort((a, b) =>
+        String(b.effectiveFrom).localeCompare(String(a.effectiveFrom)))[0];
+      const { _key, ...activeData } = newActive; // strip local-only key
+      await set(ref(database, 'globalRateConfig/current'), activeData);
+      setCurrentConfig(activeData);
+    } else {
+      if (!confirm('Kya aap is rate chart ko delete karna chahte hain?')) return;
+    }
+
     await remove(ref(database, `globalRateConfig/history/${chartKey}`));
     await fetchHistory();
   };
@@ -108,8 +129,10 @@ const RateChart: React.FC = () => {
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: 'array' });
           const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          // defval '' (not 0) keeps merged/blank cells empty so title/info rows
+          // don't masquerade as numeric SNF header cells.
           json = XLSX.utils.sheet_to_json(sheet, {
-            header: 1, defval: 0, raw: false,
+            header: 1, defval: '', raw: false,
           }) as any[][];
         }
 
@@ -118,29 +141,72 @@ const RateChart: React.FC = () => {
           return;
         }
 
-        // Parse SNF from first row (skip col 0)
-        const snfValues: number[] = [];
-        for (let i = 1; i < json[0].length; i++) {
-          const v = parseFloat(String(json[0][i]));
-          if (!isNaN(v)) snfValues.push(v);
+        // Detect the real header row instead of assuming it is row 0. Files may
+        // carry title/info rows (often merged cells) above the actual
+        // "FAT \ SNF" header. The header row is the first row whose first cell
+        // is NOT a number (a label) but which is followed by a run of numeric
+        // SNF values. Title/info rows fail this because their trailing cells are
+        // blank (merged) or text.
+        const isNum = (x: any) => {
+          const s = String(x ?? '').trim();
+          return s !== '' && !isNaN(parseFloat(s));
+        };
+        const trailingNumCount = (row: any[] = []) => {
+          let c = 0;
+          for (let i = 1; i < row.length; i++) if (isNum(row[i])) c++;
+          return c;
+        };
+
+        let headerIdx = -1;
+        for (let r = 0; r < json.length; r++) {
+          const row = json[r] || [];
+          if (!isNum(row[0]) && trailingNumCount(row) >= 2) { headerIdx = r; break; }
+        }
+        // Fallback: no label cell found — use the first row that has a numeric
+        // trailing sequence (header without a "FAT \ SNF" label).
+        if (headerIdx === -1) {
+          for (let r = 0; r < json.length; r++) {
+            if (trailingNumCount(json[r]) >= 2) { headerIdx = r; break; }
+          }
         }
 
-        // Parse FAT rows
+        console.log('[RateChart] detected header row index:', headerIdx, json[headerIdx]);
+
+        if (headerIdx === -1) {
+          alert('Could not find a valid SNF header row in the file!');
+          return;
+        }
+
+        // SNF values with their column positions, so gaps in the header don't
+        // misalign the FAT/SNF lookup.
+        const headerRow = json[headerIdx];
+        const snfCols: { snf: number; col: number }[] = [];
+        for (let c = 1; c < headerRow.length; c++) {
+          const v = parseFloat(String(headerRow[c]).trim());
+          if (!isNaN(v)) snfCols.push({ snf: v, col: c });
+        }
+        const snfValues: number[] = snfCols.map(s => s.snf);
+
+        // Parse FAT rows (everything after the header row).
         const fatValues: number[] = [];
         const rateMap: any = {};
 
-        for (let i = 1; i < json.length; i++) {
-          const fat = parseFloat(String(json[i][0]));
+        for (let i = headerIdx + 1; i < json.length; i++) {
+          const fat = parseFloat(String(json[i][0]).trim());
           if (isNaN(fat)) continue;
           fatValues.push(fat);
           const fatKey = fat.toFixed(1).replace('.', '_');
           rateMap[fatKey] = {};
-          snfValues.forEach((snf, idx) => {
-            const rate = parseFloat(String(json[i][idx + 1]));
+          for (const { snf, col } of snfCols) {
+            const rate = parseFloat(String(json[i][col]).trim());
             const snfKey = snf.toFixed(1).replace('.', '_');
             rateMap[fatKey][snfKey] = isNaN(rate) ? 0 : rate;
-          });
+          }
         }
+
+        console.log('[RateChart] parsed SNF values:', snfValues);
+        console.log('[RateChart] parsed FAT values:', fatValues);
+        console.log('[RateChart] sample rateMap["3_0"]:', rateMap['3_0']);
 
         if (fatValues.length === 0 || snfValues.length === 0) {
           alert('Could not parse FAT or SNF values!');
@@ -346,16 +412,21 @@ const RateChart: React.FC = () => {
                     <button onClick={() => setViewingConfig(cfg)} className="btn-secondary" style={{ padding: '7px 14px', fontSize: 13 }}>
                       View
                     </button>
-                    {!isActive && (
-                      <button
-                        onClick={() => handleDeleteChart(cfg._key)}
-                        className="btn-danger"
-                        style={{ padding: '6px 10px' }}
-                        title="Delete this rate chart version"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
+                    <button
+                      onClick={() => handleDeleteChart(cfg._key, isActive)}
+                      disabled={history.length <= 1}
+                      className="btn-danger"
+                      style={{
+                        padding: '6px 10px',
+                        opacity: history.length <= 1 ? 0.4 : 1,
+                        cursor: history.length <= 1 ? 'not-allowed' : 'pointer',
+                      }}
+                      title={history.length <= 1
+                        ? 'Eklauta chart delete nahi kar sakte'
+                        : (isActive ? 'Delete active chart (pichla chart auto-active hoga)' : 'Delete this rate chart version')}
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
                 </div>
               );
