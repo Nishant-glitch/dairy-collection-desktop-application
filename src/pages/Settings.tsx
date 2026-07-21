@@ -21,10 +21,36 @@ const Settings: React.FC = () => {
   const [restoring, setRestoring] = useState(false);
   const [restoreConfirmText, setRestoreConfirmText] = useState('');
   const restoreFileRef = useRef<HTMLInputElement>(null);
+  const [societies, setSocieties] = useState<{ uid: string; label: string }[]>([]);
+  const [selectedUid, setSelectedUid] = useState('');
 
   useEffect(() => {
     loadSettings();
+    if (isAdmin()) loadSocieties();
   }, []);
+
+  // Admin has read access to the whole users node — list every society so the
+  // admin can back up / export any of them.
+  const loadSocieties = async () => {
+    try {
+      const snap = await get(ref(database, 'users'));
+      if (!snap.exists()) return;
+      const users = snap.val();
+      const list = Object.keys(users).map((uid) => {
+        const u = users[uid] || {};
+        const name = u.dcsInfo?.name || u.name || u.farmerName || 'Unknown Society';
+        const code = u.dcsInfo?.code ? ` (${u.dcsInfo.code})` : '';
+        const mobile = u.mobileNumber ? ` · ${u.mobileNumber}` : '';
+        return { uid, label: `${name}${code}${mobile}` };
+      }).sort((a, b) => a.label.localeCompare(b.label));
+      setSocieties(list);
+      // Default selection: the admin's own society if present, else the first.
+      const myUid = getUid();
+      setSelectedUid(list.some((s) => s.uid === myUid) ? myUid : (list[0]?.uid || ''));
+    } catch (e) {
+      console.error('Failed to load societies:', e);
+    }
+  };
 
   const loadSettings = async () => {
     try {
@@ -99,14 +125,15 @@ const Settings: React.FC = () => {
 
   const today = () => new Date().toISOString().split('T')[0];
 
-  // Fetch the whole users/{uid} node and wrap it with metadata.
-  const buildBackup = async () => {
-    const uid = getUid();
+  // Fetch the whole users/{uid} node and wrap it with metadata. societyUid is
+  // embedded so a restore can verify the file belongs to the importing user.
+  const buildBackup = async (uid: string) => {
     const data = (await get(ref(database, `users/${uid}`))).val();
     return {
       version: '1.0',
       exportedAt: new Date().toISOString(),
       societyCode: data?.dcsInfo?.code || 'unknown',
+      societyUid: uid,
       data: data || {},
     };
   };
@@ -120,14 +147,15 @@ const Settings: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Part 1 — Full JSON backup download.
+  // Part 1 — Full JSON backup download (admin picks the society via selectedUid).
   const downloadBackup = async () => {
+    if (!selectedUid) { alert('Pehle society select karein.'); return; }
     setBackingUp(true);
     try {
-      const backup = await buildBackup();
+      const backup = await buildBackup(selectedUid);
       const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
       triggerDownload(blob, `DCS_Backup_${backup.societyCode}_${today()}.json`);
-      alert('✅ Full backup download ho gaya. Isse safe rakhein.');
+      alert('✅ Full backup download ho gaya. Isse safe rakhein / society owner ko dein.');
     } catch (err: any) {
       alert('❌ Backup failed: ' + err.message);
     } finally {
@@ -135,11 +163,12 @@ const Settings: React.FC = () => {
     }
   };
 
-  // Part 2 — Multi-sheet Excel export (readable reports).
+  // Part 2 — Multi-sheet Excel export (readable reports) for the selected society.
   const exportExcel = async () => {
+    if (!selectedUid) { alert('Pehle society select karein.'); return; }
     setExportingExcel(true);
     try {
-      const uid = getUid();
+      const uid = selectedUid;
       const data = (await get(ref(database, `users/${uid}`))).val() || {};
       const wb = XLSX.utils.book_new();
 
@@ -286,15 +315,26 @@ const Settings: React.FC = () => {
         return;
       }
 
+      const myUid = getUid();
+
+      // Ownership check — does this backup belong to the importing user?
+      if (backup.societyUid && backup.societyUid !== myUid) {
+        const proceed = window.confirm(
+          '⚠️ Ye backup file kisi aur society ki lag rahi hai. Phir bhi restore karein?\n\n' +
+          '(Isse aapka current data us backup se replace ho jaayega)'
+        );
+        if (!proceed) return;
+      }
+
       const confirmed = window.confirm(
         '⚠️ Ye aapka current data REPLACE kar dega. Ye action wapas nahi ho sakta.\n\n' +
         'Restore se pehle current data ka backup auto-download hoga.\n\nContinue?'
       );
       if (!confirmed) return;
 
-      // Safety: auto-download current data before overwriting it.
+      // Safety: auto-download the CURRENT user's data before overwriting it.
       try {
-        const safety = await buildBackup();
+        const safety = await buildBackup(myUid);
         const blob = new Blob([JSON.stringify(safety, null, 2)], { type: 'application/json' });
         triggerDownload(blob, `DCS_Backup_BEFORE_RESTORE_${safety.societyCode}_${today()}.json`);
       } catch {
@@ -302,7 +342,7 @@ const Settings: React.FC = () => {
         if (!window.confirm('Safety backup nahi ban paaya. Phir bhi restore continue karein?')) return;
       }
 
-      await set(ref(database, `users/${getUid()}`), backup.data);
+      await set(ref(database, `users/${myUid}`), backup.data);
       alert('✅ Data restore ho gaya. Page reload ho raha hai.');
       window.location.reload();
     } catch (err: any) {
@@ -534,23 +574,38 @@ const Settings: React.FC = () => {
         </button>
       </div>
 
-      {/* Backup & Data — Admin only */}
+      {/* Backup & Export — Admin only (any society via selector; no restore) */}
       {isAdmin() && (
         <div className="glass-card" style={{ padding: 24, marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
             <Database style={{ color: 'var(--brand)', width: 22, height: 22 }} />
-            <h2 style={{ color: 'var(--ink)', fontSize: 18, fontWeight: 700 }}>Backup &amp; Data</h2>
+            <h2 style={{ color: 'var(--ink)', fontSize: 18, fontWeight: 700 }}>Backup &amp; Data (Admin)</h2>
           </div>
           <p style={{ color: 'var(--ink-2)', fontSize: 13, marginBottom: 20 }}>
-            Poora society data (farmers, collection, payments, rates) backup aur export karein.
+            Kisi bhi society ka poora data backup (JSON) ya export (Excel) karein. Backup file society owner ko dein — wo apni ID se login karke Restore kar sakta hai.
           </p>
 
+          {/* Society selector */}
+          <div style={{ marginBottom: 20 }}>
+            <label className="label-text" style={{ fontSize: 11 }}>SELECT SOCIETY</label>
+            <select
+              value={selectedUid}
+              onChange={(e) => setSelectedUid(e.target.value)}
+              className="input-field"
+            >
+              {societies.length === 0 && <option value="">Loading societies…</option>}
+              {societies.map((s) => (
+                <option key={s.uid} value={s.uid}>{s.label}</option>
+              ))}
+            </select>
+          </div>
+
           {/* JSON backup + Excel export */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
             <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: 16 }}>
               <button
                 onClick={downloadBackup}
-                disabled={backingUp}
+                disabled={backingUp || !selectedUid}
                 className="btn-primary"
                 style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 8, width: '100%', justifyContent: 'center' }}
               >
@@ -558,14 +613,14 @@ const Settings: React.FC = () => {
                 {backingUp ? 'Preparing...' : 'Download Full Backup'}
               </button>
               <p style={{ color: 'var(--ink-2)', fontSize: 12, marginTop: 10 }}>
-                Poora data (farmers, collection, payments, rates) ek JSON file mein download hoga. Isse safe rakhein.
+                Selected society ka poora data ek JSON file mein download hoga. Isse safe rakhein.
               </p>
             </div>
 
             <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: 16 }}>
               <button
                 onClick={exportExcel}
-                disabled={exportingExcel}
+                disabled={exportingExcel || !selectedUid}
                 className="btn-secondary"
                 style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 8, width: '100%', justifyContent: 'center' }}
               >
@@ -577,15 +632,19 @@ const Settings: React.FC = () => {
               </p>
             </div>
           </div>
+        </div>
+      )}
 
-          {/* Danger Zone — Restore */}
-          <div style={{ border: '1.5px solid rgba(239,68,68,0.5)', background: 'rgba(239,68,68,0.05)', borderRadius: 12, padding: 18, marginTop: 20 }}>
+      {/* Restore Data — Normal user only (writes to own users/{uid}) */}
+      {!isAdmin() && (
+        <div className="glass-card" style={{ padding: 24, marginBottom: 20 }}>
+          <div style={{ border: '1.5px solid rgba(239,68,68,0.5)', background: 'rgba(239,68,68,0.05)', borderRadius: 12, padding: 18 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
               <AlertTriangle style={{ color: '#ef4444', width: 20, height: 20 }} />
-              <h3 style={{ color: '#ef4444', fontSize: 15, fontWeight: 800 }}>⚠️ Danger Zone — Restore</h3>
+              <h3 style={{ color: '#ef4444', fontSize: 15, fontWeight: 800 }}>⚠️ Restore Data (Danger Zone)</h3>
             </div>
             <p style={{ color: 'var(--ink-2)', fontSize: 13, marginBottom: 14 }}>
-              Backup file se data wapas laayein. <strong style={{ color: '#ef4444' }}>Current data poora replace ho jaayega</strong> aur ye action wapas nahi ho sakta. Restore se pehle current data ka backup auto-download hoga.
+              Admin se mili backup (.json) file yahan restore karein. <strong style={{ color: '#ef4444' }}>Aapka current data poora replace ho jaayega</strong> aur ye action wapas nahi ho sakta. Restore se pehle current data ka backup auto-download hoga.
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
               <div style={{ flex: '1 1 220px' }}>
