@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ref, get, set } from 'firebase/database';
 import { database } from '../firebase/config';
-import { up, isAdmin } from '../utils/userDb';
-import { MessageSquare, Save, RefreshCw, Bell, Shield, Send } from 'lucide-react';
+import { up, isAdmin, getUid } from '../utils/userDb';
+import { MessageSquare, Save, RefreshCw, Shield, Send, Download, FileSpreadsheet, RotateCcw, AlertTriangle, Database } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import axios from 'axios';
 
 const Settings: React.FC = () => {
@@ -15,6 +16,11 @@ const Settings: React.FC = () => {
   const [dateFormat, setDateFormat] = useState('DD/MM/YYYY');
   const [bmcBill, setBmcBill] = useState({ unionName: '', route: '', salesSthan: '', headLoadRate: '', nextBillNo: 1 });
   const [savingBill, setSavingBill] = useState(false);
+  const [backingUp, setBackingUp] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [restoreConfirmText, setRestoreConfirmText] = useState('');
+  const restoreFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadSettings();
@@ -86,6 +92,225 @@ const Settings: React.FC = () => {
       alert('✅ Preferences saved!');
     } catch (err) {
       alert('❌ Failed to save preferences');
+    }
+  };
+
+  // ---- Backup & Data (admin only) ----------------------------------------
+
+  const today = () => new Date().toISOString().split('T')[0];
+
+  // Fetch the whole users/{uid} node and wrap it with metadata.
+  const buildBackup = async () => {
+    const uid = getUid();
+    const data = (await get(ref(database, `users/${uid}`))).val();
+    return {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      societyCode: data?.dcsInfo?.code || 'unknown',
+      data: data || {},
+    };
+  };
+
+  const triggerDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Part 1 — Full JSON backup download.
+  const downloadBackup = async () => {
+    setBackingUp(true);
+    try {
+      const backup = await buildBackup();
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+      triggerDownload(blob, `DCS_Backup_${backup.societyCode}_${today()}.json`);
+      alert('✅ Full backup download ho gaya. Isse safe rakhein.');
+    } catch (err: any) {
+      alert('❌ Backup failed: ' + err.message);
+    } finally {
+      setBackingUp(false);
+    }
+  };
+
+  // Part 2 — Multi-sheet Excel export (readable reports).
+  const exportExcel = async () => {
+    setExportingExcel(true);
+    try {
+      const uid = getUid();
+      const data = (await get(ref(database, `users/${uid}`))).val() || {};
+      const wb = XLSX.utils.book_new();
+
+      // Sheet 1 — Farmers
+      const farmers = Object.values<any>(data.farmers || {}).map((f) => ({
+        Code: f.farmerCode || '',
+        Name: f.farmerName || '',
+        Mobile: f.mobileNo || '',
+        Address: f.address || '',
+        Aadhar: f.aadharNo || '',
+        'Bank Name': f.bankName || '',
+        'Account No': f.bankAC || '',
+        IFSC: f.ifscCode || '',
+        UPI: f.upiId || '',
+      }));
+      XLSX.utils.book_append_sheet(
+        wb,
+        XLSX.utils.json_to_sheet(farmers.length ? farmers : [{ Code: 'No data' }]),
+        'Farmers'
+      );
+
+      // Sheet 2 — Milk Collection (milkCollection/{date}/{shift}/{code})
+      const milkRows: any[] = [];
+      const mc = data.milkCollection || {};
+      Object.keys(mc).forEach((date) => {
+        Object.keys(mc[date] || {}).forEach((shift) => {
+          Object.keys(mc[date][shift] || {}).forEach((code) => {
+            const e = mc[date][shift][code] || {};
+            milkRows.push({
+              Date: date,
+              Shift: shift,
+              'Farmer Code': code,
+              'Farmer Name': e.farmerName || '',
+              Qty: Number(e.qty) || 0,
+              FAT: Number(e.fat) || 0,
+              SNF: e.snf ?? '',
+              CLR: e.clr ?? '',
+              Rate: Number(e.rate) || 0,
+              Amount: Number(e.amount) || 0,
+            });
+          });
+        });
+      });
+      milkRows.sort((a, b) => String(a.Date).localeCompare(String(b.Date)) || String(a.Shift).localeCompare(String(b.Shift)));
+      XLSX.utils.book_append_sheet(
+        wb,
+        XLSX.utils.json_to_sheet(milkRows.length ? milkRows : [{ Date: 'No data' }]),
+        'Milk Collection'
+      );
+
+      // Sheet 3 — Gross / Deductions (grossEntries/{code}/{entryId} nested,
+      // plus legacy flat grossEntries/{entryId}).
+      const grossRows: any[] = [];
+      const ge = data.grossEntries || {};
+      Object.keys(ge).forEach((key) => {
+        const bucket = ge[key];
+        if (!bucket || typeof bucket !== 'object') return;
+        if (typeof bucket.date === 'string') {
+          // Flat entry keyed directly by entryId.
+          grossRows.push({
+            Date: bucket.date,
+            'Farmer Code': bucket.farmerCode || key,
+            Item: bucket.item || '',
+            Category: bucket.category || '',
+            Pcs: Number(bucket.pcs) || 0,
+            Rate: Number(bucket.rate) || 0,
+            Amount: Number(bucket.amount) || 0,
+          });
+        } else {
+          // Nested bucket: key is the farmer code.
+          Object.values<any>(bucket).forEach((entry) => {
+            if (!entry || typeof entry !== 'object') return;
+            grossRows.push({
+              Date: entry.date || '',
+              'Farmer Code': key,
+              Item: entry.item || '',
+              Category: entry.category || '',
+              Pcs: Number(entry.pcs) || 0,
+              Rate: Number(entry.rate) || 0,
+              Amount: Number(entry.amount) || 0,
+            });
+          });
+        }
+      });
+      grossRows.sort((a, b) => String(a.Date).localeCompare(String(b.Date)));
+      XLSX.utils.book_append_sheet(
+        wb,
+        XLSX.utils.json_to_sheet(grossRows.length ? grossRows : [{ Date: 'No data' }]),
+        'Gross Deductions'
+      );
+
+      // Sheet 4 — BMC Entries
+      const bmcRows = Object.values<any>(data.bmcEntries || {}).map((e) => ({
+        Date: e.date || '',
+        Shift: e.shift || '',
+        BMC: e.bmcName || '',
+        'Milk Type': e.milkType || '',
+        'Qty (Kg)': Number(e.quantityKg) || 0,
+        FAT: Number(e.fat) || 0,
+        SNF: Number(e.snf) || 0,
+        Rate: Number(e.rate) || 0,
+        Amount: Number(e.amount) || 0,
+      }));
+      bmcRows.sort((a, b) => String(a.Date).localeCompare(String(b.Date)));
+      XLSX.utils.book_append_sheet(
+        wb,
+        XLSX.utils.json_to_sheet(bmcRows.length ? bmcRows : [{ Date: 'No data' }]),
+        'BMC Entries'
+      );
+
+      const code = data?.dcsInfo?.code || 'society';
+      XLSX.writeFile(wb, `DCS_Export_${code}_${today()}.xlsx`);
+      alert('✅ Excel export ho gaya.');
+    } catch (err: any) {
+      alert('❌ Excel export failed: ' + err.message);
+    } finally {
+      setExportingExcel(false);
+    }
+  };
+
+  // Part 3 — Restore from a JSON backup (DANGER: replaces all current data).
+  const handleRestoreFile = async (file: File | null) => {
+    if (!file) return;
+    if (restoreConfirmText.trim().toUpperCase() !== 'RESTORE') {
+      alert('Restore karne ke liye pehle "RESTORE" type karein.');
+      if (restoreFileRef.current) restoreFileRef.current.value = '';
+      return;
+    }
+
+    setRestoring(true);
+    try {
+      const text = await file.text();
+      let backup: any;
+      try {
+        backup = JSON.parse(text);
+      } catch {
+        alert('❌ File corrupt hai ya valid JSON nahi hai.');
+        return;
+      }
+
+      // Validate it's a real DCS backup.
+      if (!backup || !backup.version || !backup.data || typeof backup.data !== 'object') {
+        alert('❌ Ye valid DCS backup file nahi hai (version/data missing).');
+        return;
+      }
+
+      const confirmed = window.confirm(
+        '⚠️ Ye aapka current data REPLACE kar dega. Ye action wapas nahi ho sakta.\n\n' +
+        'Restore se pehle current data ka backup auto-download hoga.\n\nContinue?'
+      );
+      if (!confirmed) return;
+
+      // Safety: auto-download current data before overwriting it.
+      try {
+        const safety = await buildBackup();
+        const blob = new Blob([JSON.stringify(safety, null, 2)], { type: 'application/json' });
+        triggerDownload(blob, `DCS_Backup_BEFORE_RESTORE_${safety.societyCode}_${today()}.json`);
+      } catch {
+        // Even if the safety backup fails to build, warn but let the user decide.
+        if (!window.confirm('Safety backup nahi ban paaya. Phir bhi restore continue karein?')) return;
+      }
+
+      await set(ref(database, `users/${getUid()}`), backup.data);
+      alert('✅ Data restore ho gaya. Page reload ho raha hai.');
+      window.location.reload();
+    } catch (err: any) {
+      alert('❌ Restore failed: ' + err.message);
+    } finally {
+      setRestoring(false);
+      setRestoreConfirmText('');
+      if (restoreFileRef.current) restoreFileRef.current.value = '';
     }
   };
 
@@ -308,6 +533,99 @@ const Settings: React.FC = () => {
           {savingBill ? 'Saving...' : 'Save BMC Bill Settings'}
         </button>
       </div>
+
+      {/* Backup & Data — Admin only */}
+      {isAdmin() && (
+        <div className="glass-card" style={{ padding: 24, marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+            <Database style={{ color: 'var(--brand)', width: 22, height: 22 }} />
+            <h2 style={{ color: 'var(--ink)', fontSize: 18, fontWeight: 700 }}>Backup &amp; Data</h2>
+          </div>
+          <p style={{ color: 'var(--ink-2)', fontSize: 13, marginBottom: 20 }}>
+            Poora society data (farmers, collection, payments, rates) backup aur export karein.
+          </p>
+
+          {/* JSON backup + Excel export */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 8 }}>
+            <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: 16 }}>
+              <button
+                onClick={downloadBackup}
+                disabled={backingUp}
+                className="btn-primary"
+                style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 8, width: '100%', justifyContent: 'center' }}
+              >
+                {backingUp ? <RefreshCw style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} /> : <Download style={{ width: 16, height: 16 }} />}
+                {backingUp ? 'Preparing...' : 'Download Full Backup'}
+              </button>
+              <p style={{ color: 'var(--ink-2)', fontSize: 12, marginTop: 10 }}>
+                Poora data (farmers, collection, payments, rates) ek JSON file mein download hoga. Isse safe rakhein.
+              </p>
+            </div>
+
+            <div style={{ border: '1px solid var(--line)', borderRadius: 12, padding: 16 }}>
+              <button
+                onClick={exportExcel}
+                disabled={exportingExcel}
+                className="btn-secondary"
+                style={{ padding: '10px 20px', display: 'flex', alignItems: 'center', gap: 8, width: '100%', justifyContent: 'center' }}
+              >
+                {exportingExcel ? <RefreshCw style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} /> : <FileSpreadsheet style={{ width: 16, height: 16 }} />}
+                {exportingExcel ? 'Exporting...' : 'Export to Excel'}
+              </button>
+              <p style={{ color: 'var(--ink-2)', fontSize: 12, marginTop: 10 }}>
+                Office/accountant ke liye readable multi-sheet Excel (Farmers, Collection, Deductions, BMC).
+              </p>
+            </div>
+          </div>
+
+          {/* Danger Zone — Restore */}
+          <div style={{ border: '1.5px solid rgba(239,68,68,0.5)', background: 'rgba(239,68,68,0.05)', borderRadius: 12, padding: 18, marginTop: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <AlertTriangle style={{ color: '#ef4444', width: 20, height: 20 }} />
+              <h3 style={{ color: '#ef4444', fontSize: 15, fontWeight: 800 }}>⚠️ Danger Zone — Restore</h3>
+            </div>
+            <p style={{ color: 'var(--ink-2)', fontSize: 13, marginBottom: 14 }}>
+              Backup file se data wapas laayein. <strong style={{ color: '#ef4444' }}>Current data poora replace ho jaayega</strong> aur ye action wapas nahi ho sakta. Restore se pehle current data ka backup auto-download hoga.
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
+              <div style={{ flex: '1 1 220px' }}>
+                <label className="label-text" style={{ fontSize: 11 }}>CONFIRM: TYPE "RESTORE"</label>
+                <input
+                  type="text"
+                  value={restoreConfirmText}
+                  onChange={(e) => setRestoreConfirmText(e.target.value)}
+                  placeholder='RESTORE'
+                  className="input-field"
+                  style={{ borderColor: restoreConfirmText.trim().toUpperCase() === 'RESTORE' ? 'rgba(74,222,128,0.6)' : undefined }}
+                />
+              </div>
+              <input
+                ref={restoreFileRef}
+                type="file"
+                accept=".json,application/json"
+                style={{ display: 'none' }}
+                onChange={(e) => handleRestoreFile(e.target.files?.[0] || null)}
+              />
+              <button
+                onClick={() => restoreFileRef.current?.click()}
+                disabled={restoring || restoreConfirmText.trim().toUpperCase() !== 'RESTORE'}
+                style={{
+                  marginTop: 18,
+                  background: restoreConfirmText.trim().toUpperCase() === 'RESTORE' ? 'linear-gradient(135deg,#ef4444,#b91c1c)' : 'rgba(148,163,184,0.3)',
+                  color: '#fff', border: 'none', borderRadius: 10, padding: '11px 22px',
+                  fontWeight: 700, fontSize: 14,
+                  cursor: (restoring || restoreConfirmText.trim().toUpperCase() !== 'RESTORE') ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  opacity: (restoring || restoreConfirmText.trim().toUpperCase() !== 'RESTORE') ? 0.6 : 1,
+                }}
+              >
+                {restoring ? <RefreshCw style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} /> : <RotateCcw style={{ width: 16, height: 16 }} />}
+                {restoring ? 'Restoring...' : 'Restore from Backup'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Account Info — Admin only */}
       {isAdmin() && (
