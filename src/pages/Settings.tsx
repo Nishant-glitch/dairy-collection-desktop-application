@@ -23,6 +23,8 @@ const Settings: React.FC = () => {
   const restoreFileRef = useRef<HTMLInputElement>(null);
   const [societies, setSocieties] = useState<{ uid: string; label: string }[]>([]);
   const [selectedUid, setSelectedUid] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
 
   useEffect(() => {
     loadSettings();
@@ -125,15 +127,78 @@ const Settings: React.FC = () => {
 
   const today = () => new Date().toISOString().split('T')[0];
 
+  // Filename tag: a from_to range when either bound is set, else today's date.
+  const dateTag = (from: string, to: string) =>
+    (from || to) ? `${from || 'start'}_to_${to || 'end'}` : today();
+
+  const inRange = (date: string, from: string, to: string) =>
+    (!from || date >= from) && (!to || date <= to);
+
+  // Narrow only the transactional nodes (milkCollection, grossEntries,
+  // bmcEntries) to the date range. Master/date-independent data — farmers,
+  // dcsInfo, settings, farmerBalances, smsLog — is always kept whole. A blank
+  // range returns the data untouched (full backup).
+  const filterDataByDate = (data: any, from: string, to: string) => {
+    if (!data || (!from && !to)) return data;
+    const out = { ...data };
+
+    // milkCollection/{date}/{shift}/{code} — date is the object key.
+    if (data.milkCollection) {
+      const mc: any = {};
+      Object.keys(data.milkCollection).forEach((date) => {
+        if (inRange(date, from, to)) mc[date] = data.milkCollection[date];
+      });
+      out.milkCollection = mc;
+    }
+
+    // grossEntries: nested {code}/{entryId}={date,..} or flat {entryId}={date,..}.
+    if (data.grossEntries) {
+      const ge: any = {};
+      Object.keys(data.grossEntries).forEach((key) => {
+        const bucket = data.grossEntries[key];
+        if (!bucket || typeof bucket !== 'object') return;
+        if (typeof bucket.date === 'string') {
+          if (inRange(bucket.date, from, to)) ge[key] = bucket; // flat entry
+        } else {
+          const kept: any = {};
+          Object.keys(bucket).forEach((eid) => {
+            const entry = bucket[eid];
+            // Keep entries in range; keep date-less entries to avoid data loss.
+            if (entry && typeof entry === 'object' && (!entry.date || inRange(entry.date, from, to))) {
+              kept[eid] = entry;
+            }
+          });
+          if (Object.keys(kept).length) ge[key] = kept;
+        }
+      });
+      out.grossEntries = ge;
+    }
+
+    // bmcEntries/{id}={date,..}.
+    if (data.bmcEntries) {
+      const be: any = {};
+      Object.keys(data.bmcEntries).forEach((id) => {
+        const entry = data.bmcEntries[id];
+        if (entry && typeof entry === 'object' && inRange(entry.date, from, to)) be[id] = entry;
+      });
+      out.bmcEntries = be;
+    }
+
+    return out;
+  };
+
   // Fetch the whole users/{uid} node and wrap it with metadata. societyUid is
   // embedded so a restore can verify the file belongs to the importing user.
-  const buildBackup = async (uid: string) => {
-    const data = (await get(ref(database, `users/${uid}`))).val();
+  // Optional date range narrows transactional nodes only.
+  const buildBackup = async (uid: string, from = '', to = '') => {
+    const raw = (await get(ref(database, `users/${uid}`))).val();
+    const data = filterDataByDate(raw, from, to);
     return {
       version: '1.0',
       exportedAt: new Date().toISOString(),
-      societyCode: data?.dcsInfo?.code || 'unknown',
+      societyCode: raw?.dcsInfo?.code || 'unknown',
       societyUid: uid,
+      ...(from || to ? { dateRange: { from: from || null, to: to || null } } : {}),
       data: data || {},
     };
   };
@@ -152,9 +217,9 @@ const Settings: React.FC = () => {
     if (!selectedUid) { alert('Pehle society select karein.'); return; }
     setBackingUp(true);
     try {
-      const backup = await buildBackup(selectedUid);
+      const backup = await buildBackup(selectedUid, fromDate, toDate);
       const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-      triggerDownload(blob, `DCS_Backup_${backup.societyCode}_${today()}.json`);
+      triggerDownload(blob, `DCS_Backup_${backup.societyCode}_${dateTag(fromDate, toDate)}.json`);
       alert('✅ Full backup download ho gaya. Isse safe rakhein / society owner ko dein.');
     } catch (err: any) {
       alert('❌ Backup failed: ' + err.message);
@@ -169,7 +234,9 @@ const Settings: React.FC = () => {
     setExportingExcel(true);
     try {
       const uid = selectedUid;
-      const data = (await get(ref(database, `users/${uid}`))).val() || {};
+      const raw = (await get(ref(database, `users/${uid}`))).val() || {};
+      // Same date-range narrowing as the JSON backup (transactional nodes only).
+      const data = filterDataByDate(raw, fromDate, toDate) || {};
       const wb = XLSX.utils.book_new();
 
       // Sheet 1 — Farmers
@@ -279,8 +346,8 @@ const Settings: React.FC = () => {
         'BMC Entries'
       );
 
-      const code = data?.dcsInfo?.code || 'society';
-      XLSX.writeFile(wb, `DCS_Export_${code}_${today()}.xlsx`);
+      const code = raw?.dcsInfo?.code || 'society';
+      XLSX.writeFile(wb, `DCS_Export_${code}_${dateTag(fromDate, toDate)}.xlsx`);
       alert('✅ Excel export ho gaya.');
     } catch (err: any) {
       alert('❌ Excel export failed: ' + err.message);
@@ -599,6 +666,30 @@ const Settings: React.FC = () => {
               ))}
             </select>
           </div>
+
+          {/* Date range (blank = poora data). Master data always full. */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, marginBottom: 8 }}>
+            <div>
+              <label className="label-text" style={{ fontSize: 11 }}>FROM DATE</label>
+              <input type="date" value={fromDate} max={toDate || undefined} onChange={(e) => setFromDate(e.target.value)} className="input-field" />
+            </div>
+            <div>
+              <label className="label-text" style={{ fontSize: 11 }}>TO DATE</label>
+              <input type="date" value={toDate} min={fromDate || undefined} onChange={(e) => setToDate(e.target.value)} className="input-field" />
+            </div>
+          </div>
+          <p style={{ color: 'var(--ink-2)', fontSize: 12, marginBottom: 20 }}>
+            Date range = sirf us period ka collection / deductions / gross / BMC data.
+            Farmers, Rate Chart, DCS Info &amp; Settings hamesha poora rehta hai.
+            {(fromDate || toDate) && (
+              <button
+                onClick={() => { setFromDate(''); setToDate(''); }}
+                style={{ marginLeft: 8, background: 'none', border: 'none', color: 'var(--brand)', cursor: 'pointer', fontWeight: 600, fontSize: 12, textDecoration: 'underline' }}
+              >
+                Clear (poora data)
+              </button>
+            )}
+          </p>
 
           {/* JSON backup + Excel export */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
