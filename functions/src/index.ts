@@ -20,19 +20,25 @@ const LOCK_MS = 15 * 60 * 1000; // 15 minutes
 
 const sum = (rows: any[], pick: (r: any) => number) => rows.reduce((s, r) => s + pick(r), 0);
 
+// Same as PaymentRegister.prevMonthOf — the month immediately before m.
+const prevMonthOf = (m: string): string => {
+  const [y, mo] = m.split('-').map(Number);
+  const d = new Date(y, mo - 2, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+};
+
 // Callable HTTPS function for the no-login farmer passbook. onCall lets the
-// Firebase SDK resolve the URL + handle CORS automatically. It can be invoked
+// Firebase SDK resolve the URL + handle CORS automatically; it can be invoked
 // without authentication (request.auth is simply undefined).
 //
-// All access is server-side via the Admin SDK (bypasses security rules), so
-// pinHash and milk data are NEVER exposed to the client. Only the requesting
-// farmer's own aggregated data is returned. Field naming matches the DB:
-// farmers are keyed by their code (users/{uid}/farmers/{code}), the name is
-// `farmerName`, and the PIN hash is `pinHash` on that same record.
+// Returns the farmer's full account for a selected month: milk collection,
+// gross/deduction entries, and a summary that matches Payment Register exactly
+// (netPayable = milkAmount − deductions + bfAmount). All reads are server-side
+// via the Admin SDK, so nothing sensitive is exposed to the client.
 export const getFarmerPassbook = onCall({ region: 'us-central1' }, async (request) => {
   try {
-    const { societyUid, farmerCode, pin } = (request.data || {}) as {
-      societyUid?: string; farmerCode?: string; pin?: string;
+    const { societyUid, farmerCode, pin, month } = (request.data || {}) as {
+      societyUid?: string; farmerCode?: string; pin?: string; month?: string;
     };
     if (!societyUid || !farmerCode || !pin) {
       return { success: false, message: 'Zaroori jaankari missing hai.' };
@@ -49,8 +55,7 @@ export const getFarmerPassbook = onCall({ region: 'us-central1' }, async (reques
       return { success: false, locked: true, message: `Bahut zyada galat koshish. ${mins} minute baad try karein.` };
     }
 
-    // 2. Read the farmer record (private; Admin SDK bypasses rules). The node
-    //    key IS the farmer code, so a direct ref is correct (no query needed).
+    // 2. Read the farmer record (node key IS the code — no query needed).
     const farmerSnap = await db.ref(`users/${societyUid}/farmers/${farmerCode}`).get();
     if (!farmerSnap.exists()) {
       return { success: false, message: 'Code galat hai.' };
@@ -72,45 +77,89 @@ export const getFarmerPassbook = onCall({ region: 'us-central1' }, async (reques
       await attemptRef.set({ count, lockedUntil: 0 });
       return { success: false, message: `PIN galat hai. (${MAX_ATTEMPTS - count} koshish baaki)` };
     }
+    await attemptRef.remove(); // correct PIN — reset counter
 
-    // Correct PIN — reset the attempt counter.
-    await attemptRef.remove();
+    // 5. Load everything for this farmer (Admin SDK bypasses rules).
+    const [dcsSnap, mcSnap, geSnap, balSnap] = await Promise.all([
+      db.ref(`users/${societyUid}/dcsInfo`).get(),
+      db.ref(`users/${societyUid}/milkCollection`).get(),
+      db.ref(`users/${societyUid}/grossEntries/${farmerCode}`).get(),
+      db.ref(`users/${societyUid}/farmerBalances/${farmerCode}`).get(),
+    ]);
 
-    // 5. Society name (for the header).
-    const dcsSnap = await db.ref(`users/${societyUid}/dcsInfo`).get();
     const dcs = dcsSnap.val() || {};
     const societyName = dcs.name || dcs.societyName || '';
 
-    // 6. This farmer's own history (denormalized passbookHistory, kept in sync).
-    const raw = (await db.ref(`users/${societyUid}/passbookHistory/${farmerCode}`).get()).val() || {};
-    const history = Object.keys(raw)
-      .map((k) => {
-        const e = raw[k] || {};
-        return {
-          date: e.date || '', shift: e.shift || '',
-          qty: Number(e.qty) || 0, fat: Number(e.fat) || 0,
-          snf: e.snf != null ? Number(e.snf) : null,
-          rate: Number(e.rate) || 0, amount: Number(e.amount) || 0,
-        };
-      })
-      .sort((a, b) => b.date.localeCompare(a.date) || b.shift.localeCompare(a.shift));
+    // Milk collection — walk milkCollection/{date}/{shift}/{code}, keep this farmer.
+    const allMilk: any[] = [];
+    const mc = mcSnap.val() || {};
+    Object.keys(mc).forEach((date) => {
+      const shifts = mc[date] || {};
+      Object.keys(shifts).forEach((shift) => {
+        const e = (shifts[shift] || {})[farmerCode];
+        if (e) {
+          allMilk.push({
+            date, shift,
+            qty: Number(e.qty) || 0, fat: Number(e.fat) || 0,
+            snf: e.snf != null ? Number(e.snf) : (e.clr != null ? Number(e.clr) : null),
+            rate: Number(e.rate) || 0, amount: Number(e.amount) || 0,
+          });
+        }
+      });
+    });
 
-    const today = new Date().toISOString().split('T')[0];
-    const month = today.substring(0, 7);
-    const todayRows = history.filter((h) => h.date === today);
-    const monthRows = history.filter((h) => h.date.startsWith(month));
+    // Gross / deduction entries — grossEntries/{code}/{entryId}.
+    const allGross: any[] = [];
+    const ge = geSnap.val() || {};
+    Object.keys(ge).forEach((id) => {
+      const e = ge[id];
+      if (!e || typeof e !== 'object') return;
+      allGross.push({
+        date: e.date || '', item: e.item || e.itemName || '', category: e.category || '',
+        pcs: Number(e.pcs) || Number(e.qty) || 0, rate: Number(e.rate) || 0, amount: Number(e.amount) || 0,
+      });
+    });
 
-    // 7. Return ONLY this farmer's data.
+    // Available months = union of milk + gross months (newest first).
+    const monthsSet = new Set<string>();
+    allMilk.forEach((m) => m.date && monthsSet.add(m.date.substring(0, 7)));
+    allGross.forEach((g) => g.date && monthsSet.add(g.date.substring(0, 7)));
+    const availableMonths = Array.from(monthsSet).sort().reverse();
+
+    const currentMonth = new Date().toISOString().substring(0, 7);
+    const selectedMonth =
+      month && /^\d{4}-\d{2}$/.test(month) ? month
+        : (availableMonths.includes(currentMonth) ? currentMonth : (availableMonths[0] || currentMonth));
+
+    const milk = allMilk
+      .filter((m) => m.date.startsWith(selectedMonth))
+      .sort((a, b) => a.date.localeCompare(b.date) || a.shift.localeCompare(b.shift));
+    const gross = allGross
+      .filter((g) => g.date.startsWith(selectedMonth))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    // Balance Forward — same rule as PaymentRegister: only if the stored
+    // balance is exactly for the previous month.
+    const bfMonth = prevMonthOf(selectedMonth);
+    const bal = balSnap.val();
+    const bfAmount = (bal && bal.forMonth === bfMonth && typeof bal.balance === 'number') ? bal.balance : 0;
+
+    const milkQty = sum(milk, (e) => e.qty);
+    const milkAmount = sum(milk, (e) => e.amount);
+    const deductionAmount = sum(gross, (e) => e.amount);
+    const netPayable = milkAmount - deductionAmount + bfAmount; // matches Payment Register
+
     return {
       success: true,
       farmerName: farmer.farmerName || farmerCode,
       societyName,
-      today: { qty: sum(todayRows, (e) => e.qty), amount: sum(todayRows, (e) => e.amount) },
-      thisMonth: { qty: sum(monthRows, (e) => e.qty), amount: sum(monthRows, (e) => e.amount) },
-      history,
+      month: selectedMonth,
+      availableMonths: availableMonths.length ? availableMonths : [selectedMonth],
+      milk,   // date, shift, qty, fat, snf, rate, amount
+      gross,  // date, item, category, pcs, rate, amount
+      summary: { milkQty, milkAmount, deductionAmount, bfAmount, netPayable },
     };
   } catch (err: any) {
-    // Any unexpected failure -> logged + a clean HttpsError (not bare "internal").
     logger.error('getFarmerPassbook failed', err);
     throw new HttpsError('internal', 'Passbook load nahi ho paaya. Baad mein try karein.');
   }
