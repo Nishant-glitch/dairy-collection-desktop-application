@@ -1,11 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ref, get, set, update } from 'firebase/database';
+import { ref, get, set } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up, isAdmin, getUid } from '../utils/userDb';
 import { MessageSquare, Save, RefreshCw, Shield, Send, Download, FileSpreadsheet, RotateCcw, AlertTriangle, Database, QrCode, Printer, Copy } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { passbookUrl, historyKey } from '../utils/passbook';
-import { flattenMilkCollection } from '../utils/quality';
+import { passbookUrl } from '../utils/passbook';
 import * as XLSX from 'xlsx';
 import axios from 'axios';
 
@@ -27,7 +26,6 @@ const Settings: React.FC = () => {
   const [societies, setSocieties] = useState<{ uid: string; label: string }[]>([]);
   const [selectedUid, setSelectedUid] = useState('');
   const [societyName, setSocietyName] = useState('');
-  const [syncingPassbook, setSyncingPassbook] = useState(false);
   const qrBoxRef = useRef<HTMLDivElement>(null);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
@@ -458,34 +456,6 @@ const Settings: React.FC = () => {
     setTimeout(() => w.print(), 350);
   };
 
-  // Backfill the passbook HISTORY from existing milk-collection entries so old
-  // data shows up in the passbook. Farmer name + pinHash live on the farmer
-  // record itself (read directly by the Cloud Function), so this only mirrors
-  // history. New entries auto-mirror on save; PINs are set in Farmer Master.
-  const syncPassbook = async () => {
-    setSyncingPassbook(true);
-    try {
-      const mcSnap = await get(ref(database, up('milkCollection')));
-      const updates: Record<string, any> = {};
-      let entryCount = 0;
-      if (mcSnap.exists()) {
-        flattenMilkCollection(mcSnap.val()).forEach((e) => {
-          updates[`passbookHistory/${e.farmerCode}/${historyKey(e.date, e.shift)}`] = {
-            date: e.date, shift: e.shift, qty: e.qty, fat: e.fat,
-            ...(e.snf != null ? { snf: e.snf } : {}), rate: e.rate, amount: e.amount,
-          };
-          entryCount++;
-        });
-      }
-      await update(ref(database, up('')), updates);
-      alert(`✅ Passbook history sync ho gaya. ${entryCount} entries mirror ki gayin.\nHar farmer ka 4-digit PIN Farmer Master se set karein.`);
-    } catch (err: any) {
-      alert('❌ Sync failed: ' + err.message);
-    } finally {
-      setSyncingPassbook(false);
-    }
-  };
-
   const handleTestSMS = async () => {
     if (!testMobile.trim() || !/^\d{10}$/.test(testMobile.trim())) {
       alert('Please enter valid 10-digit number!');
@@ -562,14 +532,10 @@ const Settings: React.FC = () => {
               <button onClick={printQR} className="btn-primary" style={{ padding: '10px 18px', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Printer size={16} /> Print QR (board ke liye)
               </button>
-              <button onClick={syncPassbook} disabled={syncingPassbook} className="btn-secondary" style={{ padding: '10px 18px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                {syncingPassbook ? <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <RefreshCw size={16} />}
-                {syncingPassbook ? 'Sync ho raha hai…' : 'Sync Passbook Data'}
-              </button>
             </div>
             <p style={{ color: 'var(--ink-2)', fontSize: 12, marginTop: 12 }}>
-              <strong>Sync</strong> purani milk entries ko passbook mein daalta hai (naye farmers/entries auto-mirror hote hain).
-              Sync ke baad har farmer ka <strong>PIN Farmer Master</strong> se set/reset karein.
+              Passbook <strong>real-time</strong> hai — milk, gross/deductions aur PIN/name ke changes turant dikhte hain, koi sync nahi chahiye.
+              Har farmer ka <strong>4-digit PIN Farmer Master</strong> se set/reset karein.
             </p>
           </div>
         </div>
