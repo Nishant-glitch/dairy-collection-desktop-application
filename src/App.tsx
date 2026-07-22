@@ -10,6 +10,7 @@ import DCSMaster from './pages/DCSMaster';
 import FarmerMaster from './pages/FarmerMaster';
 import RateChart from './pages/RateChart';
 import MilkCollection from './pages/MilkCollection';
+import RateCalculator from './pages/RateCalculator';
 import BMCMaster from './pages/BMCMaster';
 import BMCEntry from './pages/BMCEntry';
 import Deductions from './pages/Deductions';
@@ -18,6 +19,7 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Subscribe from './pages/Subscribe';
 import AdminSubscriptions from './pages/AdminSubscriptions';
+import Passbook from './pages/Passbook';
 import { hasAccess } from './utils/subscription';
 import { Milk } from 'lucide-react';
 
@@ -58,6 +60,18 @@ function App() {
     </div>
   );
 
+  // Public, no-login route: /passbook/{societyUid}. Checked before the auth
+  // gate so farmers can open it without an account. No React Router needed —
+  // the app is state-routed, so we match the pathname directly.
+  const passbookMatch = window.location.pathname.match(/^\/passbook\/([^/]+)\/?$/);
+  if (passbookMatch) {
+    return (
+      <LanguageProvider>
+        <Passbook societyUid={decodeURIComponent(passbookMatch[1])} />
+      </LanguageProvider>
+    );
+  }
+
   if (loading) {
     return loadingScreen;
   }
@@ -94,6 +108,8 @@ function App() {
         return <RateChart />;
       case 'milk-collection':
         return <MilkCollection onNavigate={setCurrentPage} />;
+      case 'rate-calculator':
+        return <RateCalculator />;
       case 'bmc-master':
         return <BMCMaster />;
       case 'bmc-entry':
@@ -115,9 +131,9 @@ function App() {
 
   return (
     <LanguageProvider>
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col app-shell">
         <Navbar onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
-        <div className="flex flex-1 relative">
+        <div className="flex flex-1 relative app-body-row">
           <Sidebar 
             currentPage={currentPage} 
             onNavigate={setCurrentPage} 

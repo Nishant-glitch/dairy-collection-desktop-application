@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ref, onValue, set, remove } from 'firebase/database';
+import { ref, onValue, set, remove, get } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Plus, Edit2, Trash2, Eye, X, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, Eye, X, Search, KeyRound } from 'lucide-react';
+import { hashPin, isValidPin } from '../utils/passbook';
 
 interface Farmer {
   farmerCode: string;
@@ -29,6 +30,9 @@ const FarmerMaster: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [importing, setImporting] = useState(false);
   const farmerImportRef = useRef<HTMLInputElement>(null);
+  const [pinInput, setPinInput] = useState('');
+  // farmerCode -> true when a passbook PIN hash is set (for the list badge).
+  const [pinStatus, setPinStatus] = useState<Record<string, boolean>>({});
   const [formData, setFormData] = useState<Farmer>({
     farmerCode: '',
     farmerName: '',
@@ -44,7 +48,7 @@ const FarmerMaster: React.FC = () => {
 
   useEffect(() => {
     const unsubscribe = loadFarmers();
-    return unsubscribe;
+    return () => { unsubscribe(); };
   }, []);
 
   useEffect(() => {
@@ -55,13 +59,17 @@ const FarmerMaster: React.FC = () => {
     const farmersRef = ref(database, up('farmers'));
     return onValue(farmersRef, (snapshot) => {
       const farmerArray: Farmer[] = [];
+      const pinMap: Record<string, boolean> = {};
       if (snapshot.exists()) {
         const data = snapshot.val();
         Object.keys(data).forEach((code) => {
+          // pinHash lives on the farmer record itself; track which have it set.
+          pinMap[code] = !!data[code]?.pinHash;
           farmerArray.push({ farmerCode: code, ...data[code] });
         });
       }
       setFarmers(farmerArray);
+      setPinStatus(pinMap);
     });
   };
 
@@ -92,12 +100,14 @@ const FarmerMaster: React.FC = () => {
       mobileNo: '',
       upiId: '',
     });
+    setPinInput('');
     setShowModal(true);
   };
 
   const handleEdit = (farmer: Farmer) => {
     setIsEditing(true);
     setFormData(farmer);
+    setPinInput('');
     setShowModal(true);
   };
 
@@ -112,7 +122,25 @@ const FarmerMaster: React.FC = () => {
       return;
     }
 
+    // A PIN, if typed, must be exactly 4 digits.
+    if (pinInput && !isValidPin(pinInput)) {
+      alert('PIN 4-digit (numbers only) hona chahiye. Passbook PIN skip karne ke liye khaali chhod dein.');
+      return;
+    }
+
     const farmerRef = ref(database, up(`farmers/${formData.farmerCode}`));
+
+    // pinHash lives on the farmer record (users/{uid}/farmers/{code}/pinHash).
+    // A new 4-digit PIN overwrites it; leaving PIN blank preserves the existing
+    // hash so a normal edit never wipes it.
+    let pinHash: string | null = null;
+    if (pinInput) {
+      pinHash = await hashPin(pinInput);
+    } else {
+      const existing = await get(farmerRef);
+      pinHash = existing.exists() ? (existing.val().pinHash || null) : null;
+    }
+
     await set(farmerRef, {
       farmerName: formData.farmerName,
       address: formData.address,
@@ -123,15 +151,18 @@ const FarmerMaster: React.FC = () => {
       branchAddress: formData.branchAddress,
       mobileNo: formData.mobileNo,
       upiId: formData.upiId,
+      ...(pinHash ? { pinHash } : {}),
     });
 
+    setPinInput('');
     setShowModal(false);
   };
 
   const handleDelete = async (code: string) => {
     if (confirm('Are you sure you want to delete this farmer?')) {
-      const farmerRef = ref(database, up(`farmers/${code}`));
-      await remove(farmerRef);
+      await remove(ref(database, up(`farmers/${code}`)));
+      // Clean up the denormalized passbook history too.
+      await remove(ref(database, up(`passbookHistory/${code}`)));
     }
   };
 
@@ -332,6 +363,7 @@ const FarmerMaster: React.FC = () => {
                 <th className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '13px' }}>Bank A/C</th>
                 <th className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '13px' }}>IFSC Code</th>
                 <th className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '13px' }}>UPI ID</th>
+                <th className="px-4 py-[9px] text-center" style={{ padding: '12px 16px', fontSize: '13px' }}>Passbook PIN</th>
                 <th className="px-4 py-[9px] text-center" style={{ padding: '12px 16px', fontSize: '13px' }}>Actions</th>
               </tr>
             </thead>
@@ -345,6 +377,13 @@ const FarmerMaster: React.FC = () => {
                   <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'var(--ink)', fontSize: '14px' }}>{farmer.bankAC}</td>
                   <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'var(--ink)', fontSize: '14px' }}>{farmer.ifscCode}</td>
                   <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'var(--ink)', fontSize: '14px' }}>{farmer.upiId}</td>
+                  <td className="px-4 py-[9px] text-center" style={{ padding: '12px 16px', fontSize: '13px' }}>
+                    {pinStatus[farmer.farmerCode] ? (
+                      <span style={{ color: '#16a34a', fontWeight: 700 }}>PIN set ✓</span>
+                    ) : (
+                      <span style={{ color: 'var(--muted)' }}>Not set</span>
+                    )}
+                  </td>
                   <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '14px' }}>
                     <div className="flex justify-center gap-2">
                       <button onClick={() => handleView(farmer)} className="btn-info" style={{ width: '28px', height: '28px', padding: 0 }} title="View"><Eye size={14} /></button>
@@ -356,7 +395,7 @@ const FarmerMaster: React.FC = () => {
               ))}
               {filteredFarmers.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-20 text-center">
+                  <td colSpan={9} className="px-4 py-20 text-center">
                     <p style={{ color: 'var(--ink-2)', fontSize: 16 }}>No farmers found.</p>
                   </td>
                 </tr>
@@ -463,6 +502,26 @@ const FarmerMaster: React.FC = () => {
                     <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px' }}>UPI ID</label>
                     <input type="text" value={formData.upiId} onChange={(e) => setFormData({ ...formData, upiId: e.target.value })} className="input-3d" style={{ padding: '10px 14px', fontSize: '14px' }} placeholder="name@upi" />
                   </div>
+                </div>
+
+                {/* Passbook PIN — hashed, used for the public farmer passbook */}
+                <div style={{ marginTop: 16, borderTop: '1px dashed var(--line)', paddingTop: 16 }}>
+                  <label className="label-text" style={{ marginBottom: '6px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <KeyRound size={14} /> PASSBOOK PIN (4-digit)
+                    {isEditing && pinStatus[formData.farmerCode] && (
+                      <span style={{ color: '#16a34a', fontWeight: 700, fontSize: 11 }}>· Already set</span>
+                    )}
+                  </label>
+                  <input
+                    type="text" inputMode="numeric" value={pinInput}
+                    onChange={(e) => setPinInput(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    className="input-3d" style={{ padding: '10px 14px', fontSize: '14px', letterSpacing: 4, maxWidth: 180 }}
+                    placeholder={pinStatus[formData.farmerCode] ? 'Reset ke liye naya PIN' : 'e.g. 1234'}
+                  />
+                  <p style={{ color: 'var(--ink-2)', fontSize: 11, marginTop: 6 }}>
+                    Farmer isse apni public passbook (QR) kholega. Hash karke store hota hai. Khaali chhodne par
+                    {pinStatus[formData.farmerCode] ? ' purana PIN bana rahega.' : ' PIN set nahi hoga.'}
+                  </p>
                 </div>
               </div>
             </div>
