@@ -161,8 +161,6 @@ const FarmerMaster: React.FC = () => {
   const handleDelete = async (code: string) => {
     if (confirm('Are you sure you want to delete this farmer?')) {
       await remove(ref(database, up(`farmers/${code}`)));
-      // Clean up the denormalized passbook history too.
-      await remove(ref(database, up(`passbookHistory/${code}`)));
     }
   };
 
