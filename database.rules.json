@@ -7,14 +7,12 @@
         ".write": "auth != null && auth.uid === $uid",
         "bmcEntries": {
           ".indexOn": ["date"]
-        },
-        "passbookData": {
-          ".read": true
-        },
-        "passbookHistory": {
-          ".read": true
         }
       }
+    },
+    "passbookAttempts": {
+      ".read": false,
+      ".write": false
     },
     "subscriptions": {
       ".read": "auth != null && auth.token.email === 'admin@nishant.com'",

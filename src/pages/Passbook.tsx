@@ -1,46 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { ref, get } from 'firebase/database';
-import { database } from '../firebase/config';
-import { hashPin, isValidPin } from '../utils/passbook';
+import React, { useState } from 'react';
+import { isValidPin } from '../utils/passbook';
 import { formatIndianCurrency } from '../utils/rateCalculator';
 import { Milk, Lock, Loader2, LogOut, Droplet, Calendar, IndianRupee } from 'lucide-react';
 
 // Public, no-login farmer passbook. Reached at /passbook/{societyUid}.
-// Reads only the public passbookData (name + pinHash) and passbookHistory nodes
-// — never the private farmer/collection/rate data.
+// SECURE version: all verification + data fetch happens in the getFarmerPassbook
+// Cloud Function (Admin SDK). The client never reads the database directly, so
+// pinHash and other farmers' data are never exposed.
 
-const MAX_ATTEMPTS = 3;
-const LOCK_MINUTES = 15;
+// Deployed function URL. Override via VITE_PASSBOOK_FN_URL if the deploy prints
+// a different host (gen-2 functions may use a *.run.app URL).
+const FN_URL =
+  (import.meta as any).env?.VITE_PASSBOOK_FN_URL ||
+  'https://us-central1-farmerdb-ba9b0.cloudfunctions.net/getFarmerPassbook';
 
 interface HistoryRow {
   date: string; shift: string; qty: number; fat: number; snf: number | null; rate: number; amount: number;
 }
+interface PassbookData {
+  farmerName: string; societyName: string;
+  today: { qty: number; amount: number };
+  thisMonth: { qty: number; amount: number };
+  history: HistoryRow[];
+}
 
 const Passbook: React.FC<{ societyUid: string }> = ({ societyUid }) => {
-  const [societyName, setSocietyName] = useState('');
   const [code, setCode] = useState('');
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-  const [verified, setVerified] = useState<{ code: string; name: string } | null>(null);
-  const [rows, setRows] = useState<HistoryRow[]>([]);
-
-  useEffect(() => {
-    // Society name for the header (from DCS info — read only if allowed; falls
-    // back silently if not).
-    get(ref(database, `users/${societyUid}/dcsInfo`)).then((s) => {
-      if (s.exists()) setSocietyName(s.val().name || s.val().societyName || '');
-    }).catch(() => {});
-  }, [societyUid]);
-
-  const lockKey = (c: string) => `pb_lock_${societyUid}_${c}`;
-
-  const getLock = (c: string): { fails: number; until: number } => {
-    try { return JSON.parse(localStorage.getItem(lockKey(c)) || '') || { fails: 0, until: 0 }; }
-    catch { return { fails: 0, until: 0 }; }
-  };
-  const setLock = (c: string, v: { fails: number; until: number }) =>
-    localStorage.setItem(lockKey(c), JSON.stringify(v));
+  const [data, setData] = useState<PassbookData | null>(null);
 
   const handleVerify = async () => {
     setError('');
@@ -48,79 +37,31 @@ const Passbook: React.FC<{ societyUid: string }> = ({ societyUid }) => {
     if (!c) { setError('Farmer code daalein.'); return; }
     if (!isValidPin(pin)) { setError('4-digit PIN daalein.'); return; }
 
-    // Brute-force lock check.
-    const lock = getLock(c);
-    if (lock.until && Date.now() < lock.until) {
-      const mins = Math.ceil((lock.until - Date.now()) / 60000);
-      setError(`Bahut zyada galat koshish. ${mins} minute baad dobara try karein.`);
-      return;
-    }
-
     setBusy(true);
-    // Small delay between attempts (rate limit).
-    await new Promise((r) => setTimeout(r, 1200));
-
     try {
-      const pdSnap = await get(ref(database, `users/${societyUid}/passbookData/${c}`));
-      if (!pdSnap.exists()) {
-        setError('Code galat hai ya passbook set nahi hai.');
-        return;
-      }
-      const pd = pdSnap.val();
-      if (!pd.pinHash) {
-        setError('Is farmer ka PIN abhi set nahi hua. Society se sampark karein.');
-        return;
-      }
-
-      const entered = await hashPin(pin);
-      if (entered !== pd.pinHash) {
-        const nextFails = (lock.fails || 0) + 1;
-        if (nextFails >= MAX_ATTEMPTS) {
-          setLock(c, { fails: nextFails, until: Date.now() + LOCK_MINUTES * 60000 });
-          setError(`PIN galat. ${MAX_ATTEMPTS} baar galat — ${LOCK_MINUTES} minute ke liye lock.`);
-        } else {
-          setLock(c, { fails: nextFails, until: 0 });
-          setError(`PIN galat hai. (${MAX_ATTEMPTS - nextFails} koshish baaki)`);
-        }
-        return;
-      }
-
-      // Verified — clear lock and load history.
-      setLock(c, { fails: 0, until: 0 });
-      const histSnap = await get(ref(database, `users/${societyUid}/passbookHistory/${c}`));
-      const list: HistoryRow[] = [];
-      if (histSnap.exists()) {
-        const data = histSnap.val();
-        Object.keys(data).forEach((k) => {
-          const e = data[k] || {};
-          list.push({
-            date: e.date || '', shift: e.shift || '',
-            qty: Number(e.qty) || 0, fat: Number(e.fat) || 0,
-            snf: e.snf != null ? Number(e.snf) : null,
-            rate: Number(e.rate) || 0, amount: Number(e.amount) || 0,
-          });
-        });
-      }
-      list.sort((a, b) => b.date.localeCompare(a.date) || b.shift.localeCompare(a.shift));
-      setRows(list);
-      setVerified({ code: c, name: pd.name || c });
-    } catch (e: any) {
-      setError('Data load nahi ho paaya. Internet check karein.');
+      const resp = await fetch(FN_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ societyUid, farmerCode: c, pin: pin.trim() }),
+      });
+      const json = await resp.json().catch(() => null);
+      if (!json) { setError('Server se jawab nahi mila. Dobara try karein.'); return; }
+      if (!json.success) { setError(json.message || 'Verify nahi ho paaya.'); return; }
+      setData({
+        farmerName: json.farmerName || c,
+        societyName: json.societyName || '',
+        today: json.today || { qty: 0, amount: 0 },
+        thisMonth: json.thisMonth || { qty: 0, amount: 0 },
+        history: Array.isArray(json.history) ? json.history : [],
+      });
+    } catch {
+      setError('Network error. Internet check karein.');
     } finally {
       setBusy(false);
     }
   };
 
-  const logout = () => {
-    setVerified(null); setRows([]); setPin(''); setCode(''); setError('');
-  };
-
-  const todayStr = new Date().toISOString().split('T')[0];
-  const monthStr = todayStr.substring(0, 7);
-  const todayQty = rows.filter((r) => r.date === todayStr).reduce((s, r) => s + r.qty, 0);
-  const todayAmt = rows.filter((r) => r.date === todayStr).reduce((s, r) => s + r.amount, 0);
-  const monthQty = rows.filter((r) => r.date.startsWith(monthStr)).reduce((s, r) => s + r.qty, 0);
-  const monthAmt = rows.filter((r) => r.date.startsWith(monthStr)).reduce((s, r) => s + r.amount, 0);
+  const logout = () => { setData(null); setPin(''); setCode(''); setError(''); };
 
   const wrap: React.CSSProperties = {
     minHeight: '100vh', background: 'linear-gradient(160deg,#f0fdf4,#ecfeff)',
@@ -137,11 +78,11 @@ const Passbook: React.FC<{ societyUid: string }> = ({ societyUid }) => {
         </div>
         <div>
           <div style={{ fontSize: 20, fontWeight: 800, color: '#14532d' }}>Farmer Passbook</div>
-          <div style={{ fontSize: 13, color: '#166534' }}>{societyName || 'DCS Pro'}</div>
+          <div style={{ fontSize: 13, color: '#166534' }}>{data?.societyName || 'DCS Pro'}</div>
         </div>
       </div>
 
-      {!verified ? (
+      {!data ? (
         <div style={{ background: '#fff', borderRadius: 16, padding: 28, width: '100%', maxWidth: 380, boxShadow: '0 10px 40px rgba(0,0,0,0.08)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
             <Lock size={18} color="#16a34a" />
@@ -184,8 +125,8 @@ const Passbook: React.FC<{ societyUid: string }> = ({ societyUid }) => {
           {/* Verified header */}
           <div style={{ background: '#fff', borderRadius: 14, padding: '16px 20px', marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 6px 24px rgba(0,0,0,0.06)' }}>
             <div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: '#14532d' }}>{verified.name}</div>
-              <div style={{ fontSize: 13, color: '#6b7280' }}>Code: {verified.code}</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: '#14532d' }}>{data.farmerName}</div>
+              <div style={{ fontSize: 13, color: '#6b7280' }}>Code: {code.trim()}</div>
             </div>
             <button onClick={logout} style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#f3f4f6', border: 'none', borderRadius: 8, padding: '8px 14px', color: '#374151', fontWeight: 600, cursor: 'pointer', fontSize: 13 }}>
               <LogOut size={15} /> Band karein
@@ -194,8 +135,8 @@ const Passbook: React.FC<{ societyUid: string }> = ({ societyUid }) => {
 
           {/* Summary cards */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-            <SummaryCard icon={<Droplet size={18} />} color="#2563eb" label="Aaj" qty={todayQty} amt={todayAmt} />
-            <SummaryCard icon={<Calendar size={18} />} color="#16a34a" label="Is Mahine" qty={monthQty} amt={monthAmt} />
+            <SummaryCard icon={<Droplet size={18} />} color="#2563eb" label="Aaj" qty={data.today.qty} amt={data.today.amount} />
+            <SummaryCard icon={<Calendar size={18} />} color="#16a34a" label="Is Mahine" qty={data.thisMonth.qty} amt={data.thisMonth.amount} />
           </div>
 
           {/* History */}
@@ -203,7 +144,7 @@ const Passbook: React.FC<{ societyUid: string }> = ({ societyUid }) => {
             <h3 style={{ fontSize: 15, fontWeight: 700, color: '#14532d', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
               <IndianRupee size={16} /> Poori History
             </h3>
-            {rows.length === 0 ? (
+            {data.history.length === 0 ? (
               <p style={{ color: '#6b7280', fontSize: 14, textAlign: 'center', padding: 20 }}>Abhi koi entry nahi.</p>
             ) : (
               <div style={{ overflowX: 'auto' }}>
@@ -218,7 +159,7 @@ const Passbook: React.FC<{ societyUid: string }> = ({ societyUid }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.map((r, i) => (
+                    {data.history.map((r, i) => (
                       <tr key={i} style={{ borderTop: '1px solid #f1f5f9' }}>
                         <td style={tdStyle}>{r.date}</td>
                         <td style={tdStyle}>{r.shift}</td>
