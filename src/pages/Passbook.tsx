@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import app from '../firebase/config';
 import { isValidPin } from '../utils/passbook';
 import { formatIndianCurrency } from '../utils/rateCalculator';
 import { Milk, Lock, Loader2, LogOut, Droplet, Calendar, IndianRupee } from 'lucide-react';
 
 // Public, no-login farmer passbook. Reached at /passbook/{societyUid}.
 // SECURE version: all verification + data fetch happens in the getFarmerPassbook
-// Cloud Function (Admin SDK). The client never reads the database directly, so
-// pinHash and other farmers' data are never exposed.
-
-// Deployed function URL. Override via VITE_PASSBOOK_FN_URL if the deploy prints
-// a different host (gen-2 functions may use a *.run.app URL).
-const FN_URL =
-  (import.meta as any).env?.VITE_PASSBOOK_FN_URL ||
-  'https://us-central1-farmerdb-ba9b0.cloudfunctions.net/getFarmerPassbook';
+// callable Cloud Function (Admin SDK). The client never reads the database
+// directly, so pinHash and other farmers' data are never exposed.
+//
+// Using an HTTPS *callable* (not a raw fetch) means the Firebase SDK builds the
+// correct function URL itself (gen-1 and gen-2) and handles CORS — no URL to
+// hardcode and no preflight to misconfigure. Region must match the function's
+// (us-central1). Callables work for unauthenticated users too.
+const functions = getFunctions(app, 'us-central1');
+const getFarmerPassbook = httpsCallable(functions, 'getFarmerPassbook');
 
 interface HistoryRow {
   date: string; shift: string; qty: number; fat: number; snf: number | null; rate: number; amount: number;
@@ -39,12 +42,8 @@ const Passbook: React.FC<{ societyUid: string }> = ({ societyUid }) => {
 
     setBusy(true);
     try {
-      const resp = await fetch(FN_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ societyUid, farmerCode: c, pin: pin.trim() }),
-      });
-      const json = await resp.json().catch(() => null);
+      const resp = await getFarmerPassbook({ societyUid, farmerCode: c, pin: pin.trim() });
+      const json = (resp?.data || null) as any;
       if (!json) { setError('Server se jawab nahi mila. Dobara try karein.'); return; }
       if (!json.success) { setError(json.message || 'Verify nahi ho paaya.'); return; }
       setData({
@@ -54,8 +53,9 @@ const Passbook: React.FC<{ societyUid: string }> = ({ societyUid }) => {
         thisMonth: json.thisMonth || { qty: 0, amount: 0 },
         history: Array.isArray(json.history) ? json.history : [],
       });
-    } catch {
-      setError('Network error. Internet check karein.');
+    } catch (err: any) {
+      // Callable errors surface as { code, message }.
+      setError(err?.message ? `Error: ${err.message}` : 'Network error. Internet check karein.');
     } finally {
       setBusy(false);
     }

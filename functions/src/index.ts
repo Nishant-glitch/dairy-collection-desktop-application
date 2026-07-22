@@ -1,4 +1,4 @@
-import { onRequest } from 'firebase-functions/v2/https';
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import * as admin from 'firebase-admin';
 import * as crypto from 'crypto';
 
@@ -15,28 +15,20 @@ const LOCK_MS = 15 * 60 * 1000; // 15 minutes
 
 const sum = (rows: any[], pick: (r: any) => number) => rows.reduce((s, r) => s + pick(r), 0);
 
-// Public HTTPS endpoint for the no-login farmer passbook. All access is
-// server-side via the Admin SDK (bypasses security rules), so pinHash and milk
-// data are NEVER exposed to the client. The PIN is verified here; only the
-// requesting farmer's own aggregated data is returned.
-export const getFarmerPassbook = onRequest({ cors: true }, async (req, res) => {
-  // Defensive CORS (cors:true already handles it, but keep explicit for clarity).
-  res.set('Access-Control-Allow-Origin', '*');
-  if (req.method === 'OPTIONS') {
-    res.set('Access-Control-Allow-Methods', 'POST');
-    res.set('Access-Control-Allow-Headers', 'Content-Type');
-    res.status(204).send('');
-    return;
-  }
-  if (req.method !== 'POST') {
-    res.status(405).json({ success: false, message: 'Method not allowed' });
-    return;
-  }
-
-  const { societyUid, farmerCode, pin } = req.body || {};
+// Callable HTTPS function for the no-login farmer passbook. Using onCall (not
+// onRequest) means the Firebase SDK resolves the correct URL on the client and
+// handles CORS automatically — no manual headers, no URL guessing. It can be
+// invoked without authentication (request.auth is simply undefined here).
+//
+// All access is server-side via the Admin SDK (bypasses security rules), so
+// pinHash and milk data are NEVER exposed to the client. The PIN is verified
+// here; only the requesting farmer's own aggregated data is returned.
+export const getFarmerPassbook = onCall({ region: 'us-central1' }, async (request) => {
+  const { societyUid, farmerCode, pin } = (request.data || {}) as {
+    societyUid?: string; farmerCode?: string; pin?: string;
+  };
   if (!societyUid || !farmerCode || !pin) {
-    res.status(400).json({ success: false, message: 'Missing fields' });
-    return;
+    throw new HttpsError('invalid-argument', 'Missing fields (societyUid, farmerCode, pin).');
   }
 
   const db = admin.database();
@@ -47,15 +39,13 @@ export const getFarmerPassbook = onRequest({ cors: true }, async (req, res) => {
   const attempt = (await attemptRef.get()).val() || { count: 0, lockedUntil: 0 };
   if (attempt.lockedUntil && now < attempt.lockedUntil) {
     const mins = Math.ceil((attempt.lockedUntil - now) / 60000);
-    res.json({ success: false, locked: true, message: `Bahut zyada galat koshish. ${mins} minute baad try karein.` });
-    return;
+    return { success: false, locked: true, message: `Bahut zyada galat koshish. ${mins} minute baad try karein.` };
   }
 
   // 2. Read the farmer's pinHash + name (private; Admin SDK bypasses rules).
   const pdSnap = await db.ref(`users/${societyUid}/passbookData/${farmerCode}`).get();
   if (!pdSnap.exists() || !pdSnap.val().pinHash) {
-    res.json({ success: false, message: 'Code galat hai ya PIN set nahi hai.' });
-    return;
+    return { success: false, message: 'Code galat hai ya PIN set nahi hai.' };
   }
   const pd = pdSnap.val();
 
@@ -64,12 +54,10 @@ export const getFarmerPassbook = onRequest({ cors: true }, async (req, res) => {
     const count = (attempt.count || 0) + 1;
     if (count >= MAX_ATTEMPTS) {
       await attemptRef.set({ count: 0, lockedUntil: now + LOCK_MS });
-      res.json({ success: false, message: `PIN galat. ${MAX_ATTEMPTS} baar galat — 15 minute ke liye lock.` });
-    } else {
-      await attemptRef.set({ count, lockedUntil: 0 });
-      res.json({ success: false, message: `PIN galat hai. (${MAX_ATTEMPTS - count} koshish baaki)` });
+      return { success: false, message: `PIN galat. ${MAX_ATTEMPTS} baar galat — 15 minute ke liye lock.` };
     }
-    return;
+    await attemptRef.set({ count, lockedUntil: 0 });
+    return { success: false, message: `PIN galat hai. (${MAX_ATTEMPTS - count} koshish baaki)` };
   }
 
   // Correct PIN — reset the attempt counter.
@@ -99,12 +87,12 @@ export const getFarmerPassbook = onRequest({ cors: true }, async (req, res) => {
   const monthRows = history.filter((h) => h.date.startsWith(month));
 
   // 6. Return ONLY this farmer's data.
-  res.json({
+  return {
     success: true,
     farmerName: pd.name || farmerCode,
     societyName,
     today: { qty: sum(todayRows, (e) => e.qty), amount: sum(todayRows, (e) => e.amount) },
     thisMonth: { qty: sum(monthRows, (e) => e.qty), amount: sum(monthRows, (e) => e.amount) },
     history,
-  });
+  };
 });
