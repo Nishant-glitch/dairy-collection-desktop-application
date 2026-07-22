@@ -7,6 +7,12 @@
         ".write": "auth != null && auth.uid === $uid",
         "bmcEntries": {
           ".indexOn": ["date"]
+        },
+        "passbookData": {
+          ".read": true
+        },
+        "passbookHistory": {
+          ".read": true
         }
       }
     },

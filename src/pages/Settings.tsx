@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ref, get, set } from 'firebase/database';
+import { ref, get, set, update } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up, isAdmin, getUid } from '../utils/userDb';
-import { MessageSquare, Save, RefreshCw, Shield, Send, Download, FileSpreadsheet, RotateCcw, AlertTriangle, Database } from 'lucide-react';
+import { MessageSquare, Save, RefreshCw, Shield, Send, Download, FileSpreadsheet, RotateCcw, AlertTriangle, Database, QrCode, Printer, Copy } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+import { passbookUrl, historyKey } from '../utils/passbook';
+import { flattenMilkCollection } from '../utils/quality';
 import * as XLSX from 'xlsx';
 import axios from 'axios';
 
@@ -23,6 +26,9 @@ const Settings: React.FC = () => {
   const restoreFileRef = useRef<HTMLInputElement>(null);
   const [societies, setSocieties] = useState<{ uid: string; label: string }[]>([]);
   const [selectedUid, setSelectedUid] = useState('');
+  const [societyName, setSocietyName] = useState('');
+  const [syncingPassbook, setSyncingPassbook] = useState(false);
+  const qrBoxRef = useRef<HTMLDivElement>(null);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
 
@@ -70,6 +76,8 @@ const Settings: React.FC = () => {
       if (billSnap.exists()) {
         setBmcBill({ unionName: '', route: '', salesSthan: '', headLoadRate: '', nextBillNo: 1, ...billSnap.val() });
       }
+      const dcsSnap = await get(ref(database, up('dcsInfo')));
+      if (dcsSnap.exists()) setSocietyName(dcsSnap.val().name || dcsSnap.val().societyName || '');
     } catch (err) {
       console.error('Error loading settings:', err);
     }
@@ -421,6 +429,73 @@ const Settings: React.FC = () => {
     }
   };
 
+  // ---- Farmer Passbook (QR + sync) ---------------------------------------
+
+  const myPassbookUrl = (() => { try { return passbookUrl(getUid()); } catch { return ''; } })();
+
+  const copyPassbookUrl = async () => {
+    try { await navigator.clipboard.writeText(myPassbookUrl); alert('✅ Passbook link copy ho gaya.'); }
+    catch { alert('Copy nahi ho paaya: ' + myPassbookUrl); }
+  };
+
+  const printQR = () => {
+    const svg = qrBoxRef.current?.querySelector('svg')?.outerHTML || '';
+    if (!svg) return;
+    const w = window.open('', '_blank', 'width=640,height=760');
+    if (!w) { alert('Popup block ho gaya. Please allow popups.'); return; }
+    w.document.write(
+      `<html><head><title>Passbook QR</title></head>
+       <body style="text-align:center;font-family:system-ui,sans-serif;padding:40px">
+         <h2 style="margin-bottom:4px">${societyName || 'DCS Pro'}</h2>
+         <div style="font-size:15px;color:#166534;font-weight:700;margin-bottom:24px">Farmer Passbook — Apni Doodh History Dekhein</div>
+         <div style="display:inline-block;padding:16px;border:2px solid #16a34a;border-radius:16px">${svg}</div>
+         <p style="font-size:13px;word-break:break-all;margin-top:20px;color:#374151">${myPassbookUrl}</p>
+         <p style="color:#6b7280;font-size:14px;margin-top:16px">📱 QR scan karein → apna Code + 4-digit PIN daalein</p>
+       </body></html>`
+    );
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 350);
+  };
+
+  // Backfill the public passbook nodes from existing data (owner is authed).
+  // Sets each farmer's name (preserving any existing pinHash) and mirrors all
+  // milk-collection entries into passbookHistory. PINs are set per-farmer in
+  // Farmer Master; this does not touch them.
+  const syncPassbook = async () => {
+    setSyncingPassbook(true);
+    try {
+      const [farmersSnap, mcSnap] = await Promise.all([
+        get(ref(database, up('farmers'))),
+        get(ref(database, up('milkCollection'))),
+      ]);
+      const updates: Record<string, any> = {};
+      if (farmersSnap.exists()) {
+        const f = farmersSnap.val();
+        Object.keys(f).forEach((code) => {
+          updates[`passbookData/${code}/name`] = f[code]?.farmerName || code;
+          updates[`passbookData/${code}/updatedAt`] = Date.now();
+        });
+      }
+      let entryCount = 0;
+      if (mcSnap.exists()) {
+        flattenMilkCollection(mcSnap.val()).forEach((e) => {
+          updates[`passbookHistory/${e.farmerCode}/${historyKey(e.date, e.shift)}`] = {
+            date: e.date, shift: e.shift, qty: e.qty, fat: e.fat,
+            ...(e.snf != null ? { snf: e.snf } : {}), rate: e.rate, amount: e.amount,
+          };
+          entryCount++;
+        });
+      }
+      await update(ref(database, up('')), updates);
+      alert(`✅ Passbook sync ho gaya. ${entryCount} entries mirror ki gayin.\nNaye farmers ke 4-digit PIN Farmer Master se set karein.`);
+    } catch (err: any) {
+      alert('❌ Sync failed: ' + err.message);
+    } finally {
+      setSyncingPassbook(false);
+    }
+  };
+
   const handleTestSMS = async () => {
     if (!testMobile.trim() || !/^\d{10}$/.test(testMobile.trim())) {
       alert('Please enter valid 10-digit number!');
@@ -465,6 +540,50 @@ const Settings: React.FC = () => {
       <h1 style={{ color: 'var(--ink)', fontSize: 26, fontWeight: 800, marginBottom: 24 }}>
         ⚙️ Settings
       </h1>
+
+      {/* Farmer Passbook QR — this society's public passbook link */}
+      <div className="glass-card" style={{ padding: 24, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+          <QrCode style={{ color: 'var(--brand)', width: 22, height: 22 }} />
+          <h2 style={{ color: 'var(--ink)', fontSize: 18, fontWeight: 700 }}>Farmer Passbook QR</h2>
+        </div>
+        <p style={{ color: 'var(--ink-2)', fontSize: 13, marginBottom: 20 }}>
+          Is society ka apna QR. Farmer scan kare → apna Code + 4-digit PIN daal ke apni doodh history dekhe.
+          PIN <strong>Farmer Master</strong> se set hota hai. Har society ka QR alag hai.
+        </p>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' }}>
+          <div ref={qrBoxRef} style={{ padding: 14, background: '#fff', border: '2px solid var(--brand)', borderRadius: 14, flexShrink: 0 }}>
+            {myPassbookUrl
+              ? <QRCodeSVG value={myPassbookUrl} size={200} level="M" includeMargin />
+              : <div style={{ width: 200, height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--muted)' }}>—</div>}
+          </div>
+
+          <div style={{ flex: '1 1 260px', minWidth: 240 }}>
+            <label className="label-text" style={{ fontSize: 11 }}>PUBLIC PASSBOOK LINK</label>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              <input readOnly value={myPassbookUrl} className="input-field" style={{ fontSize: 13 }} onFocus={(e) => e.currentTarget.select()} />
+              <button onClick={copyPassbookUrl} className="btn-secondary" style={{ padding: '0 14px', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }} title="Copy link">
+                <Copy size={16} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+              <button onClick={printQR} className="btn-primary" style={{ padding: '10px 18px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Printer size={16} /> Print QR (board ke liye)
+              </button>
+              <button onClick={syncPassbook} disabled={syncingPassbook} className="btn-secondary" style={{ padding: '10px 18px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                {syncingPassbook ? <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <RefreshCw size={16} />}
+                {syncingPassbook ? 'Sync ho raha hai…' : 'Sync Passbook Data'}
+              </button>
+            </div>
+            <p style={{ color: 'var(--ink-2)', fontSize: 12, marginTop: 12 }}>
+              <strong>Sync</strong> purani milk entries ko passbook mein daalta hai (naye farmers/entries auto-mirror hote hain).
+              Sync ke baad har farmer ka <strong>PIN Farmer Master</strong> se set/reset karein.
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* SMS Configuration */}
       <div className="glass-card" style={{ padding: 24, marginBottom: 20 }}>

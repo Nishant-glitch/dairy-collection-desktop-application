@@ -19,6 +19,7 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Subscribe from './pages/Subscribe';
 import AdminSubscriptions from './pages/AdminSubscriptions';
+import Passbook from './pages/Passbook';
 import { hasAccess } from './utils/subscription';
 import { Milk } from 'lucide-react';
 
@@ -58,6 +59,18 @@ function App() {
       </div>
     </div>
   );
+
+  // Public, no-login route: /passbook/{societyUid}. Checked before the auth
+  // gate so farmers can open it without an account. No React Router needed —
+  // the app is state-routed, so we match the pathname directly.
+  const passbookMatch = window.location.pathname.match(/^\/passbook\/([^/]+)\/?$/);
+  if (passbookMatch) {
+    return (
+      <LanguageProvider>
+        <Passbook societyUid={decodeURIComponent(passbookMatch[1])} />
+      </LanguageProvider>
+    );
+  }
 
   if (loading) {
     return loadingScreen;

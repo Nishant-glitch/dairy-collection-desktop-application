@@ -8,6 +8,7 @@ import { sendSMS } from '../services/sms';
 import { X, Edit2, Trash2, CheckCircle, Droplet, Clock, Calendar, Zap, Printer, MessageSquare, History } from 'lucide-react';
 import { getRateFromMap } from '../utils/rateCalculator';
 import { flattenMilkCollection, farmerHistory, detectQualityDrop } from '../utils/quality';
+import { historyKey } from '../utils/passbook';
 
 interface Entry {
   farmerCode: string;
@@ -283,6 +284,17 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     const entryRef = ref(database, up(`milkCollection/${sessionDate}/${sessionShift}/${farmerCode}`));
     await set(entryRef, entryData);
 
+    // Mirror into the public passbook history (scoped, passbook-only fields).
+    await set(ref(database, up(`passbookHistory/${farmerCode}/${historyKey(sessionDate, sessionShift)}`)), {
+      date: sessionDate,
+      shift: sessionShift,
+      qty: entryData.qty,
+      fat: entryData.fat,
+      ...(entryData.snf != null ? { snf: entryData.snf } : {}),
+      rate: entryData.rate,
+      amount: entryData.amount,
+    });
+
     if (printEnabled) {
       // Running total for today's same shift (whole DCS, this date + shift).
       const shiftTotal = await buildShiftTotal();
@@ -399,6 +411,8 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     if (confirm('Are you sure you want to delete this entry?')) {
       const entryRef = ref(database, up(`milkCollection/${sessionDate}/${sessionShift}/${code}`));
       await remove(entryRef);
+      // Keep the passbook mirror in sync.
+      await remove(ref(database, up(`passbookHistory/${code}/${historyKey(sessionDate, sessionShift)}`)));
       setDuplicateWarning({show: false, message: ''});
     }
   };
