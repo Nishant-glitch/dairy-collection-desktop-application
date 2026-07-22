@@ -215,25 +215,36 @@ body {
   border-right: 1px solid var(--line);
 }
 
-/* Desktop layout: navbar (56px, sticky) stays put; the body row fills the
-   rest of the viewport and does NOT scroll itself. The sidebar holds its
-   place (scrolls internally only if the menu overflows) and ONLY the main
-   content area scrolls. Scoped to desktop so the mobile fixed drawer below
-   (max-width: 768px) is untouched. */
+/* Desktop layout: pin the whole shell to the viewport so only the main
+   content scrolls. The critical bits are (1) a DEFINITE height on the shell
+   with overflow:hidden — so the page can't grow past the viewport — and
+   (2) min-height:0 on the flex children, because a flex item's default
+   min-height:auto refuses to shrink below its content, which would let tall
+   content push the row (and the sidebar) taller than the screen. Scoped to
+   desktop so the mobile fixed drawer (max-width: 768px) is untouched. */
 @media (min-width: 769px) {
+  .app-shell {
+    height: 100vh;
+    overflow: hidden;
+  }
+  .navbar {
+    flex-shrink: 0; /* keep the 56px navbar from being squeezed */
+  }
   .app-body-row {
-    height: calc(100vh - 56px);
+    flex: 1;
+    min-height: 0;  /* allow the row to be shorter than its content */
     overflow: hidden;
   }
   .sidebar {
     height: 100%;
-    overflow-y: auto;
+    overflow-y: auto; /* only scrolls if the menu itself overflows */
     flex-shrink: 0;
   }
   .main-content {
     flex: 1;
+    min-height: 0;    /* let overflow-y actually take effect */
     height: 100%;
-    overflow-y: auto;
+    overflow-y: auto; /* ONLY this area scrolls */
   }
 }
 

@@ -118,7 +118,7 @@ function App() {
 
   return (
     <LanguageProvider>
-      <div className="min-h-screen flex flex-col">
+      <div className="min-h-screen flex flex-col app-shell">
         <Navbar onMenuToggle={() => setSidebarOpen(!sidebarOpen)} />
         <div className="flex flex-1 relative app-body-row">
           <Sidebar 
