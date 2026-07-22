@@ -3,7 +3,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import app from '../firebase/config';
 import { isValidPin } from '../utils/passbook';
 import { formatIndianCurrency } from '../utils/rateCalculator';
-import { Milk, Lock, Loader2, LogOut, Droplet, ShoppingBag, Calculator } from 'lucide-react';
+import { Milk, Lock, Loader2, LogOut, Droplet, ShoppingBag, MinusCircle, Calculator } from 'lucide-react';
 
 // Public, no-login farmer passbook at /passbook/{societyUid}. SECURE: all
 // verification + data fetch happens in the getFarmerPassbook callable (Admin
@@ -13,13 +13,13 @@ const getFarmerPassbook = httpsCallable(functions, 'getFarmerPassbook');
 
 interface MilkRow { date: string; shift: string; qty: number; fat: number; snf: number | null; rate: number; amount: number; }
 interface GrossRow { date: string; item: string; category: string; pcs: number; rate: number; amount: number; }
-interface Summary { milkQty: number; milkAmount: number; deductionAmount: number; bfAmount: number; netPayable: number; }
+interface Summary { milkQty: number; milkAmount: number; grossAmount: number; deductionAmount: number; bfAmount: number; netPayable: number; }
 interface PassbookData {
   farmerName: string; societyName: string; month: string; availableMonths: string[];
-  milk: MilkRow[]; gross: GrossRow[]; summary: Summary;
+  milk: MilkRow[]; gross: GrossRow[]; deductions: GrossRow[]; summary: Summary;
 }
 
-type Tab = 'milk' | 'deductions' | 'summary';
+type Tab = 'milk' | 'gross' | 'deductions' | 'summary';
 
 const monthLabel = (m: string) => {
   if (!/^\d{4}-\d{2}$/.test(m)) return m;
@@ -51,7 +51,8 @@ const Passbook: React.FC<{ societyUid: string }> = ({ societyUid }) => {
         availableMonths: Array.isArray(json.availableMonths) ? json.availableMonths : [],
         milk: Array.isArray(json.milk) ? json.milk : [],
         gross: Array.isArray(json.gross) ? json.gross : [],
-        summary: json.summary || { milkQty: 0, milkAmount: 0, deductionAmount: 0, bfAmount: 0, netPayable: 0 },
+        deductions: Array.isArray(json.deductions) ? json.deductions : [],
+        summary: json.summary || { milkQty: 0, milkAmount: 0, grossAmount: 0, deductionAmount: 0, bfAmount: 0, netPayable: 0 },
       });
       return true;
     } catch (err: any) {
@@ -152,7 +153,8 @@ const Passbook: React.FC<{ societyUid: string }> = ({ societyUid }) => {
           {/* Tabs */}
           <div style={{ display: 'flex', gap: 6, marginBottom: 14, background: '#fff', padding: 6, borderRadius: 12, boxShadow: '0 6px 24px rgba(0,0,0,0.06)', overflowX: 'auto' }}>
             <TabBtn active={tab === 'milk'} onClick={() => setTab('milk')} icon={<Droplet size={15} />} label="Milk" />
-            <TabBtn active={tab === 'deductions'} onClick={() => setTab('deductions')} icon={<ShoppingBag size={15} />} label="Deductions" />
+            <TabBtn active={tab === 'gross'} onClick={() => setTab('gross')} icon={<ShoppingBag size={15} />} label="Gross" />
+            <TabBtn active={tab === 'deductions'} onClick={() => setTab('deductions')} icon={<MinusCircle size={15} />} label="Deductions" />
             <TabBtn active={tab === 'summary'} onClick={() => setTab('summary')} icon={<Calculator size={15} />} label="Summary" />
           </div>
 
@@ -188,7 +190,7 @@ const Passbook: React.FC<{ societyUid: string }> = ({ societyUid }) => {
               </Card>
             )}
 
-            {tab === 'deductions' && (
+            {tab === 'gross' && (
               <Card>
                 <TableScroll>
                   <table style={tableStyle}>
@@ -207,7 +209,29 @@ const Passbook: React.FC<{ societyUid: string }> = ({ societyUid }) => {
                     </tbody>
                   </table>
                 </TableScroll>
-                <TotalBar left="Total Deductions" right={formatIndianCurrency(data.summary.deductionAmount)} rightColor="#b45309" />
+                <TotalBar left="Total Gross (saman)" right={formatIndianCurrency(data.summary.grossAmount)} rightColor="#b45309" />
+              </Card>
+            )}
+
+            {tab === 'deductions' && (
+              <Card>
+                <TableScroll>
+                  <table style={tableStyle}>
+                    <thead><tr style={theadRow}>
+                      <th style={th}>Date</th><th style={th}>Description</th><th style={thR}>Amount</th>
+                    </tr></thead>
+                    <tbody>
+                      {data.deductions.length === 0 ? <EmptyRow cols={3} /> : data.deductions.map((r, i) => (
+                        <tr key={i} style={bodyRow}>
+                          <td style={td}>{r.date}</td>
+                          <td style={td}>{r.item || r.category}{r.category && r.item ? ` (${r.category})` : ''}</td>
+                          <td style={{ ...tdR, fontWeight: 700, color: '#dc2626' }}>{formatIndianCurrency(r.amount)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </TableScroll>
+                <TotalBar left="Total Deductions" right={formatIndianCurrency(data.summary.deductionAmount)} rightColor="#dc2626" />
               </Card>
             )}
 
@@ -215,7 +239,8 @@ const Passbook: React.FC<{ societyUid: string }> = ({ societyUid }) => {
               <Card>
                 <div style={{ padding: '8px 4px' }}>
                   <SummaryRow label="Milk Collection" value={`+ ${formatIndianCurrency(data.summary.milkAmount)}`} color="#15803d" />
-                  <SummaryRow label="Deductions (saman/advance)" value={`− ${formatIndianCurrency(data.summary.deductionAmount)}`} color="#b45309" />
+                  <SummaryRow label="Gross Entries (saman)" value={`− ${formatIndianCurrency(data.summary.grossAmount)}`} color="#b45309" />
+                  <SummaryRow label="Deductions" value={`− ${formatIndianCurrency(data.summary.deductionAmount)}`} color="#dc2626" />
                   <SummaryRow
                     label="Previous Balance (B/F)"
                     value={data.summary.bfAmount === 0 ? '₹0' : `${data.summary.bfAmount > 0 ? '+ ' : '− '}${formatIndianCurrency(Math.abs(data.summary.bfAmount))}`}

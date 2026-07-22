@@ -20,6 +20,15 @@ const LOCK_MS = 15 * 60 * 1000; // 15 minutes
 
 const sum = (rows: any[], pick: (r: any) => number) => rows.reduce((s, r) => s + pick(r), 0);
 
+// grossEntries is a single node (Cattle Feed / Medicine / Advance / Store /
+// Other). We split it for display: cash-style deductions vs goods ("gross" /
+// saman). Both are still deducted from the milk payment (matches Payment
+// Register, which sums ALL grossEntries as deductions). Adjust this list if the
+// society treats other categories as pure deductions.
+const DEDUCTION_CATEGORIES = ['Advance'];
+const isDeductionCategory = (cat: string) =>
+  DEDUCTION_CATEGORIES.some((c) => c.toLowerCase() === String(cat || '').trim().toLowerCase());
+
 // Same as PaymentRegister.prevMonthOf — the month immediately before m.
 const prevMonthOf = (m: string): string => {
   const [y, mo] = m.split('-').map(Number);
@@ -134,9 +143,13 @@ export const getFarmerPassbook = onCall({ region: 'us-central1' }, async (reques
     const milk = allMilk
       .filter((m) => m.date.startsWith(selectedMonth))
       .sort((a, b) => a.date.localeCompare(b.date) || a.shift.localeCompare(b.shift));
-    const gross = allGross
+    const monthGross = allGross
       .filter((g) => g.date.startsWith(selectedMonth))
       .sort((a, b) => a.date.localeCompare(b.date));
+
+    // Split into goods ("gross" / saman) vs cash deductions (Advance, ...).
+    const gross = monthGross.filter((g) => !isDeductionCategory(g.category));
+    const deductions = monthGross.filter((g) => isDeductionCategory(g.category));
 
     // Balance Forward — same rule as PaymentRegister: only if the stored
     // balance is exactly for the previous month.
@@ -146,8 +159,18 @@ export const getFarmerPassbook = onCall({ region: 'us-central1' }, async (reques
 
     const milkQty = sum(milk, (e) => e.qty);
     const milkAmount = sum(milk, (e) => e.amount);
-    const deductionAmount = sum(gross, (e) => e.amount);
-    const netPayable = milkAmount - deductionAmount + bfAmount; // matches Payment Register
+    const grossAmount = sum(gross, (e) => e.amount);
+    const deductionAmount = sum(deductions, (e) => e.amount);
+    // Both goods + cash reduce the payment (all grossEntries), matching Payment
+    // Register (netPayable = milkAmount − allGrossEntries + bfAmount).
+    const netPayable = milkAmount - grossAmount - deductionAmount + bfAmount;
+
+    logger.info('getFarmerPassbook ok', {
+      societyUid, farmerCode, selectedMonth,
+      allMilk: allMilk.length, allGross: allGross.length,
+      milkInMonth: milk.length, grossInMonth: gross.length, deductionsInMonth: deductions.length,
+      availableMonths,
+    });
 
     return {
       success: true,
@@ -155,9 +178,10 @@ export const getFarmerPassbook = onCall({ region: 'us-central1' }, async (reques
       societyName,
       month: selectedMonth,
       availableMonths: availableMonths.length ? availableMonths : [selectedMonth],
-      milk,   // date, shift, qty, fat, snf, rate, amount
-      gross,  // date, item, category, pcs, rate, amount
-      summary: { milkQty, milkAmount, deductionAmount, bfAmount, netPayable },
+      milk,        // date, shift, qty, fat, snf, rate, amount
+      gross,       // goods/saman: date, item, category, pcs, rate, amount
+      deductions,  // cash deductions (Advance): date, item, category, pcs, rate, amount
+      summary: { milkQty, milkAmount, grossAmount, deductionAmount, bfAmount, netPayable },
     };
   } catch (err: any) {
     logger.error('getFarmerPassbook failed', err);
