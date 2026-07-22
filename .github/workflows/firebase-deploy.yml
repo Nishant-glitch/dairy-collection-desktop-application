@@ -29,4 +29,4 @@ jobs:
       - name: Deploy to Firebase
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        run: npx firebase-tools deploy --only functions,database --token "$FIREBASE_TOKEN" --project farmerdb --non-interactive
+        run: npx firebase-tools deploy --only functions,database --token "$FIREBASE_TOKEN" --project farmerdb --non-interactive --force
