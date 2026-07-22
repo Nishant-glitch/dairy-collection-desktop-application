@@ -48,15 +48,7 @@ const FarmerMaster: React.FC = () => {
 
   useEffect(() => {
     const unsubscribe = loadFarmers();
-    const unsubPin = onValue(ref(database, up('passbookData')), (snap) => {
-      const map: Record<string, boolean> = {};
-      if (snap.exists()) {
-        const data = snap.val();
-        Object.keys(data).forEach((code) => { map[code] = !!data[code]?.pinHash; });
-      }
-      setPinStatus(map);
-    });
-    return () => { unsubscribe(); unsubPin(); };
+    return () => { unsubscribe(); };
   }, []);
 
   useEffect(() => {
@@ -67,13 +59,17 @@ const FarmerMaster: React.FC = () => {
     const farmersRef = ref(database, up('farmers'));
     return onValue(farmersRef, (snapshot) => {
       const farmerArray: Farmer[] = [];
+      const pinMap: Record<string, boolean> = {};
       if (snapshot.exists()) {
         const data = snapshot.val();
         Object.keys(data).forEach((code) => {
+          // pinHash lives on the farmer record itself; track which have it set.
+          pinMap[code] = !!data[code]?.pinHash;
           farmerArray.push({ farmerCode: code, ...data[code] });
         });
       }
       setFarmers(farmerArray);
+      setPinStatus(pinMap);
     });
   };
 
@@ -133,6 +129,18 @@ const FarmerMaster: React.FC = () => {
     }
 
     const farmerRef = ref(database, up(`farmers/${formData.farmerCode}`));
+
+    // pinHash lives on the farmer record (users/{uid}/farmers/{code}/pinHash).
+    // A new 4-digit PIN overwrites it; leaving PIN blank preserves the existing
+    // hash so a normal edit never wipes it.
+    let pinHash: string | null = null;
+    if (pinInput) {
+      pinHash = await hashPin(pinInput);
+    } else {
+      const existing = await get(farmerRef);
+      pinHash = existing.exists() ? (existing.val().pinHash || null) : null;
+    }
+
     await set(farmerRef, {
       farmerName: formData.farmerName,
       address: formData.address,
@@ -143,22 +151,7 @@ const FarmerMaster: React.FC = () => {
       branchAddress: formData.branchAddress,
       mobileNo: formData.mobileNo,
       upiId: formData.upiId,
-    });
-
-    // Public passbook mirror — ONLY name + pinHash (no sensitive fields). A new
-    // PIN overwrites the hash; leaving PIN blank preserves the existing hash.
-    const pdRef = ref(database, up(`passbookData/${formData.farmerCode}`));
-    let pinHash: string | null = null;
-    if (pinInput) {
-      pinHash = await hashPin(pinInput);
-    } else if (pinStatus[formData.farmerCode]) {
-      const existing = await get(pdRef);
-      pinHash = existing.exists() ? existing.val().pinHash || null : null;
-    }
-    await set(pdRef, {
-      name: formData.farmerName,
       ...(pinHash ? { pinHash } : {}),
-      updatedAt: Date.now(),
     });
 
     setPinInput('');
@@ -168,8 +161,7 @@ const FarmerMaster: React.FC = () => {
   const handleDelete = async (code: string) => {
     if (confirm('Are you sure you want to delete this farmer?')) {
       await remove(ref(database, up(`farmers/${code}`)));
-      // Clean up the public passbook mirror too.
-      await remove(ref(database, up(`passbookData/${code}`)));
+      // Clean up the denormalized passbook history too.
       await remove(ref(database, up(`passbookHistory/${code}`)));
     }
   };

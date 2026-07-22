@@ -458,25 +458,15 @@ const Settings: React.FC = () => {
     setTimeout(() => w.print(), 350);
   };
 
-  // Backfill the public passbook nodes from existing data (owner is authed).
-  // Sets each farmer's name (preserving any existing pinHash) and mirrors all
-  // milk-collection entries into passbookHistory. PINs are set per-farmer in
-  // Farmer Master; this does not touch them.
+  // Backfill the passbook HISTORY from existing milk-collection entries so old
+  // data shows up in the passbook. Farmer name + pinHash live on the farmer
+  // record itself (read directly by the Cloud Function), so this only mirrors
+  // history. New entries auto-mirror on save; PINs are set in Farmer Master.
   const syncPassbook = async () => {
     setSyncingPassbook(true);
     try {
-      const [farmersSnap, mcSnap] = await Promise.all([
-        get(ref(database, up('farmers'))),
-        get(ref(database, up('milkCollection'))),
-      ]);
+      const mcSnap = await get(ref(database, up('milkCollection')));
       const updates: Record<string, any> = {};
-      if (farmersSnap.exists()) {
-        const f = farmersSnap.val();
-        Object.keys(f).forEach((code) => {
-          updates[`passbookData/${code}/name`] = f[code]?.farmerName || code;
-          updates[`passbookData/${code}/updatedAt`] = Date.now();
-        });
-      }
       let entryCount = 0;
       if (mcSnap.exists()) {
         flattenMilkCollection(mcSnap.val()).forEach((e) => {
@@ -488,7 +478,7 @@ const Settings: React.FC = () => {
         });
       }
       await update(ref(database, up('')), updates);
-      alert(`✅ Passbook sync ho gaya. ${entryCount} entries mirror ki gayin.\nNaye farmers ke 4-digit PIN Farmer Master se set karein.`);
+      alert(`✅ Passbook history sync ho gaya. ${entryCount} entries mirror ki gayin.\nHar farmer ka 4-digit PIN Farmer Master se set karein.`);
     } catch (err: any) {
       alert('❌ Sync failed: ' + err.message);
     } finally {
