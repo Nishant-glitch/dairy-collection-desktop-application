@@ -158,45 +158,12 @@ const PaymentRegister: React.FC = () => {
 
     const farmerPayments: { [key: string]: PaymentEntry } = {};
 
-    if (snapshot.exists()) {
-      const data = snapshot.val();
-      Object.keys(data).forEach((date) => {
-        if (date >= startDate && date <= endDate) {
-          const shifts = data[date];
-          Object.values(shifts).forEach((shift: any) => {
-            Object.keys(shift).forEach((farmerId) => {
-              const entry = shift[farmerId];
-              if (!farmerPayments[farmerId]) {
-                const farmer = farmers[farmerId] || {};
-                farmerPayments[farmerId] = {
-                  farmerId,
-                  farmerName: farmer.farmerName || 'Unknown',
-                  mobile: farmer.mobileNo || '',
-                  upiId: farmer.upiId || `${farmer.mobileNo}@ybl`,
-                  grossAmount: 0,
-                  deductions: 0,
-                  bfAmount: 0,
-                  netPayable: 0,
-                  customAmount: 0,
-                  isPaid: false,
-                };
-              }
-              farmerPayments[farmerId].grossAmount += parseFloat(entry.amount || 0);
-            });
-          });
-        }
-      });
-    }
-
-    // Balance Forward: a farmer's balance from the immediately-preceding month
-    // carries into this month. Read it up-front so we can also surface farmers
-    // who carry a debt/credit but have no milk this month.
-    const bfMonth = prevMonthOf(month);
-    const balSnap = await get(ref(database, up('farmerBalances')));
-    const balances: any = balSnap.exists() ? balSnap.val() : {};
-    Object.keys(balances).forEach((farmerId) => {
-      const bal = balances[farmerId];
-      if (bal && bal.forMonth === bfMonth && bal.balance && !farmerPayments[farmerId]) {
+    // Get-or-create a payment row so the farmer list is a UNION of everyone
+    // with ANY activity this month (milk, gross/deductions) or a carried
+    // balance — never just farmers who gave milk. Missing a gross-only farmer
+    // would drop their (usually negative) net and lose their B/F.
+    const getOrCreate = (farmerId: string): PaymentEntry => {
+      if (!farmerPayments[farmerId]) {
         const farmer = farmers[farmerId] || {};
         farmerPayments[farmerId] = {
           farmerId,
@@ -211,25 +178,54 @@ const PaymentRegister: React.FC = () => {
           isPaid: false,
         };
       }
+      return farmerPayments[farmerId];
+    };
+
+    const inMonth = (d: any) => typeof d === 'string' && d >= startDate && d <= endDate;
+
+    // 1. Milk collection (income).
+    if (snapshot.exists()) {
+      const data = snapshot.val();
+      Object.keys(data).forEach((date) => {
+        if (date >= startDate && date <= endDate) {
+          const shifts = data[date];
+          Object.values(shifts).forEach((shift: any) => {
+            Object.keys(shift).forEach((farmerId) => {
+              getOrCreate(farmerId).grossAmount += parseFloat(shift[farmerId].amount || 0);
+            });
+          });
+        }
+      });
+    }
+
+    // 2. Balance Forward carriers — a farmer with a non-zero prior-month
+    // balance must appear even with no activity this month.
+    const bfMonth = prevMonthOf(month);
+    const balSnap = await get(ref(database, up('farmerBalances')));
+    const balances: any = balSnap.exists() ? balSnap.val() : {};
+    Object.keys(balances).forEach((farmerId) => {
+      const bal = balances[farmerId];
+      if (bal && bal.forMonth === bfMonth && bal.balance) getOrCreate(farmerId);
     });
 
-    const grossEntriesRef = ref(database, up('grossEntries'));
-    const grossEntriesSnapshot = await get(grossEntriesRef);
+    // 3. Gross entries / deductions from the nested per-farmer buckets
+    // (grossEntries/{farmerCode}/{entryId}). Creates the farmer row if they
+    // only have deductions this month — this is the core fix. Legacy flat
+    // entries (grossEntries/{entryId} with a direct `date`) are skipped, same
+    // as the Reports payment register, so a stray entryId can't become a
+    // phantom farmer.
+    const grossEntriesSnapshot = await get(ref(database, up('grossEntries')));
     if (grossEntriesSnapshot.exists()) {
       const grossEntriesData = grossEntriesSnapshot.val();
-      Object.keys(grossEntriesData).forEach((farmerId) => {
-        if (farmerPayments[farmerId]) {
-          const entries = grossEntriesData[farmerId];
-          let totalDeduction = 0;
-          Object.values(entries).forEach((entry: any) => {
-            // Only count deductions/gross-collection entries dated within the
-            // selected month (same startDate..endDate window as grossAmount).
-            if (entry.date && entry.date >= startDate && entry.date <= endDate) {
-              totalDeduction += parseFloat(entry.amount || 0);
-            }
-          });
-          farmerPayments[farmerId].deductions = totalDeduction;
-        }
+      Object.keys(grossEntriesData).forEach((code) => {
+        const bucket = grossEntriesData[code];
+        if (!bucket || typeof bucket !== 'object') return;
+        if (typeof bucket.date === 'string') return; // legacy flat entry — skip
+        let total = 0;
+        Object.values(bucket).forEach((entry: any) => {
+          if (entry && inMonth(entry.date)) total += parseFloat(entry.amount || 0);
+        });
+        if (total !== 0) getOrCreate(code).deductions += total;
       });
     }
 
