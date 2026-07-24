@@ -15,6 +15,7 @@ import BMCMaster from './pages/BMCMaster';
 import BMCEntry from './pages/BMCEntry';
 import Deductions from './pages/Deductions';
 import PaymentRegister from './pages/PaymentRegister';
+import CashBook from './pages/CashBook';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Subscribe from './pages/Subscribe';
@@ -118,6 +119,8 @@ function App() {
         return <Deductions />;
       case 'payment-register':
         return <PaymentRegister />;
+      case 'cash-book':
+        return <CashBook />;
       case 'reports':
         return <Reports />;
       case 'settings':

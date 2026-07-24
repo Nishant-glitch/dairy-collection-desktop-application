@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ref, get, set, onValue } from 'firebase/database';
+import { ref, get, set, onValue, push } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -34,6 +34,8 @@ const PaymentRegister: React.FC = () => {
   const [month, setMonth] = useState(new Date().toISOString().substring(0, 7));
   const [payments, setPayments] = useState<PaymentEntry[]>([]);
   const [paidFilter, setPaidFilter] = useState<'all' | 'paid' | 'unpaid'>('all');
+  // Cash vs Bank for the auto-generated Cash Book entry when marking paid.
+  const [payMode, setPayMode] = useState<'cash' | 'bank'>('cash');
   const [locking, setLocking] = useState(false);
   const [farmers, setFarmers] = useState<any>({});
   const [dcsInfo, setDcsInfo] = useState<any>({});
@@ -330,7 +332,33 @@ const PaymentRegister: React.FC = () => {
       netAmount: payment.customAmount,
       status: 'paid',
       paidOn: Date.now(),
+      payMode,
     });
+
+    // Auto-link into the Cash Book (payment side). Dedup by sourceRef so
+    // re-marking never creates a second entry. Only when actually paying out
+    // (positive net) — a negative net means the farmer owes the society.
+    const sourceRef = `${month}_${payment.farmerId}`;
+    const paidAmount = payment.customAmount || 0;
+    if (paidAmount > 0) {
+      const cbSnap = await get(ref(database, up('cashBook')));
+      const already = cbSnap.exists() && Object.values(cbSnap.val()).some((e: any) => e.sourceRef === sourceRef);
+      if (!already) {
+        await push(ref(database, up('cashBook')), {
+          date: new Date().toISOString().split('T')[0],
+          side: 'payment',
+          ledgerFolio: '',
+          accountName: 'दूध उत्पादक',
+          particulars: `${payment.farmerName} (${payment.farmerId}) - ${month} milk payment`,
+          voucherNo: '',
+          cashAmount: payMode === 'cash' ? paidAmount : 0,
+          bankAmount: payMode === 'bank' ? paidAmount : 0,
+          source: 'payment-register',
+          sourceRef,
+          createdAt: Date.now(),
+        });
+      }
+    }
 
     if (payment.mobile) {
       await sendPaymentSMS(
@@ -420,6 +448,22 @@ const PaymentRegister: React.FC = () => {
 
       {payments.length > 0 && (
         <div className="glass-card" style={{ padding: '20px 24px' }}>
+          {/* Payment mode for the Cash Book auto-entry when marking paid */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-2)' }}>Mark-as-Paid mode (Cash Book):</span>
+            <div style={{ display: 'flex', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+              {(['cash', 'bank'] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setPayMode(m)}
+                  style={{ padding: '6px 16px', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700, textTransform: 'capitalize', background: payMode === m ? 'var(--brand)' : '#fff', color: payMode === m ? '#fff' : 'var(--ink-2)' }}
+                >
+                  {m === 'cash' ? 'नकद Cash' : 'बैंक Bank'}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Paid / Unpaid filter */}
           <div className="flex gap-2 bg-black/5 rounded-xl border border-slate-200" style={{ padding: '4px', marginBottom: '16px', maxWidth: '360px' }}>
             {([
