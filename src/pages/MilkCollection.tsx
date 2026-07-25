@@ -5,8 +5,9 @@ import { up } from '../utils/userDb';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatIndianCurrency } from '../utils/rateCalculator';
 import { sendSMS } from '../services/sms';
-import { X, Edit2, Trash2, CheckCircle, Droplet, Clock, Calendar, Zap, Printer, MessageSquare, History } from 'lucide-react';
+import { X, Edit2, Trash2, CheckCircle, Droplet, Clock, Calendar, Zap, Printer, MessageSquare, History, WifiOff } from 'lucide-react';
 import { getRateFromMap } from '../utils/rateCalculator';
+import { useConnection } from '../hooks/useConnection';
 
 interface Entry {
   farmerCode: string;
@@ -44,6 +45,8 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   const [isModifying, setIsModifying] = useState(false);
   const [warningMessage, setWarningMessage] = useState('');
   const [showSavedMessage, setShowSavedMessage] = useState(false);
+  const [offlineSaved, setOfflineSaved] = useState(false);
+  const online = useConnection();
   const [duplicateWarning, setDuplicateWarning] = useState<{show: boolean, message: string}>({show: false, message: ''});
 
   const [todayEntries, setTodayEntries] = useState<Entry[]>([]);
@@ -252,34 +255,57 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     }
 
     const entryRef = ref(database, up(`milkCollection/${sessionDate}/${sessionShift}/${farmerCode}`));
-    await set(entryRef, entryData);
-    // Passbook reads milkCollection live via the Cloud Function — no mirror needed.
 
-    if (printEnabled) {
-      // Running total for today's same shift (whole DCS, this date + shift).
-      const shiftTotal = await buildShiftTotal();
-      printSlip(shiftTotal);
+    // IMPORTANT (weak internet): offline, `set()` does NOT resolve until the
+    // connection returns — awaiting it would hang the save and make the clerk
+    // think the entry was lost. So we only await when online. Offline, the
+    // write is queued in RTDB's local cache (UI updates optimistically) and
+    // auto-syncs on reconnect — the entry is safe either way.
+    const writePromise = set(entryRef, entryData);
+    if (online) {
+      await writePromise;
+    } else {
+      writePromise.catch((e) => console.error('Queued offline write will retry:', e));
     }
 
-    if (smsEnabled) {
-      const farmerSnap = await get(ref(database, up(`farmers/${farmerCode}`)));
-      const farmerMobile = farmerSnap.exists() ? farmerSnap.val().mobileNo : '';
-      
-      if (farmerMobile) {
-        await sendSMS({
-          farmerId: farmerCode,
-          mobile: farmerMobile,
-          farmerName: farmerName,
-          qty: qty,
-          fat: fat,
-          amount: (amount || 0).toFixed(2),
-        });
+    // Print works offline too (buildShiftTotal reads from the local cache).
+    if (printEnabled) {
+      try {
+        const shiftTotal = await buildShiftTotal();
+        printSlip(shiftTotal);
+      } catch (e) {
+        console.error('Print skipped (offline/no cache):', e);
+      }
+    }
+
+    // SMS only when online — it needs the network.
+    if (online && smsEnabled) {
+      try {
+        const farmerSnap = await get(ref(database, up(`farmers/${farmerCode}`)));
+        const farmerMobile = farmerSnap.exists() ? farmerSnap.val().mobileNo : '';
+        if (farmerMobile) {
+          await sendSMS({
+            farmerId: farmerCode,
+            mobile: farmerMobile,
+            farmerName: farmerName,
+            qty: qty,
+            fat: fat,
+            amount: (amount || 0).toFixed(2),
+          });
+        }
+      } catch (e) {
+        console.error('SMS skipped:', e);
       }
     }
 
     clearForm();
-    setShowSavedMessage(true);
-    setTimeout(() => setShowSavedMessage(false), 1500);
+    if (online) {
+      setShowSavedMessage(true);
+      setTimeout(() => setShowSavedMessage(false), 1500);
+    } else {
+      setOfflineSaved(true);
+      setTimeout(() => setOfflineSaved(false), 4000);
+    }
     farmerCodeRef.current?.focus();
   };
 
@@ -552,6 +578,11 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
       {showSavedMessage && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 rounded-2xl bg-green-500 text-white font-black shadow-2xl flex items-center gap-3 animate-bounce" style={{ padding: '12px 24px' }}>
           <CheckCircle size={20} /> ENTRY SAVED SUCCESSFULLY
+        </div>
+      )}
+      {offlineSaved && (
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 rounded-2xl text-white font-black shadow-2xl flex items-center gap-3" style={{ padding: '12px 24px', background: '#d97706', maxWidth: '92%' }}>
+          <WifiOff size={20} /> OFFLINE — Entry local pe save ho gayi, internet aane par apne aap sync hogi
         </div>
       )}
 

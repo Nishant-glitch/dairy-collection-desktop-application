@@ -23,6 +23,9 @@ const FarmerMaster: React.FC = () => {
   const { t } = useLanguage();
   const [farmers, setFarmers] = useState<Farmer[]>([]);
   const [filteredFarmers, setFilteredFarmers] = useState<Farmer[]>([]);
+  // Render only PAGE_SIZE rows at a time so 1000+ farmers don't hang the page.
+  const PAGE_SIZE = 50;
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -74,6 +77,7 @@ const FarmerMaster: React.FC = () => {
   };
 
   const filterFarmers = () => {
+    setVisibleCount(PAGE_SIZE); // reset paging whenever the filter changes
     if (!searchTerm) {
       setFilteredFarmers(farmers);
       return;
@@ -366,7 +370,7 @@ const FarmerMaster: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {filteredFarmers.map((farmer) => (
+              {filteredFarmers.slice(0, visibleCount).map((farmer) => (
                 <tr key={farmer.farmerCode} className="table-row" style={{ height: 'auto' }}>
                   <td className="px-4 py-[9px]" style={{ padding: '12px 16px', fontWeight: 'bold', color: 'var(--ink)', fontSize: '14px' }}>{farmer.farmerCode}</td>
                   <td className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'var(--ink)', fontSize: '14px' }}>{farmer.farmerName}</td>
@@ -401,8 +405,15 @@ const FarmerMaster: React.FC = () => {
             </tbody>
           </table>
         </div>
+        {filteredFarmers.length > visibleCount && (
+          <div style={{ textAlign: 'center', marginTop: 16 }}>
+            <button onClick={() => setVisibleCount((c) => c + PAGE_SIZE)} className="btn-secondary" style={{ padding: '10px 24px', fontWeight: 700 }}>
+              Load more ({visibleCount} / {filteredFarmers.length})
+            </button>
+          </div>
+        )}
         <div style={{ marginTop: '12px', fontSize: '12px', color: 'var(--ink-2)' }}>
-          Showing {filteredFarmers.length} farmers
+          Showing {Math.min(visibleCount, filteredFarmers.length)} of {filteredFarmers.length} farmers
         </div>
       </div>
 
