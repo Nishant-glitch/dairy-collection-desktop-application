@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, Globe, Menu } from 'lucide-react';
+import { LogOut, Globe, Menu, Wifi, WifiOff } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { signOut } from 'firebase/auth';
 import { auth, database } from '../firebase/config';
 import { isAdmin, up } from '../utils/userDb';
 import { ref, onValue } from 'firebase/database';
+import { useConnection } from '../hooks/useConnection';
 import FarmerLookup from './FarmerLookup';
 import CalculatorWidget from './CalculatorWidget';
 
@@ -19,6 +20,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuToggle, onNavigate }) => {
   const user = auth.currentUser;
   const userIsAdmin = isAdmin();
   const [dcsInfo, setDcsInfo] = useState<any>({});
+  const online = useConnection();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -94,6 +96,20 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuToggle, onNavigate }) => {
 
       {/* Right side */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* Online / offline indicator */}
+        <div
+          title={online ? 'Online' : 'Offline — entries local pe save ho rahi hain, internet aane par sync hongi'}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 999,
+            background: online ? 'rgba(22,163,74,0.1)' : 'rgba(239,68,68,0.12)',
+            border: `1px solid ${online ? 'rgba(22,163,74,0.35)' : 'rgba(239,68,68,0.4)'}`,
+            color: online ? '#15803d' : '#b91c1c', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap',
+          }}
+        >
+          {online ? <Wifi size={13} /> : <WifiOff size={13} />}
+          <span className="hidden md:inline">{online ? 'Online' : 'Offline'}</span>
+        </div>
+
         {/* Quick tools: farmer lookup + calculator (available on every page) */}
         <FarmerLookup onNavigate={onNavigate} />
         <CalculatorWidget />

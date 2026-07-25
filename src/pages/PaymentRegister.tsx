@@ -34,6 +34,9 @@ const PaymentRegister: React.FC = () => {
   const [month, setMonth] = useState(new Date().toISOString().substring(0, 7));
   const [payments, setPayments] = useState<PaymentEntry[]>([]);
   const [paidFilter, setPaidFilter] = useState<'all' | 'paid' | 'unpaid'>('all');
+  // Render rows in pages so 1000+ farmers don't hang the table.
+  const PM_PAGE = 50;
+  const [pmVisible, setPmVisible] = useState(PM_PAGE);
   // Cash vs Bank for the auto-generated Cash Book entry when marking paid.
   const [payMode, setPayMode] = useState<'cash' | 'bank'>('cash');
   const [locking, setLocking] = useState(false);
@@ -70,6 +73,9 @@ const PaymentRegister: React.FC = () => {
       billUnsub();
     };
   }, []);
+
+  // Reset paging when the result set or the paid/unpaid filter changes.
+  useEffect(() => { setPmVisible(PM_PAGE); }, [paidFilter, payments]);
 
   const loadBMCList = () => {
     const bmcRef = ref(database, up('bmcMaster'));
@@ -380,10 +386,12 @@ const PaymentRegister: React.FC = () => {
 
   const labelStyle: React.CSSProperties = { color: 'var(--ink-2)', fontSize: 13, fontWeight: 600, marginBottom: 8, display: 'block' };
 
-  // Paid/Unpaid filter for the Farmer Payments result table.
-  const visiblePayments = payments.filter((p) =>
+  // Paid/Unpaid filter for the Farmer Payments result table. Totals below use
+  // the full filtered set; only the RENDER is paginated (pmVisible).
+  const filteredPayments = payments.filter((p) =>
     paidFilter === 'all' ? true : paidFilter === 'paid' ? p.isPaid : !p.isPaid
   );
+  const visiblePayments = filteredPayments.slice(0, pmVisible);
   const paidCount = payments.filter((p) => p.isPaid).length;
   const unpaidCount = payments.length - paidCount;
 
@@ -543,7 +551,7 @@ const PaymentRegister: React.FC = () => {
                     </td>
                   </tr>
                 ))}
-                {visiblePayments.length === 0 && (
+                {filteredPayments.length === 0 && (
                   <tr>
                     <td colSpan={8} className="text-center" style={{ padding: '32px 16px', color: 'var(--muted)', fontSize: 14 }}>
                       No {paidFilter} farmers for this month.
@@ -555,22 +563,29 @@ const PaymentRegister: React.FC = () => {
                 <tr>
                   <td colSpan={2} className="px-4 py-[9px]" style={{ padding: '12px 16px', color: 'var(--ink)', fontSize: '14px', fontWeight: 700 }}>TOTAL</td>
                   <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', color: 'var(--brand)', fontSize: '14px', fontWeight: 700 }}>
-                    {formatIndianCurrency(visiblePayments.reduce((sum, p) => sum + p.grossAmount, 0))}
+                    {formatIndianCurrency(filteredPayments.reduce((sum, p) => sum + p.grossAmount, 0))}
                   </td>
                   <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', color: 'var(--ink-2)', fontSize: '14px', fontWeight: 700 }}>
-                    {formatIndianCurrency(visiblePayments.reduce((sum, p) => sum + p.bfAmount, 0))}
+                    {formatIndianCurrency(filteredPayments.reduce((sum, p) => sum + p.bfAmount, 0))}
                   </td>
                   <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', color: '#ef4444', fontSize: '14px', fontWeight: 700 }}>
-                    {formatIndianCurrency(visiblePayments.reduce((sum, p) => sum + p.deductions, 0))}
+                    {formatIndianCurrency(filteredPayments.reduce((sum, p) => sum + p.deductions, 0))}
                   </td>
                   <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', color: 'var(--ink)', fontSize: '14px', fontWeight: 700 }}>
-                    {formatIndianCurrency(visiblePayments.reduce((sum, p) => sum + p.netPayable, 0))}
+                    {formatIndianCurrency(filteredPayments.reduce((sum, p) => sum + p.netPayable, 0))}
                   </td>
                   <td colSpan={2}></td>
                 </tr>
               </tfoot>
             </table>
           </div>
+          {filteredPayments.length > pmVisible && (
+            <div className="no-print" style={{ textAlign: 'center', marginTop: 16 }}>
+              <button onClick={() => setPmVisible((c) => c + PM_PAGE)} className="btn-secondary" style={{ padding: '10px 24px', fontWeight: 700 }}>
+                Load more ({pmVisible} / {filteredPayments.length})
+              </button>
+            </div>
+          )}
         </div>
       )}
       </>
