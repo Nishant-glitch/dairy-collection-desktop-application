@@ -289,6 +289,11 @@ select:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 4px 
   #report-sheet tr {
     border-bottom: 1px solid #000 !important;
   }
+
+  /* Cash Book: keep जमा | भुगतान side-by-side on paper (never stack). */
+  #report-sheet .cashbook-sides { flex-wrap: nowrap !important; gap: 8px !important; }
+  #report-sheet .cashbook-sides table { min-width: 0 !important; font-size: 9px !important; }
+  #report-sheet .cashbook-sides th, #report-sheet .cashbook-sides td { padding: 2px 3px !important; }
 }
 
 /* Mobile / responsive (functional layout rules preserved from previous theme) */

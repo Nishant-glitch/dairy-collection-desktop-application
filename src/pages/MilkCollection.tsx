@@ -7,7 +7,6 @@ import { formatIndianCurrency } from '../utils/rateCalculator';
 import { sendSMS } from '../services/sms';
 import { X, Edit2, Trash2, CheckCircle, Droplet, Clock, Calendar, Zap, Printer, MessageSquare, History } from 'lucide-react';
 import { getRateFromMap } from '../utils/rateCalculator';
-import { flattenMilkCollection, farmerHistory, detectQualityDrop } from '../utils/quality';
 
 interface Entry {
   farmerCode: string;
@@ -246,38 +245,10 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
       timestamp: Date.now(),
     };
 
-    const curSnf = sessionMode === 'SNF' ? parseFloat(snfClr) : null;
     if (sessionMode === 'SNF') {
       entryData.snf = parseFloat(snfClr);
     } else {
       entryData.clr = parseFloat(snfClr);
-    }
-
-    // Quality / adulteration check: compare against this farmer's own recent
-    // average (needs 7+ prior entries). Non-blocking — clerk can save anyway.
-    try {
-      const mcSnap = await get(ref(database, up('milkCollection')));
-      if (mcSnap.exists()) {
-        const all = flattenMilkCollection(mcSnap.val());
-        // Prior entries = this farmer's history excluding the slot being saved.
-        const prior = farmerHistory(all, farmerCode).filter(
-          (e) => !(e.date === sessionDate && e.shift === sessionShift)
-        );
-        const drop = detectQualityDrop(prior, parseFloat(fat), curSnf);
-        if (drop) {
-          const parts: string[] = [];
-          if (drop.fatDrop) parts.push(`FAT ${parseFloat(fat).toFixed(1)} (avg ${drop.avgFat.toFixed(1)})`);
-          if (drop.snfDrop && drop.avgSnf != null && curSnf != null) parts.push(`SNF ${curSnf.toFixed(1)} (avg ${drop.avgSnf.toFixed(1)})`);
-          const proceed = window.confirm(
-            `⚠️ Is farmer ka ${parts.join(' & ')} pichhle average se kaafi kam hai. Dobara check karein?\n\n` +
-            `OK = phir bhi save karein  |  Cancel = ruk jaayein`
-          );
-          if (!proceed) return;
-          entryData.qualityFlag = true; // recorded for future reference
-        }
-      }
-    } catch (e) {
-      console.error('Quality check skipped:', e);
     }
 
     const entryRef = ref(database, up(`milkCollection/${sessionDate}/${sessionShift}/${farmerCode}`));

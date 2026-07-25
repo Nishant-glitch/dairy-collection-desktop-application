@@ -5,12 +5,15 @@ import { signOut } from 'firebase/auth';
 import { auth, database } from '../firebase/config';
 import { isAdmin, up } from '../utils/userDb';
 import { ref, onValue } from 'firebase/database';
+import FarmerLookup from './FarmerLookup';
+import CalculatorWidget from './CalculatorWidget';
 
 interface NavbarProps {
   onMenuToggle: () => void;
+  onNavigate?: (page: string) => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
+const Navbar: React.FC<NavbarProps> = ({ onMenuToggle, onNavigate }) => {
   const { language, setLanguage, t } = useLanguage();
   const [currentTime, setCurrentTime] = useState(new Date());
   const user = auth.currentUser;
@@ -90,7 +93,11 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuToggle }) => {
       </div>
 
       {/* Right side */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        {/* Quick tools: farmer lookup + calculator (available on every page) */}
+        <FarmerLookup onNavigate={onNavigate} />
+        <CalculatorWidget />
+
         <div className="hidden md:flex flex-col items-end mr-4">
           <span style={{ color: 'var(--ink)', fontSize: 12, fontWeight: 600 }}>
             {currentTime.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}

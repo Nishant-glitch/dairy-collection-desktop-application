@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ref, get, set } from 'firebase/database';
+import { ref, get, set, update } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up, isAdmin, getUid } from '../utils/userDb';
 import { MessageSquare, Save, RefreshCw, Shield, Send, Download, FileSpreadsheet, RotateCcw, AlertTriangle, Database, QrCode, Printer, Copy } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import app from '../firebase/config';
 import { passbookUrl } from '../utils/passbook';
 import * as XLSX from 'xlsx';
 import axios from 'axios';
+
+const sendBackupNowFn = httpsCallable(getFunctions(app, 'us-central1'), 'sendBackupNow');
 
 const Settings: React.FC = () => {
   const [smsApiKey, setSmsApiKey] = useState(import.meta.env.VITE_MSG91_AUTH_KEY || '');
@@ -27,6 +31,10 @@ const Settings: React.FC = () => {
   const [selectedUid, setSelectedUid] = useState('');
   const [societyName, setSocietyName] = useState('');
   const qrBoxRef = useRef<HTMLDivElement>(null);
+  const [autoBackup, setAutoBackup] = useState({ enabled: false, email: '' });
+  const [lastBackupAt, setLastBackupAt] = useState<number | null>(null);
+  const [savingBackup, setSavingBackup] = useState(false);
+  const [sendingBackup, setSendingBackup] = useState(false);
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
 
@@ -75,7 +83,12 @@ const Settings: React.FC = () => {
         setBmcBill({ unionName: '', route: '', salesSthan: '', headLoadRate: '', nextBillNo: 1, ...billSnap.val() });
       }
       const dcsSnap = await get(ref(database, up('dcsInfo')));
-      if (dcsSnap.exists()) setSocietyName(dcsSnap.val().name || dcsSnap.val().societyName || '');
+      const dcs = dcsSnap.exists() ? dcsSnap.val() : {};
+      if (dcsSnap.exists()) setSocietyName(dcs.name || dcs.societyName || '');
+      const backupSnap = await get(ref(database, up('settings/backup')));
+      const b = backupSnap.exists() ? backupSnap.val() : {};
+      setAutoBackup({ enabled: !!b.enabled, email: b.email || dcs.email || '' });
+      setLastBackupAt(typeof b.lastBackupAt === 'number' ? b.lastBackupAt : null);
     } catch (err) {
       console.error('Error loading settings:', err);
     }
@@ -456,6 +469,34 @@ const Settings: React.FC = () => {
     setTimeout(() => w.print(), 350);
   };
 
+  // ---- Auto Daily Backup (email via Resend Cloud Function) ----------------
+
+  const saveBackupSettings = async (next: { enabled: boolean; email: string }) => {
+    setSavingBackup(true);
+    try {
+      // Merge — never clobber lastBackupAt written by the Cloud Function.
+      await update(ref(database, up('settings/backup')), { enabled: next.enabled, email: next.email.trim() });
+    } catch (err: any) {
+      alert('❌ Backup settings save nahi hui: ' + err.message);
+    } finally {
+      setSavingBackup(false);
+    }
+  };
+
+  const sendBackupNow = async () => {
+    setSendingBackup(true);
+    try {
+      const resp: any = await sendBackupNowFn({ email: autoBackup.email.trim() });
+      const r = resp?.data || {};
+      if (r.success) { alert('✅ ' + (r.message || 'Backup email bhej diya.')); setLastBackupAt(Date.now()); }
+      else alert('❌ ' + (r.message || 'Backup nahi bhej paaye.'));
+    } catch (err: any) {
+      alert('❌ Backup email failed: ' + (err?.message || 'unknown'));
+    } finally {
+      setSendingBackup(false);
+    }
+  };
+
   const handleTestSMS = async () => {
     if (!testMobile.trim() || !/^\d{10}$/.test(testMobile.trim())) {
       alert('Please enter valid 10-digit number!');
@@ -539,6 +580,56 @@ const Settings: React.FC = () => {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Auto Daily Backup (email) */}
+      <div className="glass-card" style={{ padding: 24, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+          <Database style={{ color: 'var(--brand)', width: 22, height: 22 }} />
+          <h2 style={{ color: 'var(--ink)', fontSize: 18, fontWeight: 700 }}>Auto Daily Backup</h2>
+        </div>
+        <p style={{ color: 'var(--ink-2)', fontSize: 13, marginBottom: 18 }}>
+          Har raat (11:00 PM) aapke poore data ka backup JSON aapke email par apne aap chala jayega. Manual backup bhoolne ka risk khatam.
+        </p>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={autoBackup.enabled}
+              onChange={(e) => { const next = { ...autoBackup, enabled: e.target.checked }; setAutoBackup(next); saveBackupSettings(next); }}
+              style={{ width: 18, height: 18, accentColor: 'var(--brand)' }}
+            />
+            <span style={{ fontWeight: 700, color: 'var(--ink)', fontSize: 14 }}>{autoBackup.enabled ? 'ON' : 'OFF'} — Auto Daily Backup</span>
+          </label>
+          {savingBackup && <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite', color: 'var(--ink-2)' }} />}
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12, alignItems: 'end', maxWidth: 560 }}>
+          <div>
+            <label className="label-text" style={{ fontSize: 11 }}>BACKUP EMAIL</label>
+            <input
+              type="email"
+              value={autoBackup.email}
+              onChange={(e) => setAutoBackup({ ...autoBackup, email: e.target.value })}
+              onBlur={() => saveBackupSettings(autoBackup)}
+              placeholder="owner@example.com"
+              className="input-field"
+            />
+          </div>
+          <button
+            onClick={sendBackupNow}
+            disabled={sendingBackup || !autoBackup.email.trim()}
+            className="btn-primary"
+            style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+          >
+            {sendingBackup ? <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Send size={16} />}
+            {sendingBackup ? 'Bhej rahe…' : 'Backup ab bhejo'}
+          </button>
+        </div>
+        <p style={{ color: 'var(--muted)', fontSize: 12, marginTop: 12 }}>
+          Last backup: {lastBackupAt ? new Date(lastBackupAt).toLocaleString('en-IN') : 'Abhi tak nahi'}
+        </p>
       </div>
 
       {/* SMS Configuration */}
