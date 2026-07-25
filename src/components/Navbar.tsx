@@ -8,6 +8,7 @@ import { ref, onValue } from 'firebase/database';
 import { useConnection } from '../hooks/useConnection';
 import FarmerLookup from './FarmerLookup';
 import CalculatorWidget from './CalculatorWidget';
+import ZoomControls from './ZoomControls';
 
 interface NavbarProps {
   onMenuToggle: () => void;
@@ -110,7 +111,8 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuToggle, onNavigate }) => {
           <span className="hidden md:inline">{online ? 'Online' : 'Offline'}</span>
         </div>
 
-        {/* Quick tools: farmer lookup + calculator (available on every page) */}
+        {/* Quick tools: zoom + farmer lookup + calculator (every page) */}
+        <ZoomControls />
         <FarmerLookup onNavigate={onNavigate} />
         <CalculatorWidget />
 

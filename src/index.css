@@ -273,7 +273,8 @@ select:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 4px 
 /* Print */
 @media print {
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-  body { background: #fff !important; background-image: none !important; }
+  /* UI zoom (body.style.zoom, inline) must not scale printed reports. */
+  body { background: #fff !important; background-image: none !important; zoom: 1 !important; }
   body * { visibility: hidden !important; }
   #report-sheet, #report-sheet * { visibility: visible !important; }
   #report-sheet { position: absolute !important; left: 0; top: 0; width: 100%; margin: 0; padding: 16px; box-shadow: none; background: #fff; color: #000; }
