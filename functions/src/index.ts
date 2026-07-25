@@ -1,7 +1,15 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { defineSecret } from 'firebase-functions/params';
 import * as logger from 'firebase-functions/logger';
 import * as admin from 'firebase-admin';
 import * as crypto from 'crypto';
+
+// Resend API key — set with: firebase functions:secrets:set RESEND_API_KEY
+const RESEND_API_KEY = defineSecret('RESEND_API_KEY');
+// Verified sender. Resend test mode allows onboarding@resend.dev (only to your
+// own account email); use a verified-domain address for production.
+const BACKUP_FROM = 'DCS Pro <onboarding@resend.dev>';
 
 // Explicit databaseURL so admin.database() always resolves, even if the
 // FIREBASE_CONFIG env var doesn't carry it.
@@ -188,3 +196,86 @@ export const getFarmerPassbook = onCall({ region: 'us-central1' }, async (reques
     throw new HttpsError('internal', 'Passbook load nahi ho paaya. Baad mein try karein.');
   }
 });
+
+// ---- Feature: Auto Daily Backup (email via Resend) -----------------------
+
+// Build the backup envelope for one society and email it as a JSON attachment.
+const sendBackupEmail = async (apiKey: string, email: string, data: any): Promise<void> => {
+  const code = data?.dcsInfo?.code || 'society';
+  const date = new Date().toISOString().split('T')[0];
+  const backup = {
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
+    societyCode: code,
+    data: data || {},
+  };
+  const content = Buffer.from(JSON.stringify(backup, null, 2)).toString('base64');
+  const filename = `DCS_Backup_${code}_${date}.json`;
+
+  const resp = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      from: BACKUP_FROM,
+      to: [email],
+      subject: `DCS Pro Backup — ${code} — ${date}`,
+      html: `<p>Namaste,</p><p>Aaj ka DCS Pro backup attached hai (society <b>${code}</b>, ${date}).</p>
+             <p>Ise safe rakhein. Restore ke liye app ke Settings → Restore Data use karein.</p>
+             <p style="color:#888;font-size:12px">— DCS Pro Auto Backup</p>`,
+      attachments: [{ filename, content }],
+    }),
+  });
+  if (!resp.ok) {
+    const txt = await resp.text().catch(() => '');
+    throw new Error(`Resend ${resp.status}: ${txt}`);
+  }
+};
+
+// Nightly scheduled backup for every society that has enabled it.
+export const dailyBackup = onSchedule(
+  { schedule: 'every day 23:00', timeZone: 'Asia/Kolkata', region: 'us-central1', secrets: [RESEND_API_KEY] },
+  async () => {
+    const apiKey = RESEND_API_KEY.value();
+    if (!apiKey) { logger.error('dailyBackup: RESEND_API_KEY not set'); return; }
+    const users = (await admin.database().ref('users').get()).val() || {};
+    let sent = 0, skipped = 0;
+    for (const [uid, data] of Object.entries<any>(users)) {
+      const cfg = data?.settings?.backup;
+      const email = cfg?.email || data?.dcsInfo?.email;
+      if (!cfg?.enabled || !email) { skipped++; continue; }
+      try {
+        await sendBackupEmail(apiKey, email, data);
+        await admin.database().ref(`users/${uid}/settings/backup/lastBackupAt`).set(Date.now());
+        sent++;
+      } catch (e) {
+        logger.error(`dailyBackup failed for ${uid}`, e);
+      }
+    }
+    logger.info('dailyBackup done', { sent, skipped });
+  }
+);
+
+// Manual "send backup now" — triggered by the authenticated society owner from
+// Settings. Sends to the provided email (or their configured/dcsInfo email).
+export const sendBackupNow = onCall(
+  { region: 'us-central1', secrets: [RESEND_API_KEY] },
+  async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid) throw new HttpsError('unauthenticated', 'Login zaroori hai.');
+    const apiKey = RESEND_API_KEY.value();
+    if (!apiKey) throw new HttpsError('failed-precondition', 'Email service configure nahi hai (RESEND_API_KEY).');
+
+    const data = (await admin.database().ref(`users/${uid}`).get()).val() || {};
+    const email = (request.data?.email || data?.settings?.backup?.email || data?.dcsInfo?.email || '').trim();
+    if (!email) return { success: false, message: 'Email address nahi mila. Settings mein daalein.' };
+
+    try {
+      await sendBackupEmail(apiKey, email, data);
+      await admin.database().ref(`users/${uid}/settings/backup/lastBackupAt`).set(Date.now());
+      return { success: true, message: `Backup ${email} par bhej diya.` };
+    } catch (e: any) {
+      logger.error('sendBackupNow failed', e);
+      return { success: false, message: 'Email bhejne mein dikkat: ' + (e.message || 'unknown') };
+    }
+  }
+);
