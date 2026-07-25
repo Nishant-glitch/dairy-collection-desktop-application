@@ -5,11 +5,12 @@ import * as logger from 'firebase-functions/logger';
 import * as admin from 'firebase-admin';
 import * as crypto from 'crypto';
 
-// Resend API key — set with: firebase functions:secrets:set RESEND_API_KEY
+// Resend API key. Bound to functions via { secrets: [RESEND_API_KEY] }; at
+// runtime it is available as process.env.RESEND_API_KEY. The GitHub Action
+// syncs the repo secret into Firebase Secret Manager before each deploy.
 const RESEND_API_KEY = defineSecret('RESEND_API_KEY');
-// Verified sender. Resend test mode allows onboarding@resend.dev (only to your
-// own account email); use a verified-domain address for production.
-const BACKUP_FROM = 'DCS Pro <onboarding@resend.dev>';
+// Verified-domain sender (dcpro.online is verified in Resend).
+const BACKUP_FROM = 'DCS Pro Backup <backup@dcpro.online>';
 
 // Explicit databaseURL so admin.database() always resolves, even if the
 // FIREBASE_CONFIG env var doesn't carry it.
@@ -235,7 +236,7 @@ const sendBackupEmail = async (apiKey: string, email: string, data: any): Promis
 export const dailyBackup = onSchedule(
   { schedule: 'every day 23:00', timeZone: 'Asia/Kolkata', region: 'us-central1', secrets: [RESEND_API_KEY] },
   async () => {
-    const apiKey = RESEND_API_KEY.value();
+    const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) { logger.error('dailyBackup: RESEND_API_KEY not set'); return; }
     const users = (await admin.database().ref('users').get()).val() || {};
     let sent = 0, skipped = 0;
@@ -262,7 +263,7 @@ export const sendBackupNow = onCall(
   async (request) => {
     const uid = request.auth?.uid;
     if (!uid) throw new HttpsError('unauthenticated', 'Login zaroori hai.');
-    const apiKey = RESEND_API_KEY.value();
+    const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) throw new HttpsError('failed-precondition', 'Email service configure nahi hai (RESEND_API_KEY).');
 
     const data = (await admin.database().ref(`users/${uid}`).get()).val() || {};

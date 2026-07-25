@@ -26,6 +26,14 @@ jobs:
         working-directory: functions
         run: npm run build
 
+      # Sync the GitHub repo secret into Firebase Secret Manager so the
+      # functions can read process.env.RESEND_API_KEY at runtime.
+      - name: Set Resend secret in Firebase
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: printf "%s" "$RESEND_API_KEY" | npx firebase-tools functions:secrets:set RESEND_API_KEY --data-file=- --force --project farmerdb --token "$FIREBASE_TOKEN"
+
       - name: Deploy to Firebase
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
