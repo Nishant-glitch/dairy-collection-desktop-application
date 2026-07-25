@@ -1,0 +1,48 @@
+{
+  "name": "dcs-pro-desktop",
+  "productName": "DCS Pro",
+  "version": "1.0.0",
+  "description": "DCS Pro — Dairy Collection System desktop app (Windows + Mac)",
+  "author": "DCS Pro",
+  "private": true,
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --publish never"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.dcspro.app",
+    "productName": "DCS Pro",
+    "directories": {
+      "buildResources": "build",
+      "output": "release"
+    },
+    "files": [
+      "main.cjs"
+    ],
+    "win": {
+      "target": ["nsis"],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "DCS Pro"
+    },
+    "mac": {
+      "target": ["dmg"],
+      "icon": "build/icon.png",
+      "category": "public.app-category.business"
+    },
+    "dmg": {
+      "title": "DCS Pro Installer"
+    }
+  }
+}
