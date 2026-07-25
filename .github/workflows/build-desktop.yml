@@ -23,8 +23,18 @@ jobs:
             name: Mac
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout code
+      # Windows 260-char path limit breaks on the deeply-nested committed
+      # node_modules (Firebase). Enable long paths for the electron-builder
+      # install, and only check out desktop/ so root node_modules is skipped.
+      - name: Enable long paths (Windows)
+        if: runner.os == 'Windows'
+        run: git config --system core.longpaths true
+
+      - name: Checkout code (desktop/ only)
         uses: actions/checkout@v4
+        with:
+          sparse-checkout: desktop
+          sparse-checkout-cone-mode: true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
