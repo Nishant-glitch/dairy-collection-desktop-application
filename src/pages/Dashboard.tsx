@@ -6,7 +6,7 @@ import { Droplet, TrendingUp, Users, Clock, Table, AlertTriangle, CheckCircle2, 
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatIndianCurrency } from '../utils/rateCalculator';
-import { flattenMilkCollection, farmerHistory, detectQualityDrop, QUALITY_MIN_HISTORY } from '../utils/quality';
+import { flattenMilkCollection } from '../utils/quality';
 
 const Dashboard: React.FC = () => {
   const { t } = useLanguage();
@@ -76,7 +76,7 @@ const Dashboard: React.FC = () => {
       const last10Days: any[] = [];
       const entries: any[] = [];
 
-      // Keep the full milkCollection tree for leaderboard + quality alerts.
+      // Keep the full milkCollection tree for the leaderboard.
       setMcData(snapshot.exists() ? snapshot.val() : null);
 
       if (snapshot.exists()) {
@@ -140,32 +140,6 @@ const Dashboard: React.FC = () => {
       unsubFarmers();
     };
   };
-
-  const today = new Date().toISOString().split('T')[0];
-
-  // Quality alerts for TODAY's entries — a farmer whose FAT/SNF dropped well
-  // below their own recent average (needs 7+ prior entries). Computed on the fly.
-  const qualityAlerts = useMemo(() => {
-    if (!mcData) return [];
-    const all = flattenMilkCollection(mcData);
-    const todays = all.filter((e) => e.date === today);
-    const alerts: any[] = [];
-    todays.forEach((e) => {
-      const prior = farmerHistory(all, e.farmerCode).filter((p) => p.date < today);
-      const drop = detectQualityDrop(prior, e.fat, e.snf);
-      if (drop) {
-        alerts.push({
-          farmerCode: e.farmerCode,
-          farmerName: e.farmerName,
-          shift: e.shift,
-          fat: e.fat, snf: e.snf,
-          avgFat: drop.avgFat, avgSnf: drop.avgSnf,
-          fatDrop: drop.fatDrop, snfDrop: drop.snfDrop,
-        });
-      }
-    });
-    return alerts;
-  }, [mcData, today]);
 
   // Month options: distinct YYYY-MM present in data + current month.
   const monthOptions = useMemo(() => {
@@ -326,44 +300,6 @@ const Dashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Quality Alerts — today's suspicious FAT/SNF drops */}
-      {qualityAlerts.length > 0 && (
-        <div className="glass-card" style={{ padding: '20px 24px', marginTop: '20px', border: '1px solid rgba(248,113,113,0.4)', background: 'rgba(248,113,113,0.04)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-            <AlertTriangle size={20} color="#ef4444" />
-            <h2 style={{ color: '#ef4444', fontSize: 18, fontWeight: 700 }}>Quality Alerts — Today ({qualityAlerts.length})</h2>
-          </div>
-          <div className="table-container" style={{ maxHeight: 280, overflowY: 'auto' }}>
-            <table className="w-full table-3d">
-              <thead className="table-header">
-                <tr>
-                  <th style={{ padding: '10px 14px', fontSize: 13, textAlign: 'left' }}>Farmer</th>
-                  <th style={{ padding: '10px 14px', fontSize: 13 }}>Shift</th>
-                  <th style={{ padding: '10px 14px', fontSize: 13, textAlign: 'right' }}>FAT (vs avg)</th>
-                  <th style={{ padding: '10px 14px', fontSize: 13, textAlign: 'right' }}>SNF (vs avg)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {qualityAlerts.map((a, i) => (
-                  <tr key={i} className="table-row">
-                    <td style={{ padding: '10px 14px', fontSize: 13, color: 'var(--ink)', fontWeight: 600 }}>
-                      {a.farmerName} <span style={{ color: 'var(--muted)', fontWeight: 400 }}>({a.farmerCode})</span>
-                    </td>
-                    <td style={{ padding: '10px 14px', fontSize: 13, color: 'var(--ink-2)', textAlign: 'center' }}>{a.shift}</td>
-                    <td style={{ padding: '10px 14px', fontSize: 13, textAlign: 'right', color: a.fatDrop ? '#ef4444' : 'var(--ink-2)', fontWeight: a.fatDrop ? 700 : 400 }}>
-                      {a.fat.toFixed(1)} <span style={{ color: 'var(--muted)', fontWeight: 400 }}>({a.avgFat.toFixed(1)})</span>
-                    </td>
-                    <td style={{ padding: '10px 14px', fontSize: 13, textAlign: 'right', color: a.snfDrop ? '#ef4444' : 'var(--ink-2)', fontWeight: a.snfDrop ? 700 : 400 }}>
-                      {a.snf != null ? a.snf.toFixed(1) : '—'} <span style={{ color: 'var(--muted)', fontWeight: 400 }}>{a.avgSnf != null ? `(${a.avgSnf.toFixed(1)})` : ''}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
       {/* Top Farmers Leaderboard */}
       <div className="glass-card" style={{ padding: '20px 24px', marginTop: '20px' }}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3" style={{ marginBottom: 18 }}>
@@ -449,7 +385,7 @@ const Dashboard: React.FC = () => {
           )}
         </div>
         <p style={{ color: 'var(--muted)', fontSize: 11, marginTop: 10 }}>
-          Quality ranking: sirf {5}+ entries wale farmers (avg FAT + SNF ke hisaab se). Alerts: {QUALITY_MIN_HISTORY}+ entries wale farmers par.
+          Quality ranking: sirf {5}+ entries wale farmers (avg FAT + SNF ke hisaab se).
         </p>
       </div>
 
