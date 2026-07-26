@@ -7,6 +7,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import app from '../firebase/config';
 import { passbookUrl } from '../utils/passbook';
+import { printHtml } from '../utils/printHtml';
 import * as XLSX from 'xlsx';
 import axios from 'axios';
 
@@ -452,9 +453,8 @@ const Settings: React.FC = () => {
   const printQR = () => {
     const svg = qrBoxRef.current?.querySelector('svg')?.outerHTML || '';
     if (!svg) return;
-    const w = window.open('', '_blank', 'width=640,height=760');
-    if (!w) { alert('Popup block ho gaya. Please allow popups.'); return; }
-    w.document.write(
+    // Hidden-iframe print (no window.open -> not blocked by popup blockers).
+    printHtml(
       `<html><head><title>Passbook QR</title></head>
        <body style="text-align:center;font-family:system-ui,sans-serif;padding:40px">
          <h2 style="margin-bottom:4px">${societyName || 'DCS Pro'}</h2>
@@ -464,9 +464,6 @@ const Settings: React.FC = () => {
          <p style="color:#6b7280;font-size:14px;margin-top:16px">📱 QR scan karein → apna Code + 4-digit PIN daalein</p>
        </body></html>`
     );
-    w.document.close();
-    w.focus();
-    setTimeout(() => w.print(), 350);
   };
 
   // ---- Auto Daily Backup (email via Resend Cloud Function) ----------------
