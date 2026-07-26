@@ -8,6 +8,7 @@ import { sendSMS } from '../services/sms';
 import { X, Edit2, Trash2, CheckCircle, Droplet, Clock, Calendar, Zap, Printer, MessageSquare, History, WifiOff } from 'lucide-react';
 import { getRateFromMap } from '../utils/rateCalculator';
 import { useConnection } from '../hooks/useConnection';
+import { printHtml } from '../utils/printHtml';
 
 interface Entry {
   farmerCode: string;
@@ -358,13 +359,8 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
       </div>
     `;
 
-    const printWindow = window.open('', '', 'width=400,height=600');
-    if (printWindow) {
-      printWindow.document.write(printContent);
-      printWindow.document.close();
-      printWindow.print();
-      printWindow.close();
-    }
+    // Hidden-iframe print (no window.open -> not blocked by popup blockers).
+    printHtml(`<html><head><title>Milk Collection Receipt</title></head><body>${printContent}</body></html>`);
   };
 
   const clearForm = () => {
