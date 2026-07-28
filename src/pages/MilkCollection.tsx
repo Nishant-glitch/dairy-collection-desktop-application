@@ -9,6 +9,7 @@ import { X, Edit2, Trash2, CheckCircle, Droplet, Clock, Calendar, Zap, Printer, 
 import { getRateFromMap } from '../utils/rateCalculator';
 import { useConnection } from '../hooks/useConnection';
 import { printHtml } from '../utils/printHtml';
+import { restoreCaret } from '../utils/focus';
 
 interface Entry {
   farmerCode: string;
@@ -394,6 +395,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
       const entryRef = ref(database, up(`milkCollection/${sessionDate}/${sessionShift}/${code}`));
       await remove(entryRef);
       setDuplicateWarning({show: false, message: ''});
+      restoreCaret(farmerCodeRef.current); // restore cursor (Windows caret bug)
     }
   };
 

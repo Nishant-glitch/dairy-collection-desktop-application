@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, setPersistence, browserLocalPersistence, browserSessionPersistence } from 'firebase/auth';
 import { auth, database } from '../firebase/config';
 import { ref, set } from 'firebase/database';
 import { Milk, User, Lock, Phone, ArrowRight } from 'lucide-react';
@@ -20,6 +20,18 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   useEffect(() => {
     createAdminIfNotExists();
+  }, []);
+
+  // Load "Remember Me" credentials on mount so the mobile (and password) are
+  // prefilled and the checkbox reflects that they were saved.
+  useEffect(() => {
+    const savedMobile = localStorage.getItem('rememberedMobile');
+    const savedPassword = localStorage.getItem('rememberedPassword');
+    if (savedMobile) {
+      setMobileNumber(savedMobile);
+      setRememberMe(true);
+      if (savedPassword) setPassword(savedPassword);
+    }
   }, []);
 
   const createAdminIfNotExists = async () => {
@@ -57,10 +69,19 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     }
 
     try {
+      // Remember Me -> keep the session across browser restarts
+      // (browserLocalPersistence); otherwise clear it when the tab closes
+      // (browserSessionPersistence). Must be set before signing in.
+      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+
       const email = isAdminLogin ? mobileNumber : mobileToEmail(mobileNumber);
       await signInWithEmailAndPassword(auth, email, password);
       if (rememberMe) {
         localStorage.setItem('rememberedMobile', mobileNumber);
+        localStorage.setItem('rememberedPassword', password);
+      } else {
+        localStorage.removeItem('rememberedMobile');
+        localStorage.removeItem('rememberedPassword');
       }
       onLogin();
     } catch (err: any) {

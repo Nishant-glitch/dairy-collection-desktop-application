@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ref, onValue, push, set, remove, get } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
+import { restoreCaret } from '../utils/focus';
 import { BookOpen, Plus, Printer, Edit2, Trash2, Lock, X, Save, Wallet, AlertTriangle } from 'lucide-react';
 
 // COMFED-style traditional double-sided Cash Book (नकद बही). Left = जमा
@@ -156,6 +157,7 @@ const CashBook: React.FC = () => {
     if (e.source === 'payment-register') return;
     if (!confirm('Ye entry delete karein?')) return;
     await remove(ref(database, up(`cashBook/${e.id}`)));
+    restoreCaret(); // release focus so the caret re-renders (Windows caret bug)
   };
 
   const saveOpening = async () => {

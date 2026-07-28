@@ -261,6 +261,16 @@ body {
 ::-webkit-scrollbar-thumb { background: #D2DDD7; border-radius: 999px; border: 3px solid var(--bg); }
 ::-webkit-scrollbar-thumb:hover { background: #BFCEC6; }
 
+/* Keep the text caret visible everywhere (Windows/Chromium can drop it after a
+   native confirm() dialog). */
+input, textarea, select, [contenteditable] {
+  caret-color: auto !important;
+}
+input:focus, textarea:focus, select:focus {
+  caret-color: var(--ink, #000) !important;
+  outline: none;
+}
+
 /* Table input */
 .table-input { width: 100%; background: transparent; border: 1px solid transparent; border-radius: 6px; color: var(--ink); padding: 5px 8px; text-align: center; font-size: 13px; transition: all .15s; }
 .table-input:hover { background: var(--surface-2); border-color: var(--line); }

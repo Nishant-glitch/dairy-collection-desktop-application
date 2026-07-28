@@ -8,6 +8,7 @@ import { sendPaymentSMS } from '../services/sms';
 import { Smartphone, QrCode, Check, Calculator, X, Users, Snowflake, Printer, Lock } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { COMFED_LOGO, SUDHA_LOGO } from '../utils/reportLogos';
+import { restoreCaret } from '../utils/focus';
 
 interface PaymentEntry {
   farmerId: string;
@@ -291,6 +292,7 @@ const PaymentRegister: React.FC = () => {
       alert('❌ Failed to finalize month. Please try again.');
     } finally {
       setLocking(false);
+      restoreCaret(); // release focus so the caret re-renders (Windows caret bug)
     }
   };
 
