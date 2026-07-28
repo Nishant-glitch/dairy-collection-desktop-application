@@ -5,6 +5,7 @@ import { up } from '../utils/userDb';
 import { Plus, FileText, BarChart2, X, Edit2, Trash2, Calculator, ShoppingBag, ArrowLeft, Printer } from 'lucide-react';
 import { formatIndianCurrency } from '../utils/rateCalculator';
 import { handleEnterNav } from '../utils/formNav';
+import { restoreCaret } from '../utils/focus';
 
 interface GrossEntry {
   id: string;
@@ -284,6 +285,7 @@ const Deductions: React.FC = () => {
   const handleDeleteGrossEntry = async (path: string) => {
     if (confirm('Delete this gross entry?')) {
       await remove(ref(database, up(`grossEntries/${path}`)));
+      restoreCaret(gcCodeRef.current); // restore cursor (Windows caret bug)
     }
   };
 
@@ -358,6 +360,7 @@ const Deductions: React.FC = () => {
     if (confirm('Are you sure you want to delete this entry?')) {
       const entryRef = ref(database, up(`grossEntries/${selectedFarmerCode}/${id}`));
       await remove(entryRef);
+      restoreCaret(itemRef.current); // restore cursor (Windows caret bug)
     }
   };
 

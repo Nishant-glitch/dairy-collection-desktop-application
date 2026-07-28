@@ -5,6 +5,7 @@ import { up } from '../utils/userDb';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Plus, Edit2, Trash2, Eye, X, Search, KeyRound } from 'lucide-react';
 import { hashPin, isValidPin } from '../utils/passbook';
+import { restoreCaret } from '../utils/focus';
 
 interface Farmer {
   farmerCode: string;
@@ -33,6 +34,7 @@ const FarmerMaster: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [importing, setImporting] = useState(false);
   const farmerImportRef = useRef<HTMLInputElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   const [pinInput, setPinInput] = useState('');
   // farmerCode -> true when a passbook PIN hash is set (for the list badge).
   const [pinStatus, setPinStatus] = useState<Record<string, boolean>>({});
@@ -165,6 +167,7 @@ const FarmerMaster: React.FC = () => {
   const handleDelete = async (code: string) => {
     if (confirm('Are you sure you want to delete this farmer?')) {
       await remove(ref(database, up(`farmers/${code}`)));
+      restoreCaret(searchRef.current); // restore cursor (Windows caret bug)
     }
   };
 
@@ -344,6 +347,7 @@ const FarmerMaster: React.FC = () => {
               <Search size={16} />
             </div>
             <input
+              ref={searchRef}
               type="text"
               placeholder="Search by Code or Name..."
               value={searchTerm}

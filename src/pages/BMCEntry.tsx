@@ -5,6 +5,7 @@ import { up } from '../utils/userDb';
 import { useLanguage } from '../contexts/LanguageContext';
 import { getRateFromMap } from '../utils/rateCalculator';
 import { handleEnterNav } from '../utils/formNav';
+import { restoreCaret } from '../utils/focus';
 import { Snowflake, Calendar, Clock, CheckCircle, Trash2, Edit2, History } from 'lucide-react';
 
 interface BMC {
@@ -233,6 +234,7 @@ const BMCEntry: React.FC = () => {
   const handleDelete = async (entryId: string) => {
     if (confirm('Are you sure you want to delete this entry?')) {
       await remove(ref(database, up(`bmcEntries/${entryId}`)));
+      restoreCaret(qtyRef.current); // restore cursor (Windows caret bug)
     }
   };
 
