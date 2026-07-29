@@ -9,6 +9,7 @@ import { useConnection } from '../hooks/useConnection';
 import FarmerLookup from './FarmerLookup';
 import CalculatorWidget from './CalculatorWidget';
 import ZoomControls from './ZoomControls';
+import Notepad from './Notepad';
 
 interface NavbarProps {
   onMenuToggle: () => void;
@@ -111,10 +112,11 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuToggle, onNavigate }) => {
           <span className="hidden md:inline">{online ? 'Online' : 'Offline'}</span>
         </div>
 
-        {/* Quick tools: zoom + farmer lookup + calculator (every page) */}
+        {/* Quick tools: zoom + farmer lookup + calculator + notepad (every page) */}
         <ZoomControls />
         <FarmerLookup onNavigate={onNavigate} />
         <CalculatorWidget />
+        <Notepad />
 
         <div className="hidden md:flex flex-col items-end mr-4">
           <span style={{ color: 'var(--ink)', fontSize: 12, fontWeight: 600 }}>
