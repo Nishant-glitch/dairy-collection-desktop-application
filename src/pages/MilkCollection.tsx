@@ -284,8 +284,8 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     // Print works offline too (totals read from the local cache).
     if (printEnabled) {
       try {
-        const [shiftTotal, monthTotal] = await Promise.all([buildShiftTotal(), buildMonthTotal()]);
-        printSlip(shiftTotal, monthTotal);
+        const monthTotal = await buildMonthTotal();
+        printSlip(monthTotal);
       } catch (e) {
         console.error('Print skipped (offline/no cache):', e);
       }
@@ -322,30 +322,13 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     farmerCodeRef.current?.focus();
   };
 
-  // Running total for the whole DCS for today's date + shift. Read after the
-  // entry is saved so the just-saved entry is included. Morning and Evening are
-  // separate buckets (different shift key) and each date is its own node, so
-  // totals are per-shift and reset fresh each day.
-  const buildShiftTotal = async () => {
-    const snap = await get(ref(database, up(`milkCollection/${sessionDate}/${sessionShift}`)));
-    let count = 0;
-    let qty = 0;
-    let amount = 0;
-    if (snap.exists()) {
-      const data = snap.val();
-      Object.keys(data).forEach((code) => {
-        const e = data[code];
-        count++;
-        qty += safeNum(e.qty);
-        amount += safeNum(e.amount);
-      });
-    }
-    return { count, qty, amount };
-  };
-
   // Whole-DCS running total from the 1st of the entry's month up to (and
   // including) the entry's date, across BOTH shifts. Uses a key-range query so
   // only the relevant date nodes are fetched (not the whole milkCollection).
+  // Guards: (1) re-check every date key is inside the month window, so nothing
+  // outside the range can slip in; (2) only count real entry objects that carry
+  // qty/amount — a malformed/legacy node can't add phantom entries (iterating a
+  // flat entry's FIELDS was inflating the count, e.g. Entr: 4019).
   const buildMonthTotal = async () => {
     const startDate = `${sessionDate.substring(0, 7)}-01`;
     let count = 0, qty = 0, amount = 0;
@@ -355,12 +338,17 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
       if (snap.exists()) {
         const data = snap.val();
         Object.keys(data).forEach((date) => {
+          // Strict month window: 1st -> the entry's date only.
+          if (date < startDate || date > sessionDate) return;
           const shifts = data[date] || {};
           Object.values(shifts).forEach((shift: any) => {
-            Object.values(shift || {}).forEach((e: any) => {
+            if (!shift || typeof shift !== 'object') return;
+            Object.values(shift).forEach((e: any) => {
+              // Count only genuine farmer entries (object with qty/amount).
+              if (!e || typeof e !== 'object' || (e.qty == null && e.amount == null)) return;
               count++;
-              qty += safeNum(e?.qty);
-              amount += safeNum(e?.amount);
+              qty += safeNum(e.qty);
+              amount += safeNum(e.amount);
             });
           });
         });
@@ -372,7 +360,6 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   };
 
   const printSlip = (
-    shiftTotal: { count: number; qty: number; amount: number } | null = null,
     monthTotal: { count: number; qty: number; amount: number } | null = null,
   ) => {
     // Thermal printer receipt (58mm default, 80mm optional via Settings).
@@ -387,14 +374,6 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     const day = parseInt((sessionDate || '').substring(8, 10), 10) || 0;
     const monthAbbr = (() => { try { return new Date(sessionDate + 'T00:00:00').toLocaleDateString('en-IN', { month: 'short' }); } catch { return ''; } })();
     const monthRange = `1-${day} ${monthAbbr}`;
-
-    const shiftHtml = shiftTotal ? `
-      ${dash}
-      <div style="text-align:center;font-weight:bold">Shift Total</div>
-      ${line('Entr', String(shiftTotal.count))}
-      ${line('Qty', `${shiftTotal.qty.toFixed(3)} Litre`)}
-      ${line('Amt', `₹${shiftTotal.amount.toFixed(2)}`)}
-    ` : '';
 
     const monthHtml = monthTotal ? `
       ${dash}
@@ -417,7 +396,6 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
       ${line('Rate', `₹${(rate || 0).toFixed(2)} /Litre`)}
       ${dash}
       <div style="font-size:15px;font-weight:bold">AMOUNT: ₹${(amount || 0).toFixed(2)}</div>
-      ${shiftHtml}
       ${monthHtml}
       ${dash}
       <div style="height:4px"></div>
