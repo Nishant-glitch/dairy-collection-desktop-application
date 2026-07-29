@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { ref, get, set, onValue } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
@@ -117,16 +118,19 @@ const Notepad: React.FC = () => {
         <NotebookPen size={16} />
       </button>
 
-      {open && (
+      {open && createPortal(
         <>
           {/* Backdrop */}
-          <div onClick={closePanel} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 9998 }} />
+          <div onClick={closePanel} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9998 }} />
 
-          {/* Panel — solid opaque white so nothing shows through */}
+          {/* Panel — portaled to <body> so the navbar's backdrop-filter can't
+              make it its containing block (which shrank it + showed through).
+              Solid opaque white. */}
           <div
             style={{
               position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 9999,
-              width: 'min(380px, 100vw)', background: '#ffffff', boxShadow: '-4px 0 24px rgba(0,0,0,0.15)',
+              width: 'min(380px, 100vw)', height: '100vh', background: '#ffffff', opacity: 1,
+              backdropFilter: 'none', boxShadow: '-4px 0 24px rgba(0,0,0,0.15)',
               display: 'flex', flexDirection: 'column', animation: 'slideIn .25s ease',
             }}
           >
@@ -191,12 +195,13 @@ const Notepad: React.FC = () => {
                   value={text}
                   onChange={(e) => onType(e.target.value)}
                   placeholder="Aaj ka kuch note likhein…"
-                  style={{ flex: 1, margin: '0 16px 16px', padding: 14, border: '1px solid #e5e7eb', borderRadius: 12, resize: 'none', fontSize: 14, lineHeight: 1.6, color: '#0f172a', outline: 'none', fontFamily: 'inherit', background: '#ffffff' }}
+                  style={{ flex: 1, minHeight: '60vh', margin: '0 16px 16px', padding: 14, border: '1px solid #e5e7eb', borderRadius: 12, resize: 'vertical', fontSize: 14, lineHeight: 1.6, color: '#0f172a', outline: 'none', fontFamily: 'inherit', background: '#ffffff' }}
                 />
               </div>
             )}
           </div>
-        </>
+        </>,
+        document.body
       )}
     </>
   );
