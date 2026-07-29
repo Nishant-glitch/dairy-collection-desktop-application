@@ -32,6 +32,7 @@ const Settings: React.FC = () => {
   const [selectedUid, setSelectedUid] = useState('');
   const [societyName, setSocietyName] = useState('');
   const qrBoxRef = useRef<HTMLDivElement>(null);
+  const [thermalPaperSize, setThermalPaperSize] = useState<'58mm' | '80mm'>('58mm');
   const [autoBackup, setAutoBackup] = useState({ enabled: false, email: '' });
   const [lastBackupAt, setLastBackupAt] = useState<number | null>(null);
   const [savingBackup, setSavingBackup] = useState(false);
@@ -90,6 +91,8 @@ const Settings: React.FC = () => {
       const b = backupSnap.exists() ? backupSnap.val() : {};
       setAutoBackup({ enabled: !!b.enabled, email: b.email || dcs.email || '' });
       setLastBackupAt(typeof b.lastBackupAt === 'number' ? b.lastBackupAt : null);
+      const tpsSnap = await get(ref(database, up('settings/thermalPaperSize')));
+      if (tpsSnap.exists() && (tpsSnap.val() === '58mm' || tpsSnap.val() === '80mm')) setThermalPaperSize(tpsSnap.val());
     } catch (err) {
       console.error('Error loading settings:', err);
     }
@@ -494,6 +497,12 @@ const Settings: React.FC = () => {
     }
   };
 
+  const saveThermalPaperSize = async (size: '58mm' | '80mm') => {
+    setThermalPaperSize(size);
+    try { await set(ref(database, up('settings/thermalPaperSize')), size); }
+    catch (err: any) { alert('❌ Paper size save nahi hui: ' + err.message); }
+  };
+
   const handleTestSMS = async () => {
     if (!testMobile.trim() || !/^\d{10}$/.test(testMobile.trim())) {
       alert('Please enter valid 10-digit number!');
@@ -696,6 +705,36 @@ const Settings: React.FC = () => {
           <Save style={{ width: 16, height: 16 }} />
           {saving ? 'Saving...' : 'Save SMS Settings'}
         </button>
+      </div>
+
+      {/* Thermal Printer */}
+      <div className="glass-card" style={{ padding: 24, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+          <Printer style={{ color: 'var(--brand)', width: 22, height: 22 }} />
+          <h2 style={{ color: 'var(--ink)', fontSize: 18, fontWeight: 700 }}>Thermal Printer</h2>
+        </div>
+        <p style={{ color: 'var(--ink-2)', fontSize: 13, marginBottom: 16 }}>
+          Milk Collection slip ki paper width. (Default 58mm)
+        </p>
+        <label className="label-text" style={{ fontSize: 11 }}>PAPER SIZE</label>
+        <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+          {(['58mm', '80mm'] as const).map((size) => (
+            <button
+              key={size}
+              onClick={() => saveThermalPaperSize(size)}
+              style={{
+                flex: 1, maxWidth: 160, padding: '12px', borderRadius: 10, cursor: 'pointer', fontWeight: 800, fontSize: 14,
+                border: thermalPaperSize === size ? '2px solid var(--brand)' : '1px solid var(--line)',
+                background: thermalPaperSize === size ? 'var(--brand-soft)' : 'var(--surface)',
+                color: thermalPaperSize === size ? 'var(--brand-strong)' : 'var(--ink-2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              }}
+            >
+              <span style={{ width: 14, height: 14, borderRadius: '50%', border: thermalPaperSize === size ? '4px solid var(--brand)' : '2px solid var(--line)', display: 'inline-block' }} />
+              {size}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* App Preferences */}

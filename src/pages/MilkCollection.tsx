@@ -36,6 +36,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   const [sessionMode, setSessionMode] = useState<'SNF' | 'CLR'>('SNF');
   const [printEnabled, setPrintEnabled] = useState(false);
   const [smsEnabled, setSmsEnabled] = useState(false);
+  const [thermalPaperSize, setThermalPaperSize] = useState<'58mm' | '80mm'>('58mm');
   
   const [farmerCode, setFarmerCode] = useState('');
   const [farmerName, setFarmerName] = useState('');
@@ -79,6 +80,11 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   useEffect(() => {
     loadDCSInfo();
     const unsubscribe = loadFarmers();
+    // Thermal printer paper size (Settings). Default 58mm.
+    get(ref(database, up('settings/thermalPaperSize'))).then((snap) => {
+      const v = snap.exists() ? snap.val() : '58mm';
+      if (v === '58mm' || v === '80mm') setThermalPaperSize(v);
+    }).catch(() => {});
     return unsubscribe;
   }, []);
 
@@ -338,35 +344,56 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   };
 
   const printSlip = (shiftTotal: { count: number; qty: number; amount: number } | null = null) => {
+    // Thermal printer receipt (58mm default, 80mm optional via Settings).
+    const width = thermalPaperSize === '80mm' ? '80mm' : '58mm';
+    const dateFmt = (sessionDate || '').split('-').reverse().join('/'); // YYYY-MM-DD -> DD/MM/YYYY
+    const shiftAbbr = sessionShift === 'Evening' ? 'Eve' : 'Mor';
+    const esc = (s: any) => String(s ?? '').replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c] as string));
+    const line = (label: string, value: string) => `<div>${esc(label.padEnd(5, ' '))}: ${esc(value)}</div>`;
+    const dash = `<div style="border-top:1px dashed #000;margin:3px 0"></div>`;
+
     const totalHtml = shiftTotal ? `
-        <hr/>
-        <p><strong>Total Shift :</strong> ${shiftTotal.count}</p>
-        <p><strong>Total Qty   :</strong> ${shiftTotal.qty.toFixed(2)}</p>
-        <p><strong>Tot Amnt    :</strong> ₹${shiftTotal.amount.toFixed(2)}</p>
+      ${dash}
+      <div style="text-align:center;font-weight:bold">Shift Total</div>
+      ${line('Entr', String(shiftTotal.count))}
+      ${line('Qty', `${shiftTotal.qty.toFixed(3)} KG`)}
+      ${line('Amt', `₹${shiftTotal.amount.toFixed(2)}`)}
     ` : '';
 
-    const printContent = `
-      <div id="milk-print-slip" style="padding: 20px; font-family: Arial;">
-        <h2 style="text-align: center;">${dcsInfo.name || 'DCS Pro'}</h2>
-        <h3 style="text-align: center;">Milk Collection Receipt</h3>
-        <hr/>
-        <p><strong>Date:</strong> ${sessionDate} | <strong>Shift:</strong> ${sessionShift}</p>
-        <p><strong>Farmer Code:</strong> ${farmerCode}</p>
-        <p><strong>Farmer Name:</strong> ${farmerName}</p>
-        <hr/>
-        <p><strong>Quantity:</strong> ${qty} Liters</p>
-        <p><strong>FAT:</strong> ${fat}%</p>
-        <p><strong>${sessionMode}:</strong> ${snfClr}%</p>
-        <p><strong>Rate:</strong> ₹${(rate || 0).toFixed(2)}/Liter</p>
-        <p style="font-size: 18px;"><strong>Amount:</strong> ₹${(amount || 0).toFixed(2)}</p>
-        ${totalHtml}
-        <hr/>
-        <p style="text-align: center; font-size: 12px;">Thank you!</p>
-      </div>
+    const body = `
+      <div style="text-align:center;font-weight:bold;font-size:13px">${esc(dcsInfo.name || 'DCS Pro')}</div>
+      <div style="text-align:center">Milk Collection Slip</div>
+      <div style="height:5px"></div>
+      <div>Date : ${esc(dateFmt)}  Shift: ${shiftAbbr}</div>
+      ${line('Code', farmerCode)}
+      ${line('Name', farmerName)}
+      ${line('Qty', `${(parseFloat(qty) || 0).toFixed(3)} KG`)}
+      ${line('FAT', `${(parseFloat(fat) || 0).toFixed(2)} %`)}
+      ${line(sessionMode, `${(parseFloat(snfClr) || 0).toFixed(2)} %`)}
+      ${line('Rate', `₹${(rate || 0).toFixed(2)} /KG`)}
+      ${dash}
+      <div style="font-size:15px;font-weight:bold">AMOUNT: ₹${(amount || 0).toFixed(2)}</div>
+      ${dash}
+      ${totalHtml}
+      <div style="height:6px"></div>
+      <div style="text-align:center">Thank You! — DCS Pro</div>
     `;
 
     // Hidden-iframe print (no window.open -> not blocked by popup blockers).
-    printHtml(`<html><head><title>Milk Collection Receipt</title></head><body>${printContent}</body></html>`);
+    printHtml(`<html><head><title>Milk Collection Receipt</title>
+      <style>
+        * { color: #000 !important; -webkit-print-color-adjust: exact; }
+        html, body { margin: 0; padding: 0; }
+        #slip { font-family: 'Courier New', monospace; font-size: 11px; color: #000; line-height: 1.35;
+                width: ${width}; box-sizing: border-box; padding: 2mm; }
+        #slip div { page-break-inside: avoid; }
+        @media print {
+          @page { size: ${width} auto; margin: 0; }
+          html, body { width: ${width}; margin: 0; }
+          #slip { width: ${width}; padding: 2mm; }
+        }
+      </style></head>
+      <body><div id="slip">${body}</div></body></html>`);
   };
 
   const clearForm = () => {
