@@ -5,7 +5,8 @@ import { up } from '../utils/userDb';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatIndianCurrency } from '../utils/rateCalculator';
 import { sendSMS } from '../services/sms';
-import { X, Edit2, Trash2, CheckCircle, Droplet, Clock, Calendar, Zap, Printer, MessageSquare, History, WifiOff } from 'lucide-react';
+import { X, Edit2, Trash2, CheckCircle, Droplet, Clock, Calendar, Zap, Printer, MessageSquare, History, WifiOff, Eye, Loader2 } from 'lucide-react';
+import { format, subDays } from 'date-fns';
 import { getRateFromMap } from '../utils/rateCalculator';
 import { useConnection } from '../hooks/useConnection';
 import { printHtml } from '../utils/printHtml';
@@ -49,6 +50,10 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   const [showSavedMessage, setShowSavedMessage] = useState(false);
   const [offlineSaved, setOfflineSaved] = useState(false);
   const online = useConnection();
+  // Quick recent-collection history popup
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [history, setHistory] = useState<{ todayMorning: any; todayEvening: any; last7: any[]; totalQty: number; totalAmount: number } | null>(null);
   const [duplicateWarning, setDuplicateWarning] = useState<{show: boolean, message: string}>({show: false, message: ''});
 
   const [todayEntries, setTodayEntries] = useState<Entry[]>([]);
@@ -422,6 +427,12 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   };
 
   const handleFarmerCodeKeyDown = async (e: React.KeyboardEvent) => {
+    // F2 -> quick recent-history popup for the current farmer (speed).
+    if (e.key === 'F2') {
+      e.preventDefault();
+      if (farmerFound) openHistory();
+      return;
+    }
     if (e.key === 'Enter' && farmerFound) {
       const snap = await get(ref(database, up(`milkCollection/${sessionDate}/${sessionShift}/${farmerCode}`)));
       if (snap.exists()) {
@@ -431,6 +442,58 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
       qtyRef.current?.focus();
     }
   };
+
+  // ---- Quick recent-collection history popup (read-only) ------------------
+  const openHistory = async () => {
+    if (!farmerCode || !farmerFound) return;
+    setShowHistory(true);
+    setHistoryLoading(true);
+    try {
+      const todayStr = format(new Date(), 'yyyy-MM-dd');
+      const dates = Array.from({ length: 7 }, (_, i) => format(subDays(new Date(), i), 'yyyy-MM-dd'));
+      const snaps = await Promise.all(dates.map((d) => get(ref(database, up(`milkCollection/${d}`)))));
+      const last7: any[] = [];
+      let totalQty = 0, totalAmount = 0;
+      let todayMorning: any = null, todayEvening: any = null;
+      dates.forEach((d, idx) => {
+        const dayVal = snaps[idx].exists() ? snaps[idx].val() : {};
+        (['Morning', 'Evening'] as const).forEach((shift) => {
+          const e = dayVal?.[shift]?.[farmerCode];
+          if (!e) return;
+          const row = {
+            date: d, shift,
+            qty: Number(e.qty) || 0, fat: Number(e.fat) || 0,
+            snf: e.snf != null ? Number(e.snf) : (e.clr != null ? Number(e.clr) : null),
+            rate: Number(e.rate) || 0, amount: Number(e.amount) || 0,
+          };
+          last7.push(row);
+          totalQty += row.qty; totalAmount += row.amount;
+          if (d === todayStr && shift === 'Morning') todayMorning = row;
+          if (d === todayStr && shift === 'Evening') todayEvening = row;
+        });
+      });
+      last7.sort((a, b) => b.date.localeCompare(a.date) || (a.shift === 'Morning' ? -1 : 1));
+      setHistory({ todayMorning, todayEvening, last7, totalQty, totalAmount });
+    } catch (err) {
+      console.error('History fetch failed:', err);
+      setHistory({ todayMorning: null, todayEvening: null, last7: [], totalQty: 0, totalAmount: 0 });
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const closeHistory = () => {
+    setShowHistory(false);
+    setTimeout(() => farmerCodeRef.current?.focus(), 50); // focus back to code input
+  };
+
+  // ESC closes the history popup.
+  useEffect(() => {
+    if (!showHistory) return;
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') closeHistory(); };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [showHistory]);
 
   const totalQty = (todayEntries || []).reduce((sum, e) => sum + safeNum(e?.qty), 0);
   const totalAmount = (todayEntries || []).reduce((sum, e) => sum + safeNum(e?.amount), 0);
@@ -584,6 +647,93 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
         </div>
       )}
 
+      {/* Quick recent-collection history popup (read-only) */}
+      {showHistory && (
+        <div
+          onClick={closeHistory}
+          style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 500, maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 60px rgba(0,0,0,0.3)' }}
+          >
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <History size={18} className="text-blue-500" /> Recent Collection
+                </div>
+                <div style={{ fontSize: 13, color: '#64748b' }}>{farmerName} ({farmerCode})</div>
+              </div>
+              <button onClick={closeHistory} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}><X size={22} /></button>
+            </div>
+
+            <div style={{ padding: 20, overflowY: 'auto' }}>
+              {historyLoading ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '30px 0', color: '#64748b' }}>
+                  <Loader2 size={26} className="text-blue-500" style={{ animation: 'spin 1s linear infinite' }} />
+                  <span style={{ fontSize: 13 }}>Loading…</span>
+                </div>
+              ) : !history ? null : (
+                <>
+                  {/* Today Morning / Evening */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                    {([['Morning', history.todayMorning], ['Evening', history.todayEvening]] as const).map(([label, e]) => (
+                      <div key={label} style={{ border: '1px solid #e5e7eb', borderRadius: 12, padding: 12 }}>
+                        <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, color: label === 'Morning' ? '#2563eb' : '#7c3aed', marginBottom: 6 }}>Aaj — {label}</div>
+                        {e ? (
+                          <div style={{ fontSize: 12, color: '#334155', lineHeight: 1.7 }}>
+                            <div><strong>Qty:</strong> {e.qty.toFixed(2)} L</div>
+                            <div><strong>FAT:</strong> {e.fat.toFixed(1)} &nbsp; <strong>SNF:</strong> {e.snf != null ? e.snf.toFixed(1) : '—'}</div>
+                            <div><strong>Rate:</strong> ₹{e.rate.toFixed(2)}</div>
+                            <div style={{ color: '#15803d', fontWeight: 800 }}>{formatIndianCurrency(e.amount)}</div>
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: 12, color: '#94a3b8' }}>Koi entry nahi</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Last 7 days table */}
+                  <div style={{ fontSize: 12, fontWeight: 800, color: '#0f172a', marginBottom: 8 }}>Last 7 Days</div>
+                  <div style={{ overflowX: 'auto', border: '1px solid #e5e7eb', borderRadius: 10 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: '#f8fafc', color: '#64748b', textAlign: 'left' }}>
+                          <th style={hcTh}>Date</th><th style={hcTh}>Shift</th>
+                          <th style={hcThR}>Qty</th><th style={hcThR}>FAT</th><th style={hcThR}>SNF</th><th style={hcThR}>Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {history.last7.length === 0 ? (
+                          <tr><td colSpan={6} style={{ padding: 16, textAlign: 'center', color: '#94a3b8' }}>Pichhle 7 din koi entry nahi</td></tr>
+                        ) : history.last7.map((r, i) => (
+                          <tr key={i} style={{ borderTop: '1px solid #f1f5f9' }}>
+                            <td style={hcTd}>{r.date}</td>
+                            <td style={hcTd}>{r.shift}</td>
+                            <td style={hcTdR}>{r.qty.toFixed(1)}</td>
+                            <td style={hcTdR}>{r.fat.toFixed(1)}</td>
+                            <td style={hcTdR}>{r.snf != null ? r.snf.toFixed(1) : '—'}</td>
+                            <td style={{ ...hcTdR, fontWeight: 700, color: '#15803d' }}>{formatIndianCurrency(r.amount)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Totals */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, padding: '12px 14px', background: '#f0fdf4', borderRadius: 10 }}>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#166534' }}>Total (7 din): {history.totalQty.toFixed(1)} L</span>
+                    <span style={{ fontSize: 16, fontWeight: 800, color: '#15803d' }}>{formatIndianCurrency(history.totalAmount)}</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between items-center no-print" style={{ marginBottom: '32px' }}>
         <div className="flex items-center gap-6">
           <div className="flex items-center gap-3">
@@ -632,18 +782,31 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div>
                 <label className="label-text" style={{ display: 'block', marginBottom: '8px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.5px', color: 'var(--ink-2)' }}>FARMER CODE</label>
-                <div className="relative flex gap-2">
-                  <input
-                    ref={farmerCodeRef}
-                    type="text"
-                    value={farmerCode}
-                    onChange={(e) => handleFarmerCodeChange(e.target.value)}
-                    onKeyDown={handleFarmerCodeKeyDown}
-                    className="input-field flex-1"
-                    style={{ padding: '11px 14px', fontSize: '14px' }}
-                    placeholder="Enter Code"
-                  />
-                  {farmerFound && <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500" size={18} />}
+                <div className="flex gap-2 items-stretch">
+                  <div className="relative flex-1">
+                    <input
+                      ref={farmerCodeRef}
+                      type="text"
+                      value={farmerCode}
+                      onChange={(e) => handleFarmerCodeChange(e.target.value)}
+                      onKeyDown={handleFarmerCodeKeyDown}
+                      className="input-field w-full"
+                      style={{ padding: '11px 14px', fontSize: '14px' }}
+                      placeholder="Enter Code"
+                    />
+                    {farmerFound && <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500" size={18} />}
+                  </div>
+                  {farmerFound && (
+                    <button
+                      type="button"
+                      onClick={openHistory}
+                      title="Recent collection history (F2)"
+                      className="btn-secondary"
+                      style={{ padding: '0 14px', display: 'flex', alignItems: 'center', flexShrink: 0 }}
+                    >
+                      <Eye size={18} />
+                    </button>
+                  )}
                 </div>
                 {farmerName && (
                   <div className="rounded-lg bg-green-500/10 border border-green-500/20" style={{ marginTop: '8px', padding: '12px' }}>
@@ -849,5 +1012,11 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     </div>
   );
 };
+
+// Recent-history popup table cell styles.
+const hcTh: React.CSSProperties = { padding: '8px 10px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, whiteSpace: 'nowrap' };
+const hcThR: React.CSSProperties = { ...hcTh, textAlign: 'right' };
+const hcTd: React.CSSProperties = { padding: '8px 10px', color: '#334155', whiteSpace: 'nowrap' };
+const hcTdR: React.CSSProperties = { ...hcTd, textAlign: 'right' };
 
 export default MilkCollection;
