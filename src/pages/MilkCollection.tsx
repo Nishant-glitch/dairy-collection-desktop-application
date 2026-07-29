@@ -356,7 +356,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
       ${dash}
       <div style="text-align:center;font-weight:bold">Shift Total</div>
       ${line('Entr', String(shiftTotal.count))}
-      ${line('Qty', `${shiftTotal.qty.toFixed(3)} KG`)}
+      ${line('Qty', `${shiftTotal.qty.toFixed(3)} Litre`)}
       ${line('Amt', `₹${shiftTotal.amount.toFixed(2)}`)}
     ` : '';
 
@@ -367,10 +367,10 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
       <div>Date : ${esc(dateFmt)}  Shift: ${shiftAbbr}</div>
       ${line('Code', farmerCode)}
       ${line('Name', farmerName)}
-      ${line('Qty', `${(parseFloat(qty) || 0).toFixed(3)} KG`)}
+      ${line('Qty', `${(parseFloat(qty) || 0).toFixed(3)} Litre`)}
       ${line('FAT', `${(parseFloat(fat) || 0).toFixed(2)} %`)}
       ${line(sessionMode, `${(parseFloat(snfClr) || 0).toFixed(2)} %`)}
-      ${line('Rate', `₹${(rate || 0).toFixed(2)} /KG`)}
+      ${line('Rate', `₹${(rate || 0).toFixed(2)} /Litre`)}
       ${dash}
       <div style="font-size:15px;font-weight:bold">AMOUNT: ₹${(amount || 0).toFixed(2)}</div>
       ${dash}
