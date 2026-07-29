@@ -284,7 +284,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     // Print works offline too (totals read from the local cache).
     if (printEnabled) {
       try {
-        const monthTotal = await buildMonthTotal();
+        const monthTotal = await buildMonthTotal(farmerCode);
         printSlip(monthTotal);
       } catch (e) {
         console.error('Print skipped (offline/no cache):', e);
@@ -322,14 +322,14 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     farmerCodeRef.current?.focus();
   };
 
-  // Whole-DCS running total from the 1st of the entry's month up to (and
-  // including) the entry's date, across BOTH shifts. Uses a key-range query so
-  // only the relevant date nodes are fetched (not the whole milkCollection).
-  // Guards: (1) re-check every date key is inside the month window, so nothing
-  // outside the range can slip in; (2) only count real entry objects that carry
-  // qty/amount — a malformed/legacy node can't add phantom entries (iterating a
-  // flat entry's FIELDS was inflating the count, e.g. Entr: 4019).
-  const buildMonthTotal = async () => {
+  // THIS farmer's running total from the 1st of the entry's month up to (and
+  // including) the entry's date, across BOTH shifts. Entries are keyed by
+  // farmer code (milkCollection/{date}/{shift}/{code}), so each shift bucket is
+  // indexed directly — no iteration over other farmers. A key-range query
+  // fetches only the relevant date nodes (not the whole milkCollection), so
+  // this stays fast even on big months. Guards: strict month window re-check +
+  // only genuine entry objects with qty/amount count.
+  const buildMonthTotal = async (code: string) => {
     const startDate = `${sessionDate.substring(0, 7)}-01`;
     let count = 0, qty = 0, amount = 0;
     try {
@@ -343,13 +343,11 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
           const shifts = data[date] || {};
           Object.values(shifts).forEach((shift: any) => {
             if (!shift || typeof shift !== 'object') return;
-            Object.values(shift).forEach((e: any) => {
-              // Count only genuine farmer entries (object with qty/amount).
-              if (!e || typeof e !== 'object' || (e.qty == null && e.amount == null)) return;
-              count++;
-              qty += safeNum(e.qty);
-              amount += safeNum(e.amount);
-            });
+            const e = shift[code]; // only THIS farmer's entry in this shift
+            if (!e || typeof e !== 'object' || (e.qty == null && e.amount == null)) return;
+            count++;
+            qty += safeNum(e.qty);
+            amount += safeNum(e.amount);
           });
         });
       }
@@ -375,9 +373,16 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     const monthAbbr = (() => { try { return new Date(sessionDate + 'T00:00:00').toLocaleDateString('en-IN', { month: 'short' }); } catch { return ''; } })();
     const monthRange = `1-${day} ${monthAbbr}`;
 
+    // Heading with the farmer's name; fall back to the generic label when the
+    // name would overflow a 58mm line (~32 monospace chars).
+    const namedHeading = `${farmerName} — Month (${monthRange})`;
+    const monthHeading = farmerName && namedHeading.length <= 32
+      ? namedHeading
+      : `Month Total (${monthRange})`;
+
     const monthHtml = monthTotal ? `
       ${dash}
-      <div style="text-align:center;font-weight:bold">Month Total (${esc(monthRange)})</div>
+      <div style="text-align:center;font-weight:bold">${esc(monthHeading)}</div>
       ${line('Entr', String(monthTotal.count))}
       ${line('Qty', `${monthTotal.qty.toFixed(3)} Litre`)}
       ${line('Amt', `₹${monthTotal.amount.toFixed(2)}`)}
