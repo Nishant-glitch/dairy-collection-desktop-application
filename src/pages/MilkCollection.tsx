@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ref, onValue, set, get, remove } from 'firebase/database';
+import { ref, onValue, set, get, remove, query, orderByKey, startAt, endAt } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -36,6 +36,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   const [sessionMode, setSessionMode] = useState<'SNF' | 'CLR'>('SNF');
   const [printEnabled, setPrintEnabled] = useState(false);
   const [smsEnabled, setSmsEnabled] = useState(false);
+  const [thermalPaperSize, setThermalPaperSize] = useState<'58mm' | '80mm'>('58mm');
   
   const [farmerCode, setFarmerCode] = useState('');
   const [farmerName, setFarmerName] = useState('');
@@ -79,6 +80,11 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   useEffect(() => {
     loadDCSInfo();
     const unsubscribe = loadFarmers();
+    // Thermal printer paper size (Settings). Default 58mm.
+    get(ref(database, up('settings/thermalPaperSize'))).then((snap) => {
+      const v = snap.exists() ? snap.val() : '58mm';
+      if (v === '58mm' || v === '80mm') setThermalPaperSize(v);
+    }).catch(() => {});
     return unsubscribe;
   }, []);
 
@@ -275,11 +281,11 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
       writePromise.catch((e) => console.error('Queued offline write will retry:', e));
     }
 
-    // Print works offline too (buildShiftTotal reads from the local cache).
+    // Print works offline too (totals read from the local cache).
     if (printEnabled) {
       try {
-        const shiftTotal = await buildShiftTotal();
-        printSlip(shiftTotal);
+        const monthTotal = await buildMonthTotal(farmerCode);
+        printSlip(monthTotal);
       } catch (e) {
         console.error('Print skipped (offline/no cache):', e);
       }
@@ -316,57 +322,106 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     farmerCodeRef.current?.focus();
   };
 
-  // Running total for the whole DCS for today's date + shift. Read after the
-  // entry is saved so the just-saved entry is included. Morning and Evening are
-  // separate buckets (different shift key) and each date is its own node, so
-  // totals are per-shift and reset fresh each day.
-  const buildShiftTotal = async () => {
-    const snap = await get(ref(database, up(`milkCollection/${sessionDate}/${sessionShift}`)));
-    let count = 0;
-    let qty = 0;
-    let amount = 0;
-    if (snap.exists()) {
-      const data = snap.val();
-      Object.keys(data).forEach((code) => {
-        const e = data[code];
-        count++;
-        qty += safeNum(e.qty);
-        amount += safeNum(e.amount);
-      });
+  // THIS farmer's running total from the 1st of the entry's month up to (and
+  // including) the entry's date, across BOTH shifts. Entries are keyed by
+  // farmer code (milkCollection/{date}/{shift}/{code}), so each shift bucket is
+  // indexed directly — no iteration over other farmers. A key-range query
+  // fetches only the relevant date nodes (not the whole milkCollection), so
+  // this stays fast even on big months. Guards: strict month window re-check +
+  // only genuine entry objects with qty/amount count.
+  const buildMonthTotal = async (code: string) => {
+    const startDate = `${sessionDate.substring(0, 7)}-01`;
+    let count = 0, qty = 0, amount = 0;
+    try {
+      const q = query(ref(database, up('milkCollection')), orderByKey(), startAt(startDate), endAt(sessionDate));
+      const snap = await get(q);
+      if (snap.exists()) {
+        const data = snap.val();
+        Object.keys(data).forEach((date) => {
+          // Strict month window: 1st -> the entry's date only.
+          if (date < startDate || date > sessionDate) return;
+          const shifts = data[date] || {};
+          Object.values(shifts).forEach((shift: any) => {
+            if (!shift || typeof shift !== 'object') return;
+            const e = shift[code]; // only THIS farmer's entry in this shift
+            if (!e || typeof e !== 'object' || (e.qty == null && e.amount == null)) return;
+            count++;
+            qty += safeNum(e.qty);
+            amount += safeNum(e.amount);
+          });
+        });
+      }
+    } catch (e) {
+      console.error('Month total failed:', e);
     }
     return { count, qty, amount };
   };
 
-  const printSlip = (shiftTotal: { count: number; qty: number; amount: number } | null = null) => {
-    const totalHtml = shiftTotal ? `
-        <hr/>
-        <p><strong>Total Shift :</strong> ${shiftTotal.count}</p>
-        <p><strong>Total Qty   :</strong> ${shiftTotal.qty.toFixed(2)}</p>
-        <p><strong>Tot Amnt    :</strong> ₹${shiftTotal.amount.toFixed(2)}</p>
+  const printSlip = (
+    monthTotal: { count: number; qty: number; amount: number } | null = null,
+  ) => {
+    // Thermal printer receipt (58mm default, 80mm optional via Settings).
+    const width = thermalPaperSize === '80mm' ? '80mm' : '58mm';
+    const dateFmt = (sessionDate || '').split('-').reverse().join('/'); // YYYY-MM-DD -> DD/MM/YYYY
+    const shiftAbbr = sessionShift === 'Evening' ? 'Eve' : 'Mor';
+    const esc = (s: any) => String(s ?? '').replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c] as string));
+    const line = (label: string, value: string) => `<div>${esc(label.padEnd(5, ' '))}: ${esc(value)}</div>`;
+    const dash = `<div style="border-top:1px dashed #000;margin:3px 0"></div>`;
+
+    // "1-<day> <Mon>" range for the month total (1st -> the entry's date).
+    const day = parseInt((sessionDate || '').substring(8, 10), 10) || 0;
+    const monthAbbr = (() => { try { return new Date(sessionDate + 'T00:00:00').toLocaleDateString('en-IN', { month: 'short' }); } catch { return ''; } })();
+    const monthRange = `1-${day} ${monthAbbr}`;
+
+    // Heading with the farmer's name; fall back to the generic label when the
+    // name would overflow a 58mm line (~32 monospace chars).
+    const namedHeading = `${farmerName} — Month (${monthRange})`;
+    const monthHeading = farmerName && namedHeading.length <= 32
+      ? namedHeading
+      : `Month Total (${monthRange})`;
+
+    const monthHtml = monthTotal ? `
+      ${dash}
+      <div style="text-align:center;font-weight:bold">${esc(monthHeading)}</div>
+      ${line('Entr', String(monthTotal.count))}
+      ${line('Qty', `${monthTotal.qty.toFixed(3)} Litre`)}
+      ${line('Amt', `₹${monthTotal.amount.toFixed(2)}`)}
     ` : '';
 
-    const printContent = `
-      <div id="milk-print-slip" style="padding: 20px; font-family: Arial;">
-        <h2 style="text-align: center;">${dcsInfo.name || 'DCS Pro'}</h2>
-        <h3 style="text-align: center;">Milk Collection Receipt</h3>
-        <hr/>
-        <p><strong>Date:</strong> ${sessionDate} | <strong>Shift:</strong> ${sessionShift}</p>
-        <p><strong>Farmer Code:</strong> ${farmerCode}</p>
-        <p><strong>Farmer Name:</strong> ${farmerName}</p>
-        <hr/>
-        <p><strong>Quantity:</strong> ${qty} Liters</p>
-        <p><strong>FAT:</strong> ${fat}%</p>
-        <p><strong>${sessionMode}:</strong> ${snfClr}%</p>
-        <p><strong>Rate:</strong> ₹${(rate || 0).toFixed(2)}/Liter</p>
-        <p style="font-size: 18px;"><strong>Amount:</strong> ₹${(amount || 0).toFixed(2)}</p>
-        ${totalHtml}
-        <hr/>
-        <p style="text-align: center; font-size: 12px;">Thank you!</p>
-      </div>
+    const body = `
+      <div style="text-align:center;font-weight:bold;font-size:13px">${esc(dcsInfo.name || 'DCS Pro')}</div>
+      <div style="text-align:center">Milk Collection Slip</div>
+      <div style="height:5px"></div>
+      <div>Date : ${esc(dateFmt)}  Shift: ${shiftAbbr}</div>
+      ${line('Code', farmerCode)}
+      ${line('Name', farmerName)}
+      ${line('Qty', `${(parseFloat(qty) || 0).toFixed(3)} Litre`)}
+      ${line('FAT', `${(parseFloat(fat) || 0).toFixed(2)} %`)}
+      ${line(sessionMode, `${(parseFloat(snfClr) || 0).toFixed(2)} %`)}
+      ${line('Rate', `₹${(rate || 0).toFixed(2)} /Litre`)}
+      ${dash}
+      <div style="font-size:15px;font-weight:bold">AMOUNT: ₹${(amount || 0).toFixed(2)}</div>
+      ${monthHtml}
+      ${dash}
+      <div style="height:4px"></div>
+      <div style="text-align:center">Thank You! — DCS Pro</div>
     `;
 
     // Hidden-iframe print (no window.open -> not blocked by popup blockers).
-    printHtml(`<html><head><title>Milk Collection Receipt</title></head><body>${printContent}</body></html>`);
+    printHtml(`<html><head><title>Milk Collection Receipt</title>
+      <style>
+        * { color: #000 !important; -webkit-print-color-adjust: exact; }
+        html, body { margin: 0; padding: 0; }
+        #slip { font-family: 'Courier New', monospace; font-size: 11px; color: #000; line-height: 1.35;
+                width: ${width}; box-sizing: border-box; padding: 2mm; }
+        #slip div { page-break-inside: avoid; }
+        @media print {
+          @page { size: ${width} auto; margin: 0; }
+          html, body { width: ${width}; margin: 0; }
+          #slip { width: ${width}; padding: 2mm; }
+        }
+      </style></head>
+      <body><div id="slip">${body}</div></body></html>`);
   };
 
   const clearForm = () => {
