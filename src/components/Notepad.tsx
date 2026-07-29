@@ -120,18 +120,18 @@ const Notepad: React.FC = () => {
       {open && (
         <>
           {/* Backdrop */}
-          <div onClick={closePanel} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.35)', zIndex: 300 }} />
+          <div onClick={closePanel} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 9998 }} />
 
-          {/* Panel */}
+          {/* Panel — solid opaque white so nothing shows through */}
           <div
             style={{
-              position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 301,
-              width: 'min(380px, 100vw)', background: '#fff', boxShadow: '-8px 0 40px rgba(0,0,0,0.18)',
+              position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 9999,
+              width: 'min(380px, 100vw)', background: '#ffffff', boxShadow: '-4px 0 24px rgba(0,0,0,0.15)',
               display: 'flex', flexDirection: 'column', animation: 'slideIn .25s ease',
             }}
           >
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid #e5e7eb' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', borderBottom: '1px solid #e5e7eb', background: '#ffffff' }}>
               <div style={{ fontSize: 16, fontWeight: 800, color: '#14532d', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <NotebookPen size={18} color="#16a34a" /> Notepad
               </div>
@@ -145,7 +145,7 @@ const Notepad: React.FC = () => {
 
             {showList ? (
               /* ---- List / search view ---- */
-              <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1, background: '#ffffff' }}>
                 <div style={{ padding: 12, borderBottom: '1px solid #f1f5f9' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#f8fafc', borderRadius: 10, padding: '8px 12px' }}>
                     <Search size={15} color="#94a3b8" />
@@ -171,9 +171,9 @@ const Notepad: React.FC = () => {
               </div>
             ) : (
               /* ---- Editor view ---- */
-              <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, flex: 1, background: '#ffffff' }}>
                 {/* Date bar */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 16px', borderBottom: '1px solid #f1f5f9', background: '#f9fafb' }}>
                   <button onClick={() => setDate((d) => shiftDate(d, -1))} title="Previous day" style={iconBtn}><ChevronLeft size={18} /></button>
                   <input type="date" value={date} onChange={(e) => setDate(e.target.value || todayStr())} style={{ flex: 1, border: '1px solid #e5e7eb', borderRadius: 8, padding: '7px 10px', fontSize: 13, color: '#0f172a' }} />
                   <button onClick={() => setDate((d) => shiftDate(d, 1))} title="Next day" style={iconBtn}><ChevronRight size={18} /></button>
@@ -191,7 +191,7 @@ const Notepad: React.FC = () => {
                   value={text}
                   onChange={(e) => onType(e.target.value)}
                   placeholder="Aaj ka kuch note likhein…"
-                  style={{ flex: 1, margin: '0 16px 16px', padding: 14, border: '1px solid #e5e7eb', borderRadius: 12, resize: 'none', fontSize: 14, lineHeight: 1.6, color: '#0f172a', outline: 'none', fontFamily: 'inherit' }}
+                  style={{ flex: 1, margin: '0 16px 16px', padding: 14, border: '1px solid #e5e7eb', borderRadius: 12, resize: 'none', fontSize: 14, lineHeight: 1.6, color: '#0f172a', outline: 'none', fontFamily: 'inherit', background: '#ffffff' }}
                 />
               </div>
             )}
