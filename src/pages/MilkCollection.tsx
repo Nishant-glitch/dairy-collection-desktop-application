@@ -366,7 +366,8 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     const shiftAbbr = sessionShift === 'Evening' ? 'Eve' : 'Mor';
     const esc = (s: any) => String(s ?? '').replace(/[<>&]/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c] as string));
     const line = (label: string, value: string) => `<div>${esc(label.padEnd(5, ' '))}: ${esc(value)}</div>`;
-    const dash = `<div style="border-top:1px dashed #000;margin:3px 0"></div>`;
+    // Slightly inset so the dashed line never touches either printable edge.
+    const dash = `<div style="border-top:1px dashed #000;margin:3px 1mm"></div>`;
 
     // "1-<day> <Mon>" range for the month total (1st -> the entry's date).
     const day = parseInt((sessionDate || '').substring(8, 10), 10) || 0;
@@ -412,13 +413,16 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
       <style>
         * { color: #000 !important; -webkit-print-color-adjust: exact; }
         html, body { margin: 0; padding: 0; }
+        /* Extra LEFT padding: thermal printers can't print to the very left
+           edge, so without it the first letter of each line (D/C/N/A) clips.
+           padding: top right bottom left. box-sizing keeps content inside. */
         #slip { font-family: 'Courier New', monospace; font-size: 11px; color: #000; line-height: 1.35;
-                width: ${width}; box-sizing: border-box; padding: 2mm; }
+                width: ${width}; box-sizing: border-box; padding: 3mm 4mm 3mm 5mm; }
         #slip div { page-break-inside: avoid; }
         @media print {
           @page { size: ${width} auto; margin: 0; }
-          html, body { width: ${width}; margin: 0; }
-          #slip { width: ${width}; padding: 2mm; }
+          html, body { width: ${width}; margin: 0; padding: 0; }
+          #slip { width: ${width}; padding: 3mm 4mm 3mm 5mm; }
         }
       </style></head>
       <body><div id="slip">${body}</div></body></html>`);
