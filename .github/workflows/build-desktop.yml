@@ -12,7 +12,38 @@ permissions:
   contents: write # needed to attach installers to a Release on tag builds
 
 jobs:
+  # Build the web app ONCE on Linux, then hand its dist/ to each desktop job.
+  # The desktop wrapper ships this snapshot as an offline fallback: normally
+  # the installed app loads https://dcpro.online for auto-update parity, but
+  # if the network is down at launch it falls back to this bundled copy.
+  # --base=./ makes assets load under file:// (relative paths).
+  web-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install web dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Build web app (relative base for file:// loading)
+        run: npx vite build --base=./
+
+      - name: Upload web build
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: dist
+          retention-days: 1
+
   build:
+    needs: web-build
     strategy:
       fail-fast: false
       matrix:
@@ -41,13 +72,20 @@ jobs:
         with:
           node-version: 20
 
+      - name: Download web build into desktop/dist
+        uses: actions/download-artifact@v4
+        with:
+          name: web-dist
+          path: desktop/dist
+
       - name: Install desktop dependencies
         working-directory: desktop
         run: npm install
 
       # electron-builder auto-detects the runner OS: windows-latest -> .exe
-      # (nsis), macos-latest -> .dmg. No signing certs, so disable auto-discovery
-      # to avoid a signing failure (installers are unsigned by design for now).
+      # (nsis, x64 + ia32 from package.json), macos-latest -> .dmg. No signing
+      # certs, so disable auto-discovery to avoid a signing failure (installers
+      # are unsigned by design for now).
       - name: Build installer
         working-directory: desktop
         env:
