@@ -25,8 +25,11 @@
       "main.cjs"
     ],
     "win": {
-      "target": ["nsis"],
-      "icon": "build/icon.png"
+      "target": [
+        { "target": "nsis", "arch": ["x64", "ia32"] }
+      ],
+      "icon": "build/icon.png",
+      "requestedExecutionLevel": "asInvoker"
     },
     "nsis": {
       "oneClick": false,

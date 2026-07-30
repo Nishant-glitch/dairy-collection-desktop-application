@@ -8,10 +8,23 @@ const { app, BrowserWindow, shell } = require('electron');
 const APP_URL = 'https://dcpro.online';
 const WINDOW_TITLE = 'DCS Pro - Dairy Collection System';
 
+// Chromium command-line switches MUST be set before app.whenReady().
+//
+// `high-dpi-support=1` explicitly opts in to Chromium's high-DPI rendering so
+// text/UI stays crisp on Windows 125%/150%/200% DPI displays (default in
+// modern Electron anyway, declared here for clarity).
+//
+// We deliberately DO NOT set `force-device-scale-factor=1` — that would
+// override the user's Windows DPI setting and render the app tiny on 4K /
+// high-DPI screens. Let Windows own scaling; Electron respects it.
+app.commandLine.appendSwitch('high-dpi-support', '1');
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1400,
     height: 900,
+    // Minimum size stops the sidebar-fixed / navbar-flex layout from breaking
+    // on small / older screens (e.g. 1024x768 Windows 10 laptops).
     minWidth: 1024,
     minHeight: 700,
     title: WINDOW_TITLE,
@@ -20,6 +33,10 @@ function createWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
+      // Explicit 1.0 so a stray Ctrl+scroll on a trackpad can't leave the
+      // window's Chromium zoom stuck at a fractional level between launches
+      // (would clash with our in-app zoom control).
+      zoomFactor: 1.0,
     },
   });
 

@@ -56,7 +56,12 @@ body {
   background-size: 22px 22px;
   min-height: calc(100vh / var(--zoom-frac));
   color: var(--ink);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  /* System-native stack — no webfont round-trip, and the OS default renders
+     cleanest at any DPI on every target: Segoe UI Variable (Win 11) / Segoe UI
+     (Win 10/8), San Francisco (macOS/iOS via -apple-system + BlinkMacSystem-
+     Font), Roboto (Android/ChromeOS), then a generic sans-serif fallback. */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Variable", "Segoe UI",
+               Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
