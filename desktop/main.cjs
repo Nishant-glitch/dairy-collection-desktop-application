@@ -1,12 +1,20 @@
-// DCS Pro desktop wrapper (Electron). Option A: the window loads the live
-// production site (https://dcpro.online), so every Vercel deploy is instantly
-// reflected — no need to ship a new installer per update. Firebase auth/data
-// work exactly as in the browser.
+// DCS Pro desktop wrapper (Electron).
+//
+// Hybrid strategy: try the live production site (https://dcpro.online) so
+// every Vercel deploy is instantly reflected — no new installer per update —
+// but fall back to a bundled `dist/index.html` snapshot when the network is
+// down. That way the desktop app opens successfully even fully offline; the
+// IndexedDB queue then handles milk-collection entries as usual.
 
+const path = require('path');
 const { app, BrowserWindow, shell } = require('electron');
 
 const APP_URL = 'https://dcpro.online';
 const WINDOW_TITLE = 'DCS Pro - Dairy Collection System';
+// The CI workflow copies the built web app into `desktop/dist/` before
+// packaging. It's built with `vite --base=./` so relative asset paths work
+// under `file://`.
+const OFFLINE_FALLBACK = path.join(__dirname, 'dist', 'index.html');
 
 // Chromium command-line switches MUST be set before app.whenReady().
 //
@@ -43,7 +51,51 @@ function createWindow() {
   // Keep our fixed title instead of the page's <title>.
   win.on('page-title-updated', (e) => e.preventDefault());
 
+  let offlineMode = false;
+  let fallbackTried = false;
+
   win.loadURL(APP_URL);
+
+  // Live URL failed to load (ERR_INTERNET_DISCONNECTED, DNS failure, etc.) ->
+  // load the bundled snapshot. Only handle the main frame's first failure so
+  // XHR/fetch errors inside the app don't retrigger.
+  win.webContents.on('did-fail-load', (_e, errorCode, errorDescription, validatedURL, isMainFrame) => {
+    if (!isMainFrame || fallbackTried) return;
+    // ERR_ABORTED (-3) fires on normal navigation aborts (e.g. we replaced the
+    // URL); it's not a network error.
+    if (errorCode === -3) return;
+    fallbackTried = true;
+    offlineMode = true;
+    console.log(`Live URL failed (${errorCode} ${errorDescription} for ${validatedURL}); loading bundled fallback`);
+    win.setTitle(`${WINDOW_TITLE} — Offline mode`);
+    win.loadFile(OFFLINE_FALLBACK).catch((err) => {
+      console.error('Bundled fallback also failed to load:', err);
+    });
+  });
+
+  // On the offline path, inject a small badge so the user can see they're on
+  // the cached snapshot (not the latest deploy). React owns #root only, so
+  // appending to <body> is safe from re-renders.
+  win.webContents.on('did-finish-load', () => {
+    if (!offlineMode) return;
+    win.webContents.executeJavaScript(`(() => {
+      if (document.getElementById('__dcs_offline_badge')) return;
+      const b = document.createElement('div');
+      b.id = '__dcs_offline_badge';
+      b.textContent = 'Offline mode — cached version';
+      Object.assign(b.style, {
+        position: 'fixed', bottom: '12px', right: '12px',
+        background: '#b45309', color: '#fff',
+        padding: '6px 12px', borderRadius: '999px',
+        fontSize: '11px', fontWeight: '800',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        zIndex: '2147483647',
+        boxShadow: '0 6px 16px rgba(0,0,0,0.25)',
+        pointerEvents: 'none',
+      });
+      document.body.appendChild(b);
+    })();`).catch(() => { /* CSP or missing body — non-fatal */ });
+  });
 
   // Open new-window / target=_blank links (and any external origin) in the
   // user's default browser rather than inside the app.
@@ -52,10 +104,11 @@ function createWindow() {
     return { action: 'deny' };
   });
   win.webContents.on('will-navigate', (event, url) => {
-    if (!url.startsWith(APP_URL)) {
-      event.preventDefault();
-      shell.openExternal(url);
-    }
+    // Allow the offline fallback (file://) to navigate freely; block anything
+    // that isn't our live URL or the local snapshot.
+    if (url.startsWith(APP_URL) || url.startsWith('file://')) return;
+    event.preventDefault();
+    shell.openExternal(url);
   });
 }
 

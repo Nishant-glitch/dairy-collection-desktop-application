@@ -32,8 +32,10 @@ export default defineConfig({
         name: "DCS Pro - Dairy Collection System",
         short_name: "DCS Pro",
         description: "Dairy Collection & Management Software",
-        theme_color: "#0a1f0f", // matches body background in src/index.css
-        background_color: "#0a1f0f",
+        // Aligned with the light app background (--bg in src/index.css) so the
+        // OS-level standalone splash matches the app that renders after it.
+        theme_color: "#F4F7F5",
+        background_color: "#F4F7F5",
         display: "standalone",
         start_url: "/",
         icons: [
@@ -43,10 +45,14 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Precache the built app shell (HTML/CSS/JS) for fast, offline-ish load.
+        // Precache the built app shell (HTML/CSS/JS) for fast, offline load.
         // Firebase Auth/Database and other API calls are NOT precached — they
         // always hit the network for live/fresh data.
-        navigateFallbackDenylist: [/^\/api/],
+        // Deep-link offline reloads (e.g. `/milk-collection`) fall back to the
+        // cached index.html; API and public passbook routes are exempted so
+        // they still hit the network / server-rendered path when available.
+        navigateFallback: "index.html",
+        navigateFallbackDenylist: [/^\/api/, /^\/passbook\//],
         // index.html can be large; allow the app-shell bundle to be precached.
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
