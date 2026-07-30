@@ -35,6 +35,8 @@ const FarmerMaster: React.FC = () => {
   const [importing, setImporting] = useState(false);
   const farmerImportRef = useRef<HTMLInputElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const scrollPosRef = useRef(0);
+  const [toast, setToast] = useState('');
   const [pinInput, setPinInput] = useState('');
   // farmerCode -> true when a passbook PIN hash is set (for the list badge).
   const [pinStatus, setPinStatus] = useState<Record<string, boolean>>({});
@@ -55,6 +57,12 @@ const FarmerMaster: React.FC = () => {
     const unsubscribe = loadFarmers();
     return () => { unsubscribe(); };
   }, []);
+
+  // Reset paging ONLY when the search changes — not when the farmers data
+  // refreshes after a save (that would jump the list back to the top).
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [searchTerm]);
 
   useEffect(() => {
     filterFarmers();
@@ -79,7 +87,8 @@ const FarmerMaster: React.FC = () => {
   };
 
   const filterFarmers = () => {
-    setVisibleCount(PAGE_SIZE); // reset paging whenever the filter changes
+    // Note: visibleCount is NOT reset here — it's reset only on search change
+    // (separate effect), so a post-save data refresh keeps the current page.
     if (!searchTerm) {
       setFilteredFarmers(farmers);
       return;
@@ -92,7 +101,23 @@ const FarmerMaster: React.FC = () => {
     setFilteredFarmers(filtered);
   };
 
+  // The scrollable container is .main-content (see App layout), not the window.
+  const getScrollEl = () => document.querySelector('.main-content') as HTMLElement | null;
+  const saveScroll = () => {
+    const el = getScrollEl();
+    scrollPosRef.current = el ? el.scrollTop : window.scrollY;
+  };
+  const restoreScroll = () => {
+    const y = scrollPosRef.current;
+    // Two rAFs: let the modal-close re-render + any farmers refresh commit first.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const el = getScrollEl();
+      if (el) el.scrollTop = y; else window.scrollTo(0, y);
+    }));
+  };
+
   const handleAdd = () => {
+    saveScroll();
     setIsEditing(false);
     setFormData({
       farmerCode: '',
@@ -111,6 +136,7 @@ const FarmerMaster: React.FC = () => {
   };
 
   const handleEdit = (farmer: Farmer) => {
+    saveScroll();
     setIsEditing(true);
     setFormData(farmer);
     setPinInput('');
@@ -160,8 +186,12 @@ const FarmerMaster: React.FC = () => {
       ...(pinHash ? { pinHash } : {}),
     });
 
+    const savedName = formData.farmerName;
     setPinInput('');
     setShowModal(false);
+    restoreScroll(); // keep the list where it was (no jump to top)
+    setToast(`${savedName} saved ✅`);
+    setTimeout(() => setToast(''), 2000);
   };
 
   const handleDelete = async (code: string) => {
@@ -281,6 +311,11 @@ const FarmerMaster: React.FC = () => {
 
   return (
     <div className="page-wrapper animate-fadeIn">
+      {toast && (
+        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 9999, background: '#16a34a', color: '#fff', fontWeight: 700, fontSize: 14, padding: '10px 20px', borderRadius: 999, boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
+          {toast}
+        </div>
+      )}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
         <h1 className="page-title" style={{ marginBottom: 0 }}>{t('farmerMaster')}</h1>
         <div className="flex items-center">
@@ -429,7 +464,7 @@ const FarmerMaster: React.FC = () => {
               <h2 style={{ fontSize: 20, fontWeight: 'bold', color: 'var(--ink)' }}>
                 {isEditing ? 'Edit Farmer' : 'Add New Farmer'}
               </h2>
-              <button onClick={() => setShowModal(false)} style={{ color: 'var(--ink-2)', cursor: 'pointer', background: 'none', border: 'none' }}>
+              <button onClick={() => { setShowModal(false); restoreScroll(); }} style={{ color: 'var(--ink-2)', cursor: 'pointer', background: 'none', border: 'none' }}>
                 <X size={24} />
               </button>
             </div>
@@ -540,7 +575,7 @@ const FarmerMaster: React.FC = () => {
             </div>
 
             <div style={{ marginTop: '24px', display: 'flex', gap: '12px' }}>
-              <button onClick={() => setShowModal(false)} className="btn-secondary" style={{ flex: 1, padding: '12px', minHeight: '40px', fontSize: '14px', fontWeight: 600 }}>Cancel</button>
+              <button onClick={() => { setShowModal(false); restoreScroll(); }} className="btn-secondary" style={{ flex: 1, padding: '12px', minHeight: '40px', fontSize: '14px', fontWeight: 600 }}>Cancel</button>
               <button onClick={handleSave} className="btn-3d" style={{ flex: 2, padding: '12px', minHeight: '40px', fontSize: '14px', fontWeight: 600 }}>Save Farmer</button>
             </div>
           </div>
