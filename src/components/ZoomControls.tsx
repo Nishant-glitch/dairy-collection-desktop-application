@@ -20,7 +20,12 @@ const ZoomControls: React.FC = () => {
   });
 
   useEffect(() => {
+    const frac = zoom / 100;
     (document.body.style as any).zoom = `${zoom}%`;
+    // When zoomed OUT, the body renders shorter than the viewport, leaving an
+    // empty strip below. Grow the body's min-height by 1/zoom so that, once
+    // scaled down, it still fills 100vh. Reset at/above 100%.
+    document.body.style.minHeight = zoom < 100 ? `${100 / frac}vh` : '';
     localStorage.setItem(KEY, String(zoom));
   }, [zoom]);
 
