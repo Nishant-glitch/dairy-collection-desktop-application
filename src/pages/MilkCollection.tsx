@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ref, onValue, set, get, remove, query, orderByKey, startAt, endAt } from 'firebase/database';
 import { database } from '../firebase/config';
-import { up } from '../utils/userDb';
+import { up, getUid } from '../utils/userDb';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatIndianCurrency } from '../utils/rateCalculator';
 import { sendSMS } from '../services/sms';
@@ -11,6 +11,7 @@ import { getRateFromMap } from '../utils/rateCalculator';
 import { useConnection } from '../hooks/useConnection';
 import { printHtml } from '../utils/printHtml';
 import { restoreCaret } from '../utils/focus';
+import { addToQueue, getQueue, removeFromQueue, QUEUE_CHANGED } from '../services/offlineQueue';
 
 interface Entry {
   farmerCode: string;
@@ -22,6 +23,7 @@ interface Entry {
   rate: number;
   amount: number;
   timestamp: number;
+  pending?: boolean; // true = durable offline entry, not yet synced to Firebase
 }
 
 interface MilkCollectionProps {
@@ -58,6 +60,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   const [duplicateWarning, setDuplicateWarning] = useState<{show: boolean, message: string}>({show: false, message: ''});
 
   const [todayEntries, setTodayEntries] = useState<Entry[]>([]);
+  const [pendingEntries, setPendingEntries] = useState<Entry[]>([]);
   const [activeRateConfig, setActiveRateConfig] = useState<any>(null);
   const [dcsInfo, setDcsInfo] = useState<any>({});
   const [farmers, setFarmers] = useState<any>({});
@@ -95,6 +98,33 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     }
   }, [showSessionSetup, sessionDate, sessionShift]);
 
+  // Durable offline-queued entries for THIS session (IndexedDB). These survive
+  // app close/reopen while offline, so on reload they re-appear in Recent
+  // Entries with a "pending sync" badge. Refreshes whenever the queue changes
+  // (new offline entry saved, or an entry synced & removed).
+  useEffect(() => {
+    if (showSessionSetup) return;
+    let cancelled = false;
+    const loadPending = async () => {
+      try {
+        const q = await getQueue();
+        if (cancelled) return;
+        const mine = q
+          .filter((it) => it.date === sessionDate && it.shift === sessionShift)
+          .map((it) => ({ farmerCode: it.farmerCode, ...it.data, pending: true } as Entry));
+        setPendingEntries(mine);
+      } catch (e) {
+        console.error('Load pending queue failed:', e);
+      }
+    };
+    loadPending();
+    window.addEventListener(QUEUE_CHANGED, loadPending);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(QUEUE_CHANGED, loadPending);
+    };
+  }, [showSessionSetup, sessionDate, sessionShift]);
+
   useEffect(() => {
     if (!qty || !fat || !snfClr || !activeRateConfig) {
       setRate(0);
@@ -120,10 +150,12 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
   // This protects back-dated entries: e.g. a 10-Jun entry always uses the chart
   // effective on 10 Jun, never a chart published later. Uses the versioned
   // globalRateConfig/history; falls back to /current only if no history exists.
-  const getConfigForDate = async (collectionDate: string) => {
-    const historySnap = await get(ref(database, 'globalRateConfig/history'));
-    if (historySnap.exists()) {
-      const configs = (Object.values(historySnap.val()) as any[])
+  const RATE_CACHE_KEY = 'dcs_rate_config_cache'; // { history, current } for offline calc
+
+  // Resolve the chart effective on the entry's date from raw history/current.
+  const resolveConfigForDate = (history: any, current: any, collectionDate: string) => {
+    if (history) {
+      const configs = (Object.values(history) as any[])
         .filter((c: any) => c && c.effectiveFrom)
         .sort((a: any, b: any) => String(a.effectiveFrom).localeCompare(String(b.effectiveFrom)));
       if (configs.length > 0) {
@@ -132,8 +164,32 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
         return valid || configs[0]; // date before all charts -> earliest chart
       }
     }
-    const currentSnap = await get(ref(database, 'globalRateConfig/current'));
-    return currentSnap.exists() ? currentSnap.val() : null;
+    return current || null;
+  };
+
+  const getConfigForDate = async (collectionDate: string) => {
+    try {
+      const [historySnap, currentSnap] = await Promise.all([
+        get(ref(database, 'globalRateConfig/history')),
+        get(ref(database, 'globalRateConfig/current')),
+      ]);
+      const history = historySnap.exists() ? historySnap.val() : null;
+      const current = currentSnap.exists() ? currentSnap.val() : null;
+      // Cache the whole rate chart so offline entries can still compute
+      // rate & amount (weak village internet). Refreshed on every online read.
+      try {
+        localStorage.setItem(RATE_CACHE_KEY, JSON.stringify({ history, current }));
+      } catch { /* storage full/blocked — non-fatal */ }
+      return resolveConfigForDate(history, current, collectionDate);
+    } catch (e) {
+      // Offline / read failed — fall back to the last cached rate chart.
+      console.error('Rate chart read failed, using offline cache:', e);
+      try {
+        const cached = JSON.parse(localStorage.getItem(RATE_CACHE_KEY) || 'null');
+        if (cached) return resolveConfigForDate(cached.history, cached.current, collectionDate);
+      } catch { /* no/invalid cache */ }
+      return null;
+    }
   };
 
   const loadDCSInfo = async () => {
@@ -247,7 +303,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
       return;
     }
 
-    if (!isModifying && todayEntries.find(e => e.farmerCode === farmerCode)) {
+    if (!isModifying && [...todayEntries, ...pendingEntries].find(e => e.farmerCode === farmerCode)) {
       alert('⚠️ Entry already exists! Use Modify button from the table.');
       return;
     }
@@ -267,18 +323,28 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
       entryData.clr = parseFloat(snfClr);
     }
 
-    const entryRef = ref(database, up(`milkCollection/${sessionDate}/${sessionShift}/${farmerCode}`));
-
-    // IMPORTANT (weak internet): offline, `set()` does NOT resolve until the
-    // connection returns — awaiting it would hang the save and make the clerk
-    // think the entry was lost. So we only await when online. Offline, the
-    // write is queued in RTDB's local cache (UI updates optimistically) and
-    // auto-syncs on reconnect — the entry is safe either way.
-    const writePromise = set(entryRef, entryData);
+    // IMPORTANT (weak village internet): the entry must NEVER be lost.
     if (online) {
-      await writePromise;
+      // Online: write straight to Firebase (same path/behaviour as before).
+      const entryRef = ref(database, up(`milkCollection/${sessionDate}/${sessionShift}/${farmerCode}`));
+      await set(entryRef, entryData);
     } else {
-      writePromise.catch((e) => console.error('Queued offline write will retry:', e));
+      // Offline: persist to the DURABLE IndexedDB queue (not RTDB's in-memory
+      // cache, which is lost on app close). It shows immediately in Recent
+      // Entries with a "pending sync" badge and auto-syncs on reconnect. If
+      // this farmer already has a queued entry for this session (re-save /
+      // modify while still offline), replace it — last write wins.
+      try {
+        const existing = (await getQueue()).find(
+          (it) => it.date === sessionDate && it.shift === sessionShift && it.farmerCode === farmerCode
+        );
+        if (existing) await removeFromQueue(existing.localId);
+        await addToQueue({ uid: getUid(), date: sessionDate, shift: sessionShift, farmerCode, data: entryData });
+      } catch (e) {
+        console.error('Failed to queue offline entry:', e);
+        alert('⚠️ Entry local pe save nahi ho payi. Dobara try karein.');
+        return;
+      }
     }
 
     // Print works offline too (totals read from the local cache).
@@ -454,13 +520,25 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     qtyRef.current?.focus();
   };
 
-  const handleDelete = async (code: string) => {
-    if (confirm('Are you sure you want to delete this entry?')) {
-      const entryRef = ref(database, up(`milkCollection/${sessionDate}/${sessionShift}/${code}`));
+  const handleDelete = async (entry: Entry) => {
+    if (!confirm('Are you sure you want to delete this entry?')) return;
+    if (entry.pending) {
+      // Durable offline entry — remove it from the IndexedDB queue so it never
+      // syncs. (It was never written to Firebase.)
+      try {
+        const item = (await getQueue()).find(
+          (it) => it.date === sessionDate && it.shift === sessionShift && it.farmerCode === entry.farmerCode
+        );
+        if (item) await removeFromQueue(item.localId);
+      } catch (e) {
+        console.error('Failed to delete pending entry:', e);
+      }
+    } else {
+      const entryRef = ref(database, up(`milkCollection/${sessionDate}/${sessionShift}/${entry.farmerCode}`));
       await remove(entryRef);
-      setDuplicateWarning({show: false, message: ''});
-      restoreCaret(farmerCodeRef.current); // restore cursor (Windows caret bug)
     }
+    setDuplicateWarning({show: false, message: ''});
+    restoreCaret(farmerCodeRef.current); // restore cursor (Windows caret bug)
   };
 
   const handleFarmerCodeChange = (code: string) => {
@@ -473,7 +551,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
         if (snap.exists()) {
           setFarmerName(snap.val().farmerName || snap.val().name);
           setFarmerFound(true);
-          setWarningMessage(todayEntries.find(ent => ent.farmerCode === code) ? 'Already entered' : '');
+          setWarningMessage([...todayEntries, ...pendingEntries].find(ent => ent.farmerCode === code) ? 'Already entered' : '');
         } else {
           setFarmerName('');
           setFarmerFound(false);
@@ -493,8 +571,8 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
       return;
     }
     if (e.key === 'Enter' && farmerFound) {
-      const snap = await get(ref(database, up(`milkCollection/${sessionDate}/${sessionShift}/${farmerCode}`)));
-      if (snap.exists()) {
+      // Check both synced and durable offline-queued entries for a duplicate.
+      if ([...todayEntries, ...pendingEntries].find(ent => ent.farmerCode === farmerCode)) {
         setDuplicateWarning({ show: true, message: `⚠️ Entry exists for ${farmerName}!` });
         return;
       }
@@ -554,10 +632,19 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     return () => window.removeEventListener('keydown', h);
   }, [showHistory]);
 
-  const totalQty = (todayEntries || []).reduce((sum, e) => sum + safeNum(e?.qty), 0);
-  const totalAmount = (todayEntries || []).reduce((sum, e) => sum + safeNum(e?.amount), 0);
-  const avgFat = (todayEntries || []).length > 0 ? (todayEntries || []).reduce((sum, e) => sum + safeNum(e?.fat), 0) / todayEntries.length : 0;
-  const avgSnfClr = (todayEntries || []).length > 0 ? (todayEntries || []).reduce((sum, e) => sum + safeNum(e?.snf || e?.clr), 0) / todayEntries.length : 0;
+  // Synced (Firebase) entries + durable offline-queued entries. A pending
+  // entry is hidden once its synced twin appears (post-sync) so there's no
+  // flash of duplicate rows during the sync window.
+  const syncedCodes = new Set((todayEntries || []).map((e) => e.farmerCode));
+  const displayEntries: Entry[] = [
+    ...(todayEntries || []),
+    ...(pendingEntries || []).filter((p) => !syncedCodes.has(p.farmerCode)),
+  ];
+
+  const totalQty = displayEntries.reduce((sum, e) => sum + safeNum(e?.qty), 0);
+  const totalAmount = displayEntries.reduce((sum, e) => sum + safeNum(e?.amount), 0);
+  const avgFat = displayEntries.length > 0 ? displayEntries.reduce((sum, e) => sum + safeNum(e?.fat), 0) / displayEntries.length : 0;
+  const avgSnfClr = displayEntries.length > 0 ? displayEntries.reduce((sum, e) => sum + safeNum(e?.snf || e?.clr), 0) / displayEntries.length : 0;
 
   if (showSessionSetup) {
     return (
@@ -1004,7 +1091,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                 Recent Entries
               </h2>
               <span className="rounded-md bg-black/5 text-slate-500 text-[10px] font-bold uppercase tracking-wider" style={{ padding: '4px 10px' }}>
-                {todayEntries.length} Records
+                {displayEntries.length} Records
               </span>
             </div>
             <div className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
@@ -1021,10 +1108,22 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
-                  {todayEntries.sort((a, b) => safeNum(b?.timestamp) - safeNum(a?.timestamp)).map((entry) => (
-                    <tr key={entry.farmerCode} className="hover:bg-black/5 transition-colors">
+                  {[...displayEntries].sort((a, b) => safeNum(b?.timestamp) - safeNum(a?.timestamp)).map((entry) => (
+                    <tr key={entry.farmerCode} className="hover:bg-black/5 transition-colors" style={entry.pending ? { background: 'rgba(217,119,6,0.06)' } : undefined}>
                       <td style={{ padding: '14px 20px', fontSize: '15px', fontWeight: 700, color: 'var(--ink)' }}>{entry.farmerCode}</td>
-                      <td style={{ padding: '14px 20px', fontSize: '15px', fontWeight: 600, color: 'var(--ink)' }}>{entry.farmerName}</td>
+                      <td style={{ padding: '14px 20px', fontSize: '15px', fontWeight: 600, color: 'var(--ink)' }}>
+                        <div className="flex items-center gap-2">
+                          <span>{entry.farmerName}</span>
+                          {entry.pending && (
+                            <span
+                              title="Offline entry — internet aane par apne aap sync hogi"
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: 3, padding: '2px 7px', borderRadius: 999, background: 'rgba(217,119,6,0.12)', border: '1px solid rgba(217,119,6,0.35)', color: '#b45309', fontSize: 10, fontWeight: 800, whiteSpace: 'nowrap' }}
+                            >
+                              ⏳ pending sync
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td style={{ padding: '14px 20px', fontSize: '15px', fontWeight: 700, color: 'var(--ink)' }}>{safeNum(entry?.qty).toFixed(2)}</td>
                       <td style={{ padding: '14px 20px', fontSize: '15px' }}>
                         <div className="flex items-center gap-2">
@@ -1045,7 +1144,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                             <Edit2 size={14} />
                           </button>
                           <button
-                            onClick={() => handleDelete(entry.farmerCode)}
+                            onClick={() => handleDelete(entry)}
                             className="rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-[#11211A] transition-all"
                             style={{ padding: '8px' }}
                           >
@@ -1055,7 +1154,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                       </td>
                     </tr>
                   ))}
-                  {todayEntries.length === 0 && (
+                  {displayEntries.length === 0 && (
                     <tr>
                       <td colSpan={7} className="text-center text-slate-500 text-sm font-medium" style={{ padding: '48px' }}>
                         No entries found for this session
