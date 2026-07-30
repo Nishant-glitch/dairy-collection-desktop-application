@@ -441,9 +441,9 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     const monthRange = `1-${day} ${monthAbbr}`;
 
     // Heading with the farmer's name; fall back to the generic label when the
-    // name would overflow a 58mm line (~32 monospace chars).
+    // name would overflow a 58mm line (~24 monospace chars at 13px bold).
     const namedHeading = `${farmerName} — Month (${monthRange})`;
-    const monthHeading = farmerName && namedHeading.length <= 32
+    const monthHeading = farmerName && namedHeading.length <= 24
       ? namedHeading
       : `Month Total (${monthRange})`;
 
@@ -456,8 +456,8 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     ` : '';
 
     const body = `
-      <div style="text-align:center;font-weight:bold;font-size:13px">${esc(dcsInfo.name || 'DCS Pro')}</div>
-      <div style="text-align:center">Milk Collection Slip</div>
+      <div style="text-align:center;font-weight:bold;font-size:16px">${esc(dcsInfo.name || 'DCS Pro')}</div>
+      <div style="text-align:center;font-size:13px">Milk Collection Slip</div>
       <div style="height:5px"></div>
       <div>Date : ${esc(dateFmt)}  Shift: ${shiftAbbr}</div>
       ${line('Code', farmerCode)}
@@ -467,7 +467,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
       ${line(sessionMode, `${(parseFloat(snfClr) || 0).toFixed(2)} %`)}
       ${line('Rate', `₹${(rate || 0).toFixed(2)} /Litre`)}
       ${dash}
-      <div style="font-size:15px;font-weight:bold">AMOUNT: ₹${(amount || 0).toFixed(2)}</div>
+      <div style="font-size:17px;font-weight:900">AMOUNT: ₹${(amount || 0).toFixed(2)}</div>
       ${monthHtml}
       ${dash}
       <div style="height:4px"></div>
@@ -477,13 +477,15 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     // Hidden-iframe print (no window.open -> not blocked by popup blockers).
     printHtml(`<html><head><title>Milk Collection Receipt</title>
       <style>
+        /* Pure black + bold everywhere — thermal prints come out light, so
+           every line is bold and #000 (no grays) for a darker, clearer slip. */
         * { color: #000 !important; -webkit-print-color-adjust: exact; }
         html, body { margin: 0; padding: 0; }
         /* Extra LEFT padding: thermal printers can't print to the very left
            edge, so without it the first letter of each line (D/C/N/A) clips.
            padding: top right bottom left. box-sizing keeps content inside. */
-        #slip { font-family: 'Courier New', monospace; font-size: 11px; color: #000; line-height: 1.35;
-                width: ${width}; box-sizing: border-box; padding: 3mm 4mm 3mm 5mm; }
+        #slip { font-family: 'Courier New', monospace; font-size: 13px; font-weight: 700; color: #000;
+                line-height: 1.55; width: ${width}; box-sizing: border-box; padding: 3mm 4mm 3mm 5mm; }
         #slip div { page-break-inside: avoid; }
         @media print {
           @page { size: ${width} auto; margin: 0; }
