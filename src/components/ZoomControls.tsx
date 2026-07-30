@@ -22,10 +22,17 @@ const ZoomControls: React.FC = () => {
   useEffect(() => {
     const frac = zoom / 100;
     (document.body.style as any).zoom = `${zoom}%`;
-    // When zoomed OUT, the body renders shorter than the viewport, leaving an
-    // empty strip below. Grow the body's min-height by 1/zoom so that, once
-    // scaled down, it still fills 100vh. Reset at/above 100%.
-    document.body.style.minHeight = zoom < 100 ? `${100 / frac}vh` : '';
+    // `zoom` scales the body visually, so a `min-height: 100vh` body renders
+    // as only `zoom%` of the viewport — leaving a blank strip below when zoomed
+    // out. Counter it by setting the body's min-height to 100/frac vh, which
+    // after scaling by `frac` lands back at exactly 100vh at ANY zoom level
+    // (e.g. 70% -> 142.8vh -> fills the screen). html carries the same dotted
+    // background as a backstop for any sub-pixel gap.
+    document.body.style.minHeight = `${100 / frac}vh`;
+    // Belt-and-braces: ensure the root element always fills + paints the
+    // viewport even if the stylesheet load order changes.
+    document.documentElement.style.minHeight = '100vh';
+    document.documentElement.style.background = 'var(--bg)';
     localStorage.setItem(KEY, String(zoom));
   }, [zoom]);
 
