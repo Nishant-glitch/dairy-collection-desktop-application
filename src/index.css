@@ -29,6 +29,14 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* html + #root carry the app background too, so when the body is zoomed OUT
+   (navbar zoom control shrinks body) the exposed area below still shows the
+   app's light colour — not white (web) or the dark Electron window. */
+html, #root {
+  background: var(--bg);
+  min-height: 100vh;
+}
+
 body {
   background: var(--bg);
   background-image: radial-gradient(rgba(24,165,88,0.05) 1px, transparent 1px);
