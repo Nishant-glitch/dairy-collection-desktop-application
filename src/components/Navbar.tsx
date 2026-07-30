@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { LogOut, Globe, Menu, Wifi, WifiOff } from 'lucide-react';
+import { LogOut, Globe, Menu, Wifi, WifiOff, Loader2, CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { signOut } from 'firebase/auth';
 import { auth, database } from '../firebase/config';
 import { isAdmin, up } from '../utils/userDb';
 import { ref, onValue } from 'firebase/database';
 import { useConnection } from '../hooks/useConnection';
+import { SYNC_STATUS, SYNCED } from '../services/syncService';
+import { getQueueCount } from '../services/offlineQueue';
 import FarmerLookup from './FarmerLookup';
 import CalculatorWidget from './CalculatorWidget';
 import ZoomControls from './ZoomControls';
@@ -23,6 +25,10 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuToggle, onNavigate }) => {
   const userIsAdmin = isAdmin();
   const [dcsInfo, setDcsInfo] = useState<any>({});
   const online = useConnection();
+  // Offline-sync state (from syncService, via window events).
+  const [pendingCount, setPendingCount] = useState(0);
+  const [syncing, setSyncing] = useState(false);
+  const [syncedToast, setSyncedToast] = useState<{ show: boolean; count: number }>({ show: false, count: 0 });
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -40,6 +46,30 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuToggle, onNavigate }) => {
     };
   }, []);
 
+  // Live pending-count + syncing status, plus a "N synced" toast.
+  useEffect(() => {
+    getQueueCount().then(setPendingCount).catch(() => {});
+
+    const onStatus = (e: Event) => {
+      const d = (e as CustomEvent).detail || {};
+      if (typeof d.pendingCount === 'number') setPendingCount(d.pendingCount);
+      setSyncing(!!d.syncing);
+    };
+    const onSynced = (e: Event) => {
+      const count = (e as CustomEvent).detail?.count || 0;
+      if (count <= 0) return;
+      setSyncedToast({ show: true, count });
+      setTimeout(() => setSyncedToast({ show: false, count }), 4000);
+    };
+
+    window.addEventListener(SYNC_STATUS, onStatus);
+    window.addEventListener(SYNCED, onSynced);
+    return () => {
+      window.removeEventListener(SYNC_STATUS, onStatus);
+      window.removeEventListener(SYNCED, onSynced);
+    };
+  }, []);
+
   const handleLogout = async () => {
     await signOut(auth);
     window.location.reload();
@@ -50,6 +80,20 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuToggle, onNavigate }) => {
   };
 
   return (
+    <>
+    {/* Toast: "N offline entries synced ✅" when a sync pass completes. */}
+    {syncedToast.show && (
+      <div
+        style={{
+          position: 'fixed', top: 68, left: '50%', transform: 'translateX(-50%)', zIndex: 200,
+          display: 'flex', alignItems: 'center', gap: 8, padding: '10px 18px', borderRadius: 12,
+          background: '#16a34a', color: '#fff', fontSize: 13, fontWeight: 800,
+          boxShadow: '0 12px 30px rgba(0,0,0,0.25)', whiteSpace: 'nowrap',
+        }}
+      >
+        <CheckCircle2 size={16} /> {syncedToast.count} offline {syncedToast.count === 1 ? 'entry' : 'entries'} synced ✅
+      </div>
+    )}
     <nav style={{
       background: 'rgba(255,255,255,0.85)',
       borderBottom: '1px solid var(--line)',
@@ -98,19 +142,47 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuToggle, onNavigate }) => {
 
       {/* Right side */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        {/* Online / offline indicator */}
-        <div
-          title={online ? 'Online' : 'Offline — entries local pe save ho rahi hain, internet aane par sync hongi'}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 999,
-            background: online ? 'rgba(22,163,74,0.1)' : 'rgba(239,68,68,0.12)',
-            border: `1px solid ${online ? 'rgba(22,163,74,0.35)' : 'rgba(239,68,68,0.4)'}`,
-            color: online ? '#15803d' : '#b91c1c', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap',
-          }}
-        >
-          {online ? <Wifi size={13} /> : <WifiOff size={13} />}
-          <span className="hidden md:inline">{online ? 'Online' : 'Offline'}</span>
-        </div>
+        {/* Online / offline + sync indicator */}
+        {(() => {
+          // Decide the pill's look & text from connection + queue state.
+          let icon = <Wifi size={13} />;
+          let label = 'Online ✓';
+          let fg = '#15803d', bg = 'rgba(22,163,74,0.1)', bd = 'rgba(22,163,74,0.35)';
+          let title = 'Online — sab entries synced hain';
+
+          if (!online) {
+            icon = <WifiOff size={13} />;
+            label = pendingCount > 0 ? `Offline — ${pendingCount} pending` : 'Offline';
+            fg = '#b91c1c'; bg = 'rgba(239,68,68,0.12)'; bd = 'rgba(239,68,68,0.4)';
+            title = 'Offline — entries local pe safe hain, internet aane par apne aap sync hongi';
+          } else if (syncing) {
+            icon = <Loader2 size={13} className="animate-spin" />;
+            label = `Syncing… ${pendingCount} left`;
+            fg = '#b45309'; bg = 'rgba(217,119,6,0.12)'; bd = 'rgba(217,119,6,0.4)';
+            title = 'Pending entries sync ho rahi hain…';
+          } else if (pendingCount > 0) {
+            icon = <Wifi size={13} />;
+            label = `${pendingCount} pending`;
+            fg = '#b45309'; bg = 'rgba(217,119,6,0.12)'; bd = 'rgba(217,119,6,0.4)';
+            title = 'Online — pending entries sync hone waali hain';
+          }
+
+          return (
+            <div
+              title={title}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 999,
+                background: bg, border: `1px solid ${bd}`, color: fg,
+                fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap',
+              }}
+            >
+              {icon}
+              <span className="hidden md:inline">{label}</span>
+              {/* On mobile, show just the count when there's something pending. */}
+              {pendingCount > 0 && <span className="md:hidden">{pendingCount}</span>}
+            </div>
+          );
+        })()}
 
         {/* Quick tools: zoom + farmer lookup + calculator + notepad (every page) */}
         <ZoomControls />
@@ -152,6 +224,7 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuToggle, onNavigate }) => {
         </div>
       </div>
     </nav>
+    </>
   );
 };
 

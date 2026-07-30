@@ -22,6 +22,7 @@ import Subscribe from './pages/Subscribe';
 import AdminSubscriptions from './pages/AdminSubscriptions';
 import Passbook from './pages/Passbook';
 import { hasAccess } from './utils/subscription';
+import { initSyncService } from './services/syncService';
 import { Milk } from 'lucide-react';
 
 function App() {
@@ -39,6 +40,14 @@ function App() {
     });
 
     return () => unsubscribe();
+  }, []);
+
+  // Start the offline auto-sync service once. It watches the RTDB connection,
+  // the browser online event and the queue, and flushes any IndexedDB-queued
+  // milk-collection entries to Firebase whenever the network is available —
+  // even after the app was closed and reopened while offline. Idempotent.
+  useEffect(() => {
+    initSyncService();
   }, []);
 
   useEffect(() => {
