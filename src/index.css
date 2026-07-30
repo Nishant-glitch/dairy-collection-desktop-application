@@ -25,15 +25,20 @@
   --shadow-lg: 0 18px 48px rgba(16,40,28,0.12);
 
   --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 22px;
+
+  /* Set by ZoomControls (body.style.zoom). Every viewport-height wrapper
+     divides 100vh by this so the shell/root/body still fill the screen after
+     the body is visually scaled down. Default 1 = no zoom. */
+  --zoom-frac: 1;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* html + #root carry the app background too, so when the body is zoomed OUT
-   (navbar zoom control shrinks body) the exposed area below still shows the
-   app's light colour — not white (web) or the dark Electron window. html also
-   carries the SAME dotted pattern as body so the exposed strip is seamless
-   (a plain colour there reads as a blank/white band). */
+/* html/#root/body all carry the app background, so ANY strip exposed by zoom
+   or by browser overscroll paints the theme colour + dotted pattern, never
+   white (web) or the dark Electron window. The `calc(100vh / var(--zoom-frac))`
+   min-heights compensate for `body { zoom: <N>% }`: at 70% zoom each expands
+   to 142.8vh, which after scaling lands back at 100vh — no blank strip. */
 html {
   background: var(--bg);
   background-image: radial-gradient(rgba(24,165,88,0.05) 1px, transparent 1px);
@@ -42,14 +47,14 @@ html {
 }
 #root {
   background: var(--bg);
-  min-height: 100vh;
+  min-height: calc(100vh / var(--zoom-frac));
 }
 
 body {
   background: var(--bg);
   background-image: radial-gradient(rgba(24,165,88,0.05) 1px, transparent 1px);
   background-size: 22px 22px;
-  min-height: 100vh;
+  min-height: calc(100vh / var(--zoom-frac));
   color: var(--ink);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -240,7 +245,11 @@ body {
    desktop so the mobile fixed drawer (max-width: 768px) is untouched. */
 @media (min-width: 769px) {
   .app-shell {
-    height: 100vh;
+    /* 100vh / zoom-frac so, after body's `zoom` scaling, the shell still fills
+       the viewport at any zoom level (e.g. 70% -> 142.8vh -> 100vh visually).
+       Without this, `.app-shell { height: 100vh }` at 70% zoom rendered as
+       only 70vh, leaving a blank strip below the sidebar and main content. */
+    height: calc(100vh / var(--zoom-frac));
     overflow: hidden;
   }
   .navbar {
