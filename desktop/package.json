@@ -1,7 +1,7 @@
 {
   "name": "dcs-pro-desktop",
   "productName": "DCS Pro",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "DCS Pro — Dairy Collection System desktop app (Windows + Mac)",
   "author": "DCS Pro",
   "private": true,
