@@ -20,6 +20,7 @@ import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Subscribe from './pages/Subscribe';
 import AdminSubscriptions from './pages/AdminSubscriptions';
+import AdminWhatsApp from './pages/AdminWhatsApp';
 import Passbook from './pages/Passbook';
 import { hasAccessWithOfflineFallback, type AccessDecision } from './utils/subscription';
 import { initSyncService } from './services/syncService';
@@ -164,6 +165,8 @@ function App() {
         return <Settings />;
       case 'admin-subscriptions':
         return <AdminSubscriptions />;
+      case 'admin-whatsapp':
+        return <AdminWhatsApp />;
       default:
         return <Dashboard />;
     }
