@@ -348,10 +348,14 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     }
 
     // Print works offline too (totals read from the local cache).
+    // Focus restore for continuous data-entry: the print dialog steals focus,
+    // so after it closes we send it back to the farmer-code input via the
+    // printSlip onDone callback. Handles the "auto print ON, cursor gayab"
+    // bug where clerks had to click the input after every save.
     if (printEnabled) {
       try {
         const monthTotal = await buildMonthTotal(farmerCode);
-        printSlip(monthTotal);
+        printSlip(monthTotal, () => farmerCodeRef.current?.focus());
       } catch (e) {
         console.error('Print skipped (offline/no cache):', e);
       }
@@ -385,7 +389,14 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
       setOfflineSaved(true);
       setTimeout(() => setOfflineSaved(false), 4000);
     }
+    // Focus restore — layered so continuous entry works whether print is ON
+    // or OFF. Immediate call (works when print is off). Two delayed retries
+    // catch cases where the print dialog opens between them; even if the
+    // dialog is open, .focus() still sets document.activeElement so the input
+    // is ready the moment focus returns to the window.
     farmerCodeRef.current?.focus();
+    setTimeout(() => farmerCodeRef.current?.focus(), 300);
+    setTimeout(() => farmerCodeRef.current?.focus(), 1200);
   };
 
   // THIS farmer's running total from the 1st of the entry's month up to (and
@@ -425,6 +436,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
 
   const printSlip = (
     monthTotal: { count: number; qty: number; amount: number } | null = null,
+    onDone?: () => void,
   ) => {
     // Thermal printer receipt (58mm default, 80mm optional via Settings).
     const width = thermalPaperSize === '80mm' ? '80mm' : '58mm';
@@ -493,7 +505,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
           #slip { width: ${width}; padding: 3mm 4mm 3mm 5mm; }
         }
       </style></head>
-      <body><div id="slip">${body}</div></body></html>`);
+      <body><div id="slip">${body}</div></body></html>`, onDone);
   };
 
   const clearForm = () => {
