@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ref, get, set } from 'firebase/database';
+import { ref, get, set, remove } from 'firebase/database';
 import { database } from '../firebase/config';
-import { up } from '../utils/userDb';
+import { up, getUid } from '../utils/userDb';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Save, Building2 } from 'lucide-react';
 
@@ -15,6 +15,9 @@ const DCSMaster: React.FC = () => {
     upiId: '',
     upiName: '',
   });
+  // The code that was on the record when the form loaded, so on save we know
+  // whether the code changed and can remove the old societyCodeIndex entry.
+  const [originalCode, setOriginalCode] = useState('');
 
   useEffect(() => {
     loadDCSInfo();
@@ -24,14 +27,50 @@ const DCSMaster: React.FC = () => {
     const dcsRef = ref(database, up('dcsInfo'));
     const snapshot = await get(dcsRef);
     if (snapshot.exists()) {
-      setFormData(snapshot.val());
+      const val = snapshot.val();
+      setFormData(val);
+      setOriginalCode(String(val.code || '').trim());
+    }
+  };
+
+  // Kept in sync with dcsInfo.code so the central WhatsApp bot can resolve
+  // "farmer typed code XYZ" to the owning society uid in one lookup.
+  // societyCodeIndex/{code} = uid. Rules ensure a society can only claim
+  // codes that are unclaimed (or already theirs).
+  const syncCodeIndex = async (oldCode: string, newCode: string, uid: string) => {
+    const oldC = oldCode.trim();
+    const newC = newCode.trim();
+    if (oldC === newC) return; // nothing to change
+    if (oldC) {
+      try { await remove(ref(database, `societyCodeIndex/${oldC}`)); }
+      catch (e) { console.error('Failed to remove old code index entry:', e); }
+    }
+    if (newC) {
+      try { await set(ref(database, `societyCodeIndex/${newC}`), uid); }
+      catch (e) {
+        // Most likely cause: another society already owns this code.
+        console.error('Failed to claim new code index entry:', e);
+        throw new Error(
+          `Code "${newC}" already claimed by another society. Kripya doosra code chunein.`
+        );
+      }
     }
   };
 
   const handleSave = async () => {
-    const dcsRef = ref(database, up('dcsInfo'));
-    await set(dcsRef, formData);
-    alert('DCS information saved successfully!');
+    const uid = getUid();
+    const newCode = String(formData.code || '').trim();
+    try {
+      // Claim the new code FIRST — if this fails (collision), we haven't yet
+      // written dcsInfo, so the user sees the collision error before their
+      // society record is mutated.
+      await syncCodeIndex(originalCode, newCode, uid);
+      await set(ref(database, up('dcsInfo')), formData);
+      setOriginalCode(newCode);
+      alert('DCS information saved successfully!');
+    } catch (e: any) {
+      alert(e?.message || 'Save failed. Kripya dobara try karein.');
+    }
   };
 
   return (

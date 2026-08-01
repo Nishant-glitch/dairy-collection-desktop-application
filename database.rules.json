@@ -29,6 +29,39 @@
       ".read": "auth != null",
       ".write": "auth != null && auth.token.email === 'admin@nishant.com'"
     },
+
+    "societyCodeIndex": {
+      "//": "Global lookup: code -> owner uid. Read-open for the WhatsApp Cloud Function (and any authed client). A society can only claim a code that is unclaimed (or already theirs), and delete only their own entry — prevents one society from hijacking another's code.",
+      ".read": "auth != null",
+      "$code": {
+        ".write": "auth != null && ((newData.exists() && newData.val() === auth.uid && (!data.exists() || data.val() === auth.uid)) || (!newData.exists() && data.exists() && data.val() === auth.uid))"
+      }
+    },
+
+    "whatsappRechargeRequests": {
+      "//": "Society submits requests under their own uid; admin sees everything.",
+      ".read": "auth != null && auth.token.email === 'admin@nishant.com'",
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || auth.token.email === 'admin@nishant.com')",
+        ".write": "auth != null && (auth.uid === $uid || auth.token.email === 'admin@nishant.com')"
+      }
+    },
+
+    "whatsappWallets": {
+      "//": "Balance is admin-write-only so societies cannot inflate their own credit. Cloud Function (admin SDK) bypasses these rules to debit per message.",
+      ".read": "auth != null && auth.token.email === 'admin@nishant.com'",
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || auth.token.email === 'admin@nishant.com')",
+        ".write": "auth != null && auth.token.email === 'admin@nishant.com'"
+      }
+    },
+
+    "whatsappConfig": {
+      "//": "Public read: societies need the recharge UPI ID + per-message cost to render the wallet UI. Admin-only write.",
+      ".read": "auth != null",
+      ".write": "auth != null && auth.token.email === 'admin@nishant.com'"
+    },
+
     ".read": false,
     ".write": false
   }

@@ -348,10 +348,14 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     }
 
     // Print works offline too (totals read from the local cache).
+    // Focus restore for continuous data-entry: the print dialog steals focus,
+    // so after it closes we send it back to the farmer-code input via the
+    // printSlip onDone callback. Handles the "auto print ON, cursor gayab"
+    // bug where clerks had to click the input after every save.
     if (printEnabled) {
       try {
         const monthTotal = await buildMonthTotal(farmerCode);
-        printSlip(monthTotal);
+        printSlip(monthTotal, () => farmerCodeRef.current?.focus());
       } catch (e) {
         console.error('Print skipped (offline/no cache):', e);
       }
@@ -385,7 +389,14 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
       setOfflineSaved(true);
       setTimeout(() => setOfflineSaved(false), 4000);
     }
+    // Focus restore — layered so continuous entry works whether print is ON
+    // or OFF. Immediate call (works when print is off). Two delayed retries
+    // catch cases where the print dialog opens between them; even if the
+    // dialog is open, .focus() still sets document.activeElement so the input
+    // is ready the moment focus returns to the window.
     farmerCodeRef.current?.focus();
+    setTimeout(() => farmerCodeRef.current?.focus(), 300);
+    setTimeout(() => farmerCodeRef.current?.focus(), 1200);
   };
 
   // THIS farmer's running total from the 1st of the entry's month up to (and
@@ -425,6 +436,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
 
   const printSlip = (
     monthTotal: { count: number; qty: number; amount: number } | null = null,
+    onDone?: () => void,
   ) => {
     // Thermal printer receipt (58mm default, 80mm optional via Settings).
     const width = thermalPaperSize === '80mm' ? '80mm' : '58mm';
@@ -493,7 +505,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
           #slip { width: ${width}; padding: 3mm 4mm 3mm 5mm; }
         }
       </style></head>
-      <body><div id="slip">${body}</div></body></html>`);
+      <body><div id="slip">${body}</div></body></html>`, onDone);
   };
 
   const clearForm = () => {
@@ -803,7 +815,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 500, maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 60px rgba(0,0,0,0.3)' }}
+            style={{ background: '#fff', borderRadius: 16, width: '100%', maxWidth: 580, maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 60px rgba(0,0,0,0.3)' }}
           >
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #e5e7eb' }}>
@@ -827,35 +839,37 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                   {/* Today Morning / Evening */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
                     {([['Morning', history.todayMorning], ['Evening', history.todayEvening]] as const).map(([label, e]) => (
-                      <div key={label} style={{ border: '1px solid #e5e7eb', borderRadius: 12, padding: 12 }}>
-                        <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, color: label === 'Morning' ? '#2563eb' : '#7c3aed', marginBottom: 6 }}>Aaj — {label}</div>
+                      <div key={label} style={{ border: '1px solid #e5e7eb', borderRadius: 12, padding: 14 }}>
+                        <div style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, color: label === 'Morning' ? '#2563eb' : '#7c3aed', marginBottom: 8 }}>Aaj — {label}</div>
                         {e ? (
-                          <div style={{ fontSize: 12, color: '#334155', lineHeight: 1.7 }}>
+                          <div style={{ fontSize: 14, color: '#0f172a', lineHeight: 1.7 }}>
                             <div><strong>Qty:</strong> {e.qty.toFixed(2)} L</div>
                             <div><strong>FAT:</strong> {e.fat.toFixed(1)} &nbsp; <strong>SNF:</strong> {e.snf != null ? e.snf.toFixed(1) : '—'}</div>
                             <div><strong>Rate:</strong> ₹{e.rate.toFixed(2)}</div>
-                            <div style={{ color: '#15803d', fontWeight: 800 }}>{formatIndianCurrency(e.amount)}</div>
+                            <div style={{ color: '#15803d', fontWeight: 800, fontSize: 15, marginTop: 2 }}>{formatIndianCurrency(e.amount)}</div>
                           </div>
                         ) : (
-                          <div style={{ fontSize: 12, color: '#94a3b8' }}>Koi entry nahi</div>
+                          <div style={{ fontSize: 13, color: '#94a3b8' }}>Koi entry nahi</div>
                         )}
                       </div>
                     ))}
                   </div>
 
                   {/* Last 7 days table */}
-                  <div style={{ fontSize: 12, fontWeight: 800, color: '#0f172a', marginBottom: 8 }}>Last 7 Days</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a', marginBottom: 10 }}>Last 7 Days</div>
+                  {/* overflow-x-auto keeps the table scrollable on narrow / zoomed screens. */}
                   <div style={{ overflowX: 'auto', border: '1px solid #e5e7eb', borderRadius: 10 }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                       <thead>
-                        <tr style={{ background: '#f8fafc', color: '#64748b', textAlign: 'left' }}>
+                        <tr style={{ background: '#f8fafc', textAlign: 'left' }}>
                           <th style={hcTh}>Date</th><th style={hcTh}>Shift</th>
-                          <th style={hcThR}>Qty</th><th style={hcThR}>FAT</th><th style={hcThR}>SNF</th><th style={hcThR}>Amount</th>
+                          <th style={hcThR}>Qty</th><th style={hcThR}>FAT</th><th style={hcThR}>SNF</th>
+                          <th style={hcThR}>Rate</th><th style={hcThR}>Amount</th>
                         </tr>
                       </thead>
                       <tbody>
                         {history.last7.length === 0 ? (
-                          <tr><td colSpan={6} style={{ padding: 16, textAlign: 'center', color: '#94a3b8' }}>Pichhle 7 din koi entry nahi</td></tr>
+                          <tr><td colSpan={7} style={{ padding: 20, textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>Pichhle 7 din koi entry nahi</td></tr>
                         ) : history.last7.map((r, i) => (
                           <tr key={i} style={{ borderTop: '1px solid #f1f5f9' }}>
                             <td style={hcTd}>{r.date}</td>
@@ -863,17 +877,19 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                             <td style={hcTdR}>{r.qty.toFixed(1)}</td>
                             <td style={hcTdR}>{r.fat.toFixed(1)}</td>
                             <td style={hcTdR}>{r.snf != null ? r.snf.toFixed(1) : '—'}</td>
-                            <td style={{ ...hcTdR, fontWeight: 700, color: '#15803d' }}>{formatIndianCurrency(r.amount)}</td>
+                            {/* Rate stored on the entry at save time — do NOT re-compute. */}
+                            <td style={hcTdR}>₹{(r.rate || 0).toFixed(2)}</td>
+                            <td style={{ ...hcTdR, fontWeight: 800, color: '#15803d' }}>{formatIndianCurrency(r.amount)}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
 
-                  {/* Totals */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, padding: '12px 14px', background: '#f0fdf4', borderRadius: 10 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#166534' }}>Total (7 din): {history.totalQty.toFixed(1)} L</span>
-                    <span style={{ fontSize: 16, fontWeight: 800, color: '#15803d' }}>{formatIndianCurrency(history.totalAmount)}</span>
+                  {/* Totals — prominent so the clerk can eyeball the week's payout instantly. */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, padding: '14px 18px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12 }}>
+                    <span style={{ fontSize: 15, fontWeight: 800, color: '#166534' }}>Total (7 din): {history.totalQty.toFixed(1)} L</span>
+                    <span style={{ fontSize: 20, fontWeight: 900, color: '#15803d' }}>{formatIndianCurrency(history.totalAmount)}</span>
                   </div>
                 </>
               )}
@@ -1174,9 +1190,11 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
 };
 
 // Recent-history popup table cell styles.
-const hcTh: React.CSSProperties = { padding: '8px 10px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.4, whiteSpace: 'nowrap' };
+// Recent-collection modal table styles. Bumped from 10/12px to 12/14px so
+// older / bespectacled clerks can read the numbers without squinting.
+const hcTh: React.CSSProperties = { padding: '10px 12px', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.4, whiteSpace: 'nowrap', color: '#334155' };
 const hcThR: React.CSSProperties = { ...hcTh, textAlign: 'right' };
-const hcTd: React.CSSProperties = { padding: '8px 10px', color: '#334155', whiteSpace: 'nowrap' };
+const hcTd: React.CSSProperties = { padding: '10px 12px', fontSize: 14, color: '#0f172a', fontWeight: 600, whiteSpace: 'nowrap' };
 const hcTdR: React.CSSProperties = { ...hcTd, textAlign: 'right' };
 
 export default MilkCollection;

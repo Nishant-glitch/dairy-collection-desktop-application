@@ -14,6 +14,7 @@ import {
   Snowflake,
   Calculator,
   BookOpen,
+  MessageSquare,
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { isAdmin } from '../utils/userDb';
@@ -62,6 +63,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, isOpen, onCl
 
   if (isAdmin()) {
     menuItems.push({ id: 'admin-subscriptions', icon: Crown, label: 'Subscriptions' });
+    menuItems.push({ id: 'admin-whatsapp', icon: MessageSquare, label: 'WhatsApp Wallet' });
   }
 
   const sidebar = (

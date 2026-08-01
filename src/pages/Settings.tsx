@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ref, get, set, update } from 'firebase/database';
+import { ref, get, set, update, push, onValue } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up, isAdmin, getUid } from '../utils/userDb';
-import { MessageSquare, Save, RefreshCw, Shield, Send, Download, FileSpreadsheet, RotateCcw, AlertTriangle, Database, QrCode, Printer, Copy } from 'lucide-react';
+import { MessageSquare, Save, RefreshCw, Shield, Send, Download, FileSpreadsheet, RotateCcw, AlertTriangle, Database, QrCode, Printer, Copy, Wallet } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import app from '../firebase/config';
@@ -40,10 +40,76 @@ const Settings: React.FC = () => {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
 
+  // WhatsApp Wallet — society's credit for outgoing farmer messages. Balance
+  // lives in a top-level admin-write-only node (whatsappWallets/{uid}) so it
+  // can't be tampered with from the client; recharge is a request the admin
+  // approves after verifying the UPI payment.
+  const [waBalance, setWaBalance] = useState<number>(0);
+  const [waAdminUpiId, setWaAdminUpiId] = useState<string>('');
+  const [waAdminUpiName, setWaAdminUpiName] = useState<string>('');
+  const [waCostPerMsg, setWaCostPerMsg] = useState<number>(0.33);
+  const [waRechargeBusy, setWaRechargeBusy] = useState<number | null>(null);
+  const [waLastRequestAt, setWaLastRequestAt] = useState<number | null>(null);
+
   useEffect(() => {
     loadSettings();
     if (isAdmin()) loadSocieties();
+
+    // Live WhatsApp balance for the current society (updates the moment the
+    // admin approves a recharge). Falls back to 0 if the wallet node doesn't
+    // exist yet.
+    const uid = getUid();
+    const walletRef = ref(database, `whatsappWallets/${uid}/balance`);
+    const walletUnsub = onValue(walletRef, (snap) => {
+      setWaBalance(typeof snap.val() === 'number' ? snap.val() : 0);
+    });
+
+    // Global recharge config (admin's UPI + per-message cost). Public read.
+    const cfgRef = ref(database, 'whatsappConfig');
+    const cfgUnsub = onValue(cfgRef, (snap) => {
+      const c = snap.val() || {};
+      setWaAdminUpiId(c.rechargeUpiId || '');
+      setWaAdminUpiName(c.rechargeUpiName || '');
+      if (typeof c.costPerMessage === 'number' && c.costPerMessage > 0) {
+        setWaCostPerMsg(c.costPerMessage);
+      }
+    });
+
+    // Track the society's own most recent request so we can show "request
+    // pending" state after they submit.
+    const reqRef = ref(database, `whatsappRechargeRequests/${uid}`);
+    const reqUnsub = onValue(reqRef, (snap) => {
+      const all = snap.val() || {};
+      const times = Object.values(all)
+        .map((r: any) => (r?.status === 'pending' ? Number(r?.requestedAt) || 0 : 0))
+        .filter((t) => t > 0);
+      setWaLastRequestAt(times.length ? Math.max(...times) : null);
+    });
+
+    return () => { walletUnsub(); cfgUnsub(); reqUnsub(); };
   }, []);
+
+  const handleWaRecharge = async (amount: number) => {
+    if (waRechargeBusy) return;
+    if (!confirm(`₹${amount} recharge request bhejein?\n\nAdmin ke UPI par payment karein, phir "Recharge request" bhejein. Verify hone ke baad balance add ho jayega.`)) return;
+    setWaRechargeBusy(amount);
+    try {
+      const uid = getUid();
+      const newReqRef = push(ref(database, `whatsappRechargeRequests/${uid}`));
+      await set(newReqRef, {
+        amount,
+        status: 'pending',
+        requestedAt: Date.now(),
+        requestedBy: uid,
+      });
+      alert(`✅ Recharge request bhej di gayi.\nAdmin ${waAdminUpiId ? `ke UPI (${waAdminUpiId})` : ''} par ₹${amount} bhejein. Verify hone par balance add ho jayega.`);
+    } catch (e) {
+      console.error(e);
+      alert('❌ Request bhejne mein error. Kripya dobara try karein.');
+    } finally {
+      setWaRechargeBusy(null);
+    }
+  };
 
   // Admin has read access to the whole users node — list every society so the
   // admin can back up / export any of them.
@@ -705,6 +771,84 @@ const Settings: React.FC = () => {
           <Save style={{ width: 16, height: 16 }} />
           {saving ? 'Saving...' : 'Save SMS Settings'}
         </button>
+      </div>
+
+      {/* WhatsApp Wallet — society's credit for outgoing farmer messages. */}
+      <div className="glass-card" style={{ padding: 24, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+          <Wallet style={{ color: 'var(--brand)', width: 22, height: 22 }} />
+          <h2 style={{ color: 'var(--ink)', fontSize: 18, fontWeight: 700 }}>WhatsApp Wallet</h2>
+        </div>
+        <p style={{ color: 'var(--ink-2)', fontSize: 13, marginBottom: 18 }}>
+          Farmer WhatsApp par society code daal ke apna passbook, latest entry aur totals dekh sakta hai. Har message ka thoda charge cutta hai — recharge yahan se karein.
+        </p>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'stretch' }}>
+          {/* Balance card */}
+          <div style={{
+            flex: '1 1 240px', minWidth: 220,
+            background: 'linear-gradient(135deg, #ecfdf5, #d1fae5)',
+            border: '1px solid #86efac', borderRadius: 14, padding: 20,
+          }}>
+            <div style={{ color: '#166534', fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Current Balance</div>
+            <div style={{ color: '#14532d', fontSize: 32, fontWeight: 900, lineHeight: 1 }}>
+              ₹{waBalance.toFixed(2)}
+            </div>
+            <div style={{ color: '#166534', fontSize: 13, fontWeight: 600, marginTop: 10 }}>
+              ≈ {Math.floor(waBalance / waCostPerMsg).toLocaleString('en-IN')} messages
+              <span style={{ color: '#4d7c4f', fontSize: 11, marginLeft: 6 }}>(₹{waCostPerMsg.toFixed(2)}/msg)</span>
+            </div>
+            {waLastRequestAt && (
+              <div style={{ marginTop: 12, padding: '6px 10px', background: 'rgba(217,119,6,0.12)', border: '1px solid rgba(217,119,6,0.35)', color: '#b45309', borderRadius: 999, fontSize: 11, fontWeight: 700, display: 'inline-block' }}>
+                ⏳ Pending recharge request — {new Date(waLastRequestAt).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+              </div>
+            )}
+          </div>
+
+          {/* UPI QR — points at admin's UPI so payment goes to the right place. */}
+          <div style={{ flex: '1 1 200px', minWidth: 200, textAlign: 'center' }}>
+            <div style={{ color: 'var(--ink-2)', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>Pay via UPI</div>
+            {waAdminUpiId ? (
+              <>
+                <div style={{ padding: 10, background: '#fff', border: '2px solid var(--brand)', borderRadius: 12, display: 'inline-block' }}>
+                  <QRCodeSVG
+                    value={`upi://pay?pa=${encodeURIComponent(waAdminUpiId)}&pn=${encodeURIComponent(waAdminUpiName || 'DCS Pro')}&cu=INR`}
+                    size={140}
+                    level="M"
+                  />
+                </div>
+                <div style={{ color: 'var(--ink)', fontSize: 12, fontWeight: 700, marginTop: 8 }}>{waAdminUpiId}</div>
+                {waAdminUpiName && <div style={{ color: 'var(--ink-2)', fontSize: 11 }}>{waAdminUpiName}</div>}
+              </>
+            ) : (
+              <div style={{ padding: 20, border: '1px dashed var(--line)', borderRadius: 12, color: 'var(--muted)', fontSize: 12 }}>
+                Admin ne recharge UPI abhi set nahi kiya. Kripya admin se sampark karein.
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Recharge amount buttons */}
+        <div style={{ marginTop: 20 }}>
+          <div style={{ color: 'var(--ink-2)', fontSize: 12, fontWeight: 700, marginBottom: 8 }}>Recharge amount chunein — payment karne ke baad "request bhejein" dabayein:</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+            {[100, 500, 1000].map((amt) => (
+              <button
+                key={amt}
+                onClick={() => handleWaRecharge(amt)}
+                disabled={waRechargeBusy !== null}
+                className="btn-primary"
+                style={{ padding: '12px 22px', fontSize: 15, fontWeight: 800, minWidth: 140, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+              >
+                ₹{amt} <span style={{ opacity: 0.85, fontSize: 11, fontWeight: 600 }}>≈ {Math.floor(amt / waCostPerMsg)} msg</span>
+                {waRechargeBusy === amt && <RefreshCw size={14} className="animate-spin" />}
+              </button>
+            ))}
+          </div>
+          <p style={{ color: 'var(--ink-2)', fontSize: 11, marginTop: 10, lineHeight: 1.6 }}>
+            <strong>Kaam kaise karta hai:</strong> Upar wale QR se payment karein. Fir "₹100 / ₹500 / ₹1000" button dabayein — admin ke paas request pahuch jayegi. Admin verify karke aapka balance turant add kar dega. Balance tamper-proof hai — sirf admin badha sakta hai.
+          </p>
+        </div>
       </div>
 
       {/* Thermal Printer */}
