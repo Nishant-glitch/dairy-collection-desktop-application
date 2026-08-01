@@ -121,7 +121,7 @@ const Subscribe: React.FC = () => {
               <QRCodeSVG value={upiLink} size={190} includeMargin level="M" />
               <div style={{ color: '#0a1f0f', fontWeight: 800, fontSize: 22, marginTop: 6 }}>₹{price}</div>
               <div style={{ color: '#475569', fontSize: 12, fontWeight: 600 }}>{PAYEE_NAME}</div>
-              <div style={{ color: '#64748b', fontSize: 12 }}>{UPI_ID}</div>
+              <div style={{ color: '#0f172a', fontSize: 12, fontWeight: 600 }}>{UPI_ID}</div>
             </div>
 
             <a

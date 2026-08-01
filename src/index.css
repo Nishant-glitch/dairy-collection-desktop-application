@@ -4,9 +4,13 @@
   --bg:           #F4F7F5;
   --surface:      #FFFFFF;
   --surface-2:    #F8FAF9;
-  --ink:          #11211A;
-  --ink-2:        #4B5C53;
-  --muted:        #8A998F;
+  /* Text scale — darkened globally for readability on cheap village-screens
+     and for older / bespectacled clerks. Kept as *dark* rather than pure #000
+     so hairline strokes on rendering don't halate. Placeholders opt out of
+     --muted via an explicit rule further down. */
+  --ink:          #0a0a0a;  /* primary body text */
+  --ink-2:        #374151;  /* secondary — labels, subheads */
+  --muted:        #4b5563;  /* helper text, captions */
   --line:         #E6ECE8;
   --line-2:       #EEF2F0;
 
@@ -55,7 +59,7 @@ body {
   background-image: radial-gradient(rgba(24,165,88,0.05) 1px, transparent 1px);
   background-size: 22px 22px;
   min-height: calc(100vh / var(--zoom-frac));
-  color: var(--ink);
+  color: #0a0a0a;
   /* System-native stack — no webfont round-trip, and the OS default renders
      cleanest at any DPI on every target: Segoe UI Variable (Win 11) / Segoe UI
      (Win 10/8), San Francisco (macOS/iOS via -apple-system + BlinkMacSystem-
@@ -125,7 +129,20 @@ body {
   border-color: var(--brand);
   box-shadow: 0 0 0 4px var(--brand-ring);
 }
-.input-3d::placeholder, .input-field::placeholder { color: var(--muted); }
+/* Placeholders keep a lighter grey so the typed text (which is now near-black)
+   is visually distinct from the ghost text. Explicit colour — deliberately NOT
+   var(--muted), which has been darkened for helper text. */
+.input-3d::placeholder, .input-field::placeholder,
+input::placeholder, textarea::placeholder { color: #9ca3af; }
+
+/* Global darkening for Tailwind's most common light-grey utilities. They are
+   used all over the app for data cells, row values and secondary lines that
+   read as "grey" and hurt readability on cheap panels. Darkened once here so
+   every page benefits without touching each file. text-slate-400/gray-400 are
+   left alone — those are typically intentional empty-state / caption text. */
+.text-slate-500, .text-gray-500 { color: #1e293b; }
+.text-slate-600, .text-gray-600 { color: #0f172a; }
+.text-slate-700, .text-gray-700 { color: #0a0a0a; }
 
 .label-text { display: block; font-size: 12px; font-weight: 600; color: var(--ink-2); margin-bottom: 7px; letter-spacing: .2px; }
 

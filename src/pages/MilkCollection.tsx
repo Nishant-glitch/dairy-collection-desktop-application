@@ -823,7 +823,7 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
                 <div style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <History size={18} className="text-blue-500" /> Recent Collection
                 </div>
-                <div style={{ fontSize: 13, color: '#64748b' }}>{farmerName} ({farmerCode})</div>
+                <div style={{ fontSize: 13, color: '#1e293b', fontWeight: 600 }}>{farmerName} ({farmerCode})</div>
               </div>
               <button onClick={closeHistory} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}><X size={22} /></button>
             </div>
