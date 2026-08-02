@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { ref, get, set, onValue, push } from 'firebase/database';
+import { ref, get, set, onValue, push, remove } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
+import { auth } from '../firebase/config';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatIndianCurrency } from '../utils/rateCalculator';
 import { sendPaymentSMS } from '../services/sms';
-import { Smartphone, QrCode, Check, Calculator, X, Users, Snowflake, Printer, Lock } from 'lucide-react';
+import { Smartphone, QrCode, Check, Calculator, X, Users, Snowflake, Printer, Lock, RotateCcw } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { COMFED_LOGO, SUDHA_LOGO } from '../utils/reportLogos';
 import { restoreCaret } from '../utils/focus';
@@ -41,6 +42,15 @@ const PaymentRegister: React.FC = () => {
   // Cash vs Bank for the auto-generated Cash Book entry when marking paid.
   const [payMode, setPayMode] = useState<'cash' | 'bank'>('cash');
   const [locking, setLocking] = useState(false);
+  // B/F reset modal state — typed "RESET" gate so the destructive action can't
+  // fire from a misclick. `bfResetting` also drives the row-level per-farmer
+  // reset spinner so we can guard against parallel writes.
+  const [bfResetOpen, setBfResetOpen] = useState(false);
+  const [bfResetConfirm, setBfResetConfirm] = useState('');
+  const [bfResetting, setBfResetting] = useState<'all' | string | null>(null);
+  // Short-lived success banner (auto-dismisses). Kept inline instead of adding
+  // a global toast lib — this is the only place that needs one.
+  const [toast, setToast] = useState<string | null>(null);
   const [farmers, setFarmers] = useState<any>({});
   const [dcsInfo, setDcsInfo] = useState<any>({});
   const [showQR, setShowQR] = useState<{ show: boolean; data: string; farmer: string }>({
@@ -296,6 +306,77 @@ const PaymentRegister: React.FC = () => {
     }
   };
 
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3500);
+  };
+
+  // Audit entry for every reset. bfResetLog is under users/{uid}/ so the same
+  // owner-write rule that guards farmerBalances also guards this — no extra
+  // rules needed. Fire-and-forget: a log failure must not block the reset.
+  const logBfReset = (scope: 'all' | 'single', extra: Record<string, any>) => {
+    const entry = {
+      scope,
+      resetAt: Date.now(),
+      resetBy: auth.currentUser?.email || auth.currentUser?.uid || 'unknown',
+      ...extra,
+    };
+    push(ref(database, up('bfResetLog')), entry).catch((e) =>
+      console.error('bfResetLog write failed (non-fatal):', e)
+    );
+  };
+
+  // GLOBAL reset: nuke the whole farmerBalances node. Requires typed "RESET".
+  // After the wipe we re-run calculatePayments so every row's B/F drops to 0
+  // and Net Payable recomputes without waiting for the user to click Calculate.
+  const resetAllBf = async () => {
+    if (bfResetting || bfResetConfirm !== 'RESET') return;
+    setBfResetting('all');
+    try {
+      const before = payments.filter((p) => p.bfAmount !== 0).length;
+      await remove(ref(database, up('farmerBalances')));
+      logBfReset('all', { affectedCount: before });
+      setBfResetOpen(false);
+      setBfResetConfirm('');
+      // Re-read from the freshly-wiped node so the UI reflects the reset
+      // immediately (no manual Calculate click needed).
+      await calculatePayments();
+      showToast(`✅ B/F reset ho gaya (${before} farmer${before === 1 ? '' : 's'}).`);
+    } catch (e) {
+      console.error('resetAllBf failed:', e);
+      alert('❌ Reset failed. Kripya dobara try karein.');
+    } finally {
+      setBfResetting(null);
+    }
+  };
+
+  // SINGLE-FARMER reset: remove just that farmer's balance record, then patch
+  // the row locally so we don't need a full re-Calculate. Net Payable falls
+  // to (gross − deductions) with B/F = 0.
+  const resetOneBf = async (payment: PaymentEntry) => {
+    if (bfResetting) return;
+    if (payment.bfAmount === 0) return;
+    if (!confirm(`${payment.farmerName} (${payment.farmerId}) ka B/F reset karein?\n\nCurrent B/F: ${formatIndianCurrency(payment.bfAmount)}\nYe undo nahi ho sakta.`)) return;
+    setBfResetting(payment.farmerId);
+    try {
+      await remove(ref(database, up(`farmerBalances/${payment.farmerId}`)));
+      logBfReset('single', { farmerId: payment.farmerId, previousBalance: payment.bfAmount });
+      setPayments((prev) =>
+        prev.map((p) => {
+          if (p.farmerId !== payment.farmerId) return p;
+          const newNet = p.grossAmount - p.deductions;
+          return { ...p, bfAmount: 0, netPayable: newNet, customAmount: p.isPaid ? p.customAmount : newNet };
+        })
+      );
+      showToast(`✅ ${payment.farmerName} ka B/F reset ho gaya.`);
+    } catch (e) {
+      console.error('resetOneBf failed:', e);
+      alert('❌ Reset failed. Kripya dobara try karein.');
+    } finally {
+      setBfResetting(null);
+    }
+  };
+
   const handleCustomAmount = (farmerId: string, amount: number) => {
     setPayments((prev) =>
       prev.map((p) => (p.farmerId === farmerId ? { ...p, customAmount: amount } : p))
@@ -399,6 +480,83 @@ const PaymentRegister: React.FC = () => {
 
   return (
     <div className="page-wrapper animate-fadeIn">
+      {/* Auto-dismissing success banner for reset operations. Fixed at top so
+          it stays visible even after the page rerenders from calculatePayments. */}
+      {toast && (
+        <div
+          role="status"
+          style={{
+            position: 'fixed', top: 72, left: '50%', transform: 'translateX(-50%)',
+            zIndex: 200, padding: '10px 18px', borderRadius: 12,
+            background: '#16a34a', color: '#fff', fontSize: 13, fontWeight: 800,
+            boxShadow: '0 12px 30px rgba(0,0,0,0.25)', whiteSpace: 'nowrap',
+          }}
+        >
+          {toast}
+        </div>
+      )}
+
+      {/* Reset-B/F confirmation modal — typed "RESET" gate. Kept destructive
+          styling (red) throughout so misclicks are obvious. */}
+      {bfResetOpen && (
+        <div
+          onClick={() => !bfResetting && setBfResetOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 150, background: 'rgba(15,23,42,0.55)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: '#fff', borderRadius: 14, width: '100%', maxWidth: 460, padding: 24, boxShadow: '0 24px 60px rgba(0,0,0,0.3)', border: '2px solid rgba(220,38,38,0.35)' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(220,38,38,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <RotateCcw size={20} color="#b91c1c" />
+              </div>
+              <h3 style={{ fontSize: 17, fontWeight: 800, color: '#0f172a' }}>Reset All B/F</h3>
+            </div>
+            <p style={{ fontSize: 13, color: '#334155', lineHeight: 1.6, marginBottom: 14 }}>
+              ⚠️ Sabhi <strong>{payments.filter((p) => p.bfAmount !== 0).length}</strong> farmers ka Balance Forward (B/F) reset kar diya jayega. Ye action <strong>undo nahi ho sakta</strong>. Confirm karne ke liye <strong style={{ color: '#b91c1c' }}>RESET</strong> type karein:
+            </p>
+            <input
+              type="text"
+              autoFocus
+              value={bfResetConfirm}
+              onChange={(e) => setBfResetConfirm(e.target.value)}
+              placeholder="Type RESET"
+              disabled={bfResetting !== null}
+              style={{
+                width: '100%', padding: '10px 14px', fontSize: 14, fontWeight: 700,
+                border: `2px solid ${bfResetConfirm === 'RESET' ? '#16a34a' : '#e5e7eb'}`,
+                borderRadius: 10, outline: 'none', letterSpacing: 1, textAlign: 'center',
+                textTransform: 'uppercase',
+              }}
+            />
+            <div style={{ display: 'flex', gap: 10, marginTop: 16, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => { setBfResetOpen(false); setBfResetConfirm(''); }}
+                disabled={bfResetting !== null}
+                className="btn-secondary"
+                style={{ padding: '9px 18px', fontWeight: 700 }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={resetAllBf}
+                disabled={bfResetConfirm !== 'RESET' || bfResetting !== null}
+                style={{
+                  padding: '9px 18px', fontWeight: 800, fontSize: 13,
+                  background: bfResetConfirm === 'RESET' ? '#dc2626' : '#fca5a5',
+                  color: '#fff', border: 'none', borderRadius: 10,
+                  cursor: bfResetConfirm === 'RESET' && !bfResetting ? 'pointer' : 'not-allowed',
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                }}
+              >
+                <RotateCcw size={14} /> {bfResetting === 'all' ? 'Resetting…' : 'Confirm Reset'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <h1 className="page-title">{t('paymentRegister')}</h1>
 
       {/* Tabs: Farmer vs BMC */}
@@ -451,6 +609,26 @@ const PaymentRegister: React.FC = () => {
             >
               <Lock size={16} />
               {locking ? 'Finalizing…' : 'Finalize Month'}
+            </button>
+          )}
+          {/* Reset B/F — for cleaning up an accidental Finalize or a stale
+              carry after entries were deleted. Only visible when at least one
+              farmer actually has a non-zero B/F (else there's nothing to
+              reset, and hiding the destructive button is safer). */}
+          {payments.length > 0 && payments.some((p) => p.bfAmount !== 0) && (
+            <button
+              onClick={() => { setBfResetConfirm(''); setBfResetOpen(true); }}
+              disabled={bfResetting !== null}
+              style={{
+                padding: '10px 16px', height: '40px', minHeight: '40px',
+                background: 'transparent', color: '#b91c1c',
+                border: '1px solid rgba(220,38,38,0.35)', borderRadius: 10,
+                fontWeight: 700, fontSize: 13, cursor: bfResetting ? 'not-allowed' : 'pointer',
+                display: 'inline-flex', alignItems: 'center', gap: 6,
+              }}
+              title="Sabhi farmers ka Balance Forward reset karein"
+            >
+              <RotateCcw size={14} /> Reset B/F
             </button>
           )}
         </div>
@@ -515,7 +693,23 @@ const PaymentRegister: React.FC = () => {
                       {formatIndianCurrency(payment.grossAmount)}
                     </td>
                     <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: payment.bfAmount < 0 ? '#ef4444' : payment.bfAmount > 0 ? '#16a34a' : 'var(--ink-2)', fontWeight: payment.bfAmount !== 0 ? 700 : 400 }}>
-                      {payment.bfAmount === 0 ? '—' : `${payment.bfAmount > 0 ? '+' : ''}${formatIndianCurrency(payment.bfAmount)}`}
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
+                        {payment.bfAmount === 0 ? '—' : `${payment.bfAmount > 0 ? '+' : ''}${formatIndianCurrency(payment.bfAmount)}`}
+                        {payment.bfAmount !== 0 && (
+                          <button
+                            onClick={() => resetOneBf(payment)}
+                            disabled={bfResetting !== null}
+                            title="Sirf is farmer ka B/F reset karein"
+                            style={{
+                              background: 'transparent', border: 'none', cursor: bfResetting ? 'not-allowed' : 'pointer',
+                              color: '#b91c1c', padding: 2, borderRadius: 4, display: 'inline-flex',
+                              opacity: bfResetting === payment.farmerId ? 0.5 : 0.75,
+                            }}
+                          >
+                            <RotateCcw size={13} />
+                          </button>
+                        )}
+                      </span>
                     </td>
                     <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: '#ef4444' }}>
                       {formatIndianCurrency(payment.deductions)}
