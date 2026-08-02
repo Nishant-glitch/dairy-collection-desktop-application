@@ -30,43 +30,9 @@ const prevMonthOf = (m: string): string => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 };
 
-// Reusable "resolved period" — whatever mode the user picked, the calc & the
-// downstream mark-paid / finalize / print / SMS all read from this so the
-// period the user calculated with is the period every action uses.
-type PayPeriodKind = 'month' | 'range';
-interface ResolvedPeriod {
-  kind: PayPeriodKind;
-  startDate: string;   // yyyy-MM-dd (inclusive)
-  endDate: string;     // yyyy-MM-dd (inclusive)
-  month?: string;      // yyyy-MM (only in 'month' mode — drives farmerBalances key)
-  label: string;       // human display, e.g. "August 2026" or "01/08/2026 to 15/08/2026"
-  key: string;         // storage key, e.g. month "2026-08" or range "2026-08-01_2026-08-15"
-}
-
-const fmtDDMMYYYY = (yyyyMMdd: string): string => {
-  const parts = String(yyyyMMdd).split('-');
-  return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : yyyyMMdd;
-};
-
-const monthLabel = (yyyyMM: string): string => {
-  try {
-    return new Date(`${yyyyMM}-01T00:00:00`).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
-  } catch { return yyyyMM; }
-};
-
 const PaymentRegister: React.FC = () => {
   const { t } = useLanguage();
   const [month, setMonth] = useState(new Date().toISOString().substring(0, 7));
-  // Farmer payment period selector — default Monthly (backward compatible with
-  // every existing flow: finalize, farmerBalances keying, payments/{month}/...).
-  const todayStr = new Date().toISOString().split('T')[0];
-  const firstOfCurMonth = `${new Date().toISOString().substring(0, 7)}-01`;
-  const [payPeriod, setPayPeriod] = useState<PayPeriodKind>('month');
-  const [fromDate, setFromDate] = useState(firstOfCurMonth);
-  const [toDate, setToDate] = useState(todayStr);
-  // Frozen at Calculate time so mark-as-paid / finalize / print use the SAME
-  // period the results were computed for, even if the user then edits the form.
-  const [calcPeriod, setCalcPeriod] = useState<ResolvedPeriod | null>(null);
   const [payments, setPayments] = useState<PaymentEntry[]>([]);
   const [paidFilter, setPaidFilter] = useState<'all' | 'paid' | 'unpaid'>('all');
   // Render rows in pages so 1000+ farmers don't hang the table.
@@ -89,10 +55,6 @@ const PaymentRegister: React.FC = () => {
   const firstOfMonth = `${new Date().toISOString().substring(0, 7)}-01`;
   const [bmcFromDate, setBmcFromDate] = useState(firstOfMonth);
   const [bmcToDate, setBmcToDate] = useState(today);
-  // BMC defaults to Range mode (that's how the tab has always worked). Adding
-  // Monthly as an opt-in for societies that batch BMC payouts by month.
-  const [bmcPeriod, setBmcPeriod] = useState<PayPeriodKind>('range');
-  const [bmcMonth, setBmcMonth] = useState(new Date().toISOString().substring(0, 7));
   const [bmcFilter, setBmcFilter] = useState('all');
   const [milkTypeFilter, setMilkTypeFilter] = useState<'all' | 'cow' | 'buffalo'>('all');
   const [bmcList, setBmcList] = useState<any[]>([]);
@@ -141,21 +103,6 @@ const PaymentRegister: React.FC = () => {
   };
 
   const calculateBMCEntries = async () => {
-    // If Monthly mode, sync the range to the month's bounds so the print
-    // header + downstream filtering all see the same window. Range mode uses
-    // whatever the user typed as-is.
-    let fromD = bmcFromDate;
-    let toD = bmcToDate;
-    if (bmcPeriod === 'month') {
-      fromD = `${bmcMonth}-01`;
-      toD = `${bmcMonth}-31`; // lexicographic upper bound — safe for Feb too
-      setBmcFromDate(fromD);
-      setBmcToDate(toD);
-    } else {
-      if (!fromD || !toD) { alert('From & To dates required.'); return; }
-      if (toD < fromD) { alert('To Date, From Date ke baad ya barabar hona chahiye.'); return; }
-    }
-
     // Read all bmcEntries and filter client-side — the same pattern used by
     // farmer payments (above), Deductions and Reports. This avoids depending on
     // a server-side .indexOn that must be deployed to the live Firebase rules.
@@ -168,7 +115,7 @@ const PaymentRegister: React.FC = () => {
         const entry = data[id];
         const d = entry.date;
         if (!d) return;
-        if (d < fromD || d > toD) return;
+        if (d < bmcFromDate || d > bmcToDate) return;
         if (bmcFilter !== 'all' && entry.bmcId !== bmcFilter) return;
         if (milkTypeFilter !== 'all' && (entry.milkType || 'cow') !== milkTypeFilter) return;
         list.push({ entryId: id, ...entry });
@@ -211,41 +158,9 @@ const PaymentRegister: React.FC = () => {
     }
   };
 
-  // Resolve the current form state into a single ResolvedPeriod value used by
-  // every downstream operation. Returns null (and alerts) on invalid input.
-  const resolvePeriod = (): ResolvedPeriod | null => {
-    if (payPeriod === 'month') {
-      return {
-        kind: 'month',
-        startDate: `${month}-01`,
-        endDate: `${month}-31`,   // lexicographic upper bound — safe for Feb too
-        month,
-        label: monthLabel(month),
-        key: month,
-      };
-    }
-    // range mode
-    if (!fromDate || !toDate) {
-      alert('From Date aur To Date dono zaroori hain.');
-      return null;
-    }
-    if (toDate < fromDate) {
-      alert('To Date, From Date ke baad ya barabar hona chahiye.');
-      return null;
-    }
-    return {
-      kind: 'range',
-      startDate: fromDate,
-      endDate: toDate,
-      label: `${fmtDDMMYYYY(fromDate)} to ${fmtDDMMYYYY(toDate)}`,
-      key: `${fromDate}_${toDate}`,
-    };
-  };
-
   const calculatePayments = async () => {
-    const period = resolvePeriod();
-    if (!period) return;
-    const { startDate, endDate } = period;
+    const startDate = `${month}-01`;
+    const endDate = `${month}-31`;
 
     const collectionRef = ref(database, up('milkCollection'));
     const snapshot = await get(collectionRef);
@@ -293,13 +208,8 @@ const PaymentRegister: React.FC = () => {
     }
 
     // 2. Balance Forward carriers — a farmer with a non-zero prior-month
-    // balance must appear even with no activity this period. For range mode,
-    // B/F is the balance stored for the month IMMEDIATELY BEFORE the range's
-    // start month (same formula, driven off startDate). Note: within-month
-    // ranges therefore show the same B/F irrespective of range start day;
-    // exact mid-month carry needs full-month finalization first (documented
-    // in the Date Range help text).
-    const bfMonth = prevMonthOf(startDate.substring(0, 7));
+    // balance must appear even with no activity this month.
+    const bfMonth = prevMonthOf(month);
     const balSnap = await get(ref(database, up('farmerBalances')));
     const balances: any = balSnap.exists() ? balSnap.val() : {};
     Object.keys(balances).forEach((farmerId) => {
@@ -338,10 +248,10 @@ const PaymentRegister: React.FC = () => {
       payment.customAmount = payment.netPayable;
     });
 
-    // Restore persisted paid status for this period. Storage key is
-    // period.key (month "yyyy-MM" or range "yyyy-MM-dd_yyyy-MM-dd") so month
-    // marks and range marks live in separate buckets and never overwrite.
-    const paidSnap = await get(ref(database, up(`payments/${period.key}`)));
+    // Restore persisted paid status for this month (existing field:
+    // payments/{month}/{farmerId}.status === 'paid') so the Paid/Unpaid
+    // filter and the PAID badge reflect work done in earlier sessions.
+    const paidSnap = await get(ref(database, up(`payments/${month}`)));
     if (paidSnap.exists()) {
       const paidData = paidSnap.val();
       Object.keys(paidData).forEach((farmerId) => {
@@ -355,19 +265,14 @@ const PaymentRegister: React.FC = () => {
     }
 
     setPayments(Object.values(farmerPayments));
-    // Freeze the period AFTER the results are ready so any in-flight edit to
-    // the form doesn't drift under the user before they mark-as-paid.
-    setCalcPeriod(period);
   };
 
   // Finalize the month: store each farmer's Net Payable as their carry-forward
   // balance. The EXACT value carries — positive (credit) or negative (debt) —
-  // so it becomes next month's B/F Amount. Month-mode only: range mode has no
-  // stable "next month" to key against, so the button is hidden in that mode.
+  // so it becomes next month's B/F Amount.
   const lockMonth = async () => {
-    if (payments.length === 0 || !calcPeriod || calcPeriod.kind !== 'month') return;
-    const lockedMonth = calcPeriod.month!;
-    if (!confirm(`Finalize ${monthLabel(lockedMonth)}? Each farmer's Net Payable (positive or negative) will carry forward as next month's Balance Forward (B/F). You can re-finalize after recalculating.`)) {
+    if (payments.length === 0) return;
+    if (!confirm(`Finalize ${month}? Each farmer's Net Payable (positive or negative) will carry forward as next month's Balance Forward (B/F). You can re-finalize after recalculating.`)) {
       return;
     }
     setLocking(true);
@@ -376,7 +281,7 @@ const PaymentRegister: React.FC = () => {
         payments.map((p) =>
           set(ref(database, up(`farmerBalances/${p.farmerId}`)), {
             balance: p.netPayable,
-            forMonth: lockedMonth,
+            forMonth: month,
             updatedAt: Date.now(),
           })
         )
@@ -401,7 +306,7 @@ const PaymentRegister: React.FC = () => {
     const upiId = payment.upiId || `${payment.mobile}@ybl`;
     const amount = payment.customAmount;
     const name = payment.farmerName;
-    const note = `Milk Payment ${calcPeriod?.label || month}`;
+    const note = `Milk Payment ${month}`;
 
     const deepLink = `phonepe://pay?pa=${upiId}&pn=${encodeURIComponent(
       name
@@ -428,10 +333,7 @@ const PaymentRegister: React.FC = () => {
   };
 
   const markAsPaid = async (payment: PaymentEntry) => {
-    if (!calcPeriod) return; // shouldn't happen — Calculate always sets it
-    const periodKey = calcPeriod.key;
-    const periodLabel = calcPeriod.label;
-    const paymentRef = ref(database, up(`payments/${periodKey}/${payment.farmerId}`));
+    const paymentRef = ref(database, up(`payments/${month}/${payment.farmerId}`));
     await set(paymentRef, {
       grossAmount: payment.grossAmount,
       totalDeductions: payment.deductions,
@@ -439,13 +341,12 @@ const PaymentRegister: React.FC = () => {
       status: 'paid',
       paidOn: Date.now(),
       payMode,
-      period: { kind: calcPeriod.kind, startDate: calcPeriod.startDate, endDate: calcPeriod.endDate, label: periodLabel },
     });
 
     // Auto-link into the Cash Book (payment side). Dedup by sourceRef so
     // re-marking never creates a second entry. Only when actually paying out
     // (positive net) — a negative net means the farmer owes the society.
-    const sourceRef = `${periodKey}_${payment.farmerId}`;
+    const sourceRef = `${month}_${payment.farmerId}`;
     const paidAmount = payment.customAmount || 0;
     if (paidAmount > 0) {
       const cbSnap = await get(ref(database, up('cashBook')));
@@ -456,7 +357,7 @@ const PaymentRegister: React.FC = () => {
           side: 'payment',
           ledgerFolio: '',
           accountName: 'दूध उत्पादक',
-          particulars: `${payment.farmerName} (${payment.farmerId}) - ${periodLabel} milk payment`,
+          particulars: `${payment.farmerName} (${payment.farmerId}) - ${month} milk payment`,
           voucherNo: '',
           cashAmount: payMode === 'cash' ? paidAmount : 0,
           bankAmount: payMode === 'bank' ? paidAmount : 0,
@@ -472,7 +373,7 @@ const PaymentRegister: React.FC = () => {
         payment.farmerName,
         payment.farmerId,
         payment.mobile,
-        periodLabel,
+        month,
         payment.customAmount,
         dcsInfo.name || 'DCS'
       );
@@ -521,78 +422,26 @@ const PaymentRegister: React.FC = () => {
       {activeTab === 'farmer' && (
       <>
       <div className="glass-card" style={{ padding: '20px 24px', marginBottom: '20px' }}>
-        <label style={{ ...labelStyle, marginBottom: 12 }}>Select Payment Period</label>
-
-        {/* Two radio-driven rows: pick monthly OR a specific range. The inactive
-            row is dimmed but kept visible so the user can see what they're not
-            using — one click flips modes without losing their inputs. */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-
-          {/* Monthly row */}
-          <label style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', cursor: 'pointer', opacity: payPeriod === 'month' ? 1 : 0.55 }}>
-            <input
-              type="radio"
-              name="payPeriod"
-              checked={payPeriod === 'month'}
-              onChange={() => setPayPeriod('month')}
-              style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--brand)' }}
-            />
-            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', minWidth: 100 }}>Full Month:</span>
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-end" style={{ gap: '16px' }}>
+          <div style={{ maxWidth: '280px', width: '100%' }}>
+            <label style={labelStyle}>Select Payment Month</label>
             <input
               type="month"
               value={month}
               onChange={(e) => setMonth(e.target.value)}
-              onFocus={() => setPayPeriod('month')}
-              className="input-3d"
-              style={{ height: '38px', padding: '8px 12px', fontSize: '14px', maxWidth: 200 }}
+              className="input-3d w-full"
+              style={{ height: '40px', padding: '10px 14px', fontSize: '14px' }}
             />
-          </label>
-
-          {/* Date Range row */}
-          <label style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', cursor: 'pointer', opacity: payPeriod === 'range' ? 1 : 0.55 }}>
-            <input
-              type="radio"
-              name="payPeriod"
-              checked={payPeriod === 'range'}
-              onChange={() => setPayPeriod('range')}
-              style={{ width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--brand)' }}
-            />
-            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', minWidth: 100 }}>Date Range:</span>
-            <span style={{ fontSize: 12, color: 'var(--ink-2)' }}>From</span>
-            <input
-              type="date"
-              value={fromDate}
-              max={toDate || undefined}
-              onChange={(e) => setFromDate(e.target.value)}
-              onFocus={() => setPayPeriod('range')}
-              className="input-3d"
-              style={{ height: '38px', padding: '8px 12px', fontSize: '14px', maxWidth: 170 }}
-            />
-            <span style={{ fontSize: 12, color: 'var(--ink-2)' }}>To</span>
-            <input
-              type="date"
-              value={toDate}
-              min={fromDate || undefined}
-              onChange={(e) => setToDate(e.target.value)}
-              onFocus={() => setPayPeriod('range')}
-              className="input-3d"
-              style={{ height: '38px', padding: '8px 12px', fontSize: '14px', maxWidth: 170 }}
-            />
-          </label>
-        </div>
-
-        <div className="flex" style={{ gap: 12, marginTop: 16, flexWrap: 'wrap' }}>
+          </div>
           <button
             onClick={calculatePayments}
             className="btn-3d"
-            style={{ padding: '10px 20px', height: '40px', minHeight: '40px' }}
+            style={{ padding: '10px 20px', height: '40px', minHeight: '40px', marginLeft: 'auto' }}
           >
             <Calculator size={16} />
             Calculate
           </button>
-          {/* Finalize is inherently month-keyed (drives next month's B/F).
-              Hidden in range mode so users can't half-finalize a slice. */}
-          {payments.length > 0 && calcPeriod?.kind === 'month' && (
+          {payments.length > 0 && (
             <button
               onClick={lockMonth}
               disabled={locking}
@@ -605,30 +454,10 @@ const PaymentRegister: React.FC = () => {
             </button>
           )}
         </div>
-
-        {payPeriod === 'range' && (
-          <p style={{ marginTop: 12, fontSize: 11, color: 'var(--ink-2)', lineHeight: 1.6 }}>
-            <strong>Note:</strong> Date Range mein B/F wo hai jo range ki starting month se pehle carry forward hua hai — mid-month starting date pe exact carry-forward chahiye toh pehle poora previous month "Finalize Month" karke settle karein.
-          </p>
-        )}
       </div>
 
       {payments.length > 0 && (
         <div className="glass-card" style={{ padding: '20px 24px' }}>
-          {/* Period header — visible on screen AND on print so the printout
-              always states which range the numbers cover. */}
-          {calcPeriod && (
-            <div style={{ marginBottom: 14, paddingBottom: 12, borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'baseline', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 12, color: 'var(--ink-2)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Payment Period:</span>
-              <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--ink)' }}>{calcPeriod.label}</span>
-              {calcPeriod.kind === 'range' && (
-                <span style={{ fontSize: 11, color: 'var(--muted)' }}>
-                  ({fmtDDMMYYYY(calcPeriod.startDate)} – {fmtDDMMYYYY(calcPeriod.endDate)})
-                </span>
-              )}
-            </div>
-          )}
-
           {/* Payment mode for the Cash Book auto-entry when marking paid */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ink-2)' }}>Mark-as-Paid mode (Cash Book):</span>
@@ -767,42 +596,12 @@ const PaymentRegister: React.FC = () => {
       {activeTab === 'bmc' && (
       <>
         <div className="glass-card no-print" style={{ padding: '20px 24px', marginBottom: '20px' }}>
-          {/* Same Monthly / Date Range toggle as Farmer payments. BMC defaults
-              to Date Range because that's how the tab has always worked. */}
-          <div style={{ display: 'flex', gap: 16, marginBottom: 14, flexWrap: 'wrap' }}>
-            {(['range', 'month'] as const).map((mode) => (
-              <label key={mode} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, fontWeight: 700, color: bmcPeriod === mode ? 'var(--ink)' : 'var(--ink-2)' }}>
-                <input
-                  type="radio"
-                  name="bmcPeriod"
-                  checked={bmcPeriod === mode}
-                  onChange={() => setBmcPeriod(mode)}
-                  style={{ width: 15, height: 15, accentColor: 'var(--brand)' }}
-                />
-                {mode === 'range' ? 'Date Range' : 'Full Month'}
-              </label>
-            ))}
-          </div>
-
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-end" style={{ gap: '16px' }}>
-            {bmcPeriod === 'month' ? (
-              <div style={{ maxWidth: '200px', width: '100%' }}>
-                <label style={labelStyle}>Select Month</label>
-                <input
-                  type="month"
-                  value={bmcMonth}
-                  onChange={(e) => setBmcMonth(e.target.value)}
-                  className="input-3d w-full"
-                  style={{ height: '40px', padding: '10px 14px', fontSize: '14px' }}
-                />
-              </div>
-            ) : (<>
             <div style={{ maxWidth: '180px', width: '100%' }}>
               <label style={labelStyle}>From Date</label>
               <input
                 type="date"
                 value={bmcFromDate}
-                max={bmcToDate || undefined}
                 onChange={(e) => setBmcFromDate(e.target.value)}
                 className="input-3d w-full"
                 style={{ height: '40px', padding: '10px 14px', fontSize: '14px' }}
@@ -813,13 +612,11 @@ const PaymentRegister: React.FC = () => {
               <input
                 type="date"
                 value={bmcToDate}
-                min={bmcFromDate || undefined}
                 onChange={(e) => setBmcToDate(e.target.value)}
                 className="input-3d w-full"
                 style={{ height: '40px', padding: '10px 14px', fontSize: '14px' }}
               />
             </div>
-            </>)}
             <div style={{ maxWidth: '220px', width: '100%' }}>
               <label style={labelStyle}>BMC</label>
               <select
