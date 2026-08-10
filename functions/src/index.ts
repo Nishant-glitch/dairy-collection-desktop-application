@@ -45,6 +45,19 @@ const prevMonthOf = (m: string): string => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 };
 
+// Mirror of src/utils/farmerBalances.bfForMonth — keep in sync with the web
+// helper. Reads the new per-month path first; falls back to the legacy
+// single-slot record only when its stored forMonth matches the query.
+const bfForMonth = (node: any, month: string): number => {
+  if (!node || typeof node !== 'object') return 0;
+  const monthly = node[month];
+  if (monthly && typeof monthly === 'object' && typeof monthly.balance === 'number') {
+    return monthly.balance;
+  }
+  if (node.forMonth === month && typeof node.balance === 'number') return node.balance;
+  return 0;
+};
+
 // Callable HTTPS function for the no-login farmer passbook. onCall lets the
 // Firebase SDK resolve the URL + handle CORS automatically; it can be invoked
 // without authentication (request.auth is simply undefined).
@@ -160,11 +173,10 @@ export const getFarmerPassbook = onCall({ region: 'us-central1' }, async (reques
     const gross = monthGross.filter((g) => !isDeductionCategory(g.category));
     const deductions = monthGross.filter((g) => isDeductionCategory(g.category));
 
-    // Balance Forward — same rule as PaymentRegister: only if the stored
-    // balance is exactly for the previous month.
+    // Balance Forward — via the shared helper so the passbook honours both
+    // the new per-month path AND legacy scalar records.
     const bfMonth = prevMonthOf(selectedMonth);
-    const bal = balSnap.val();
-    const bfAmount = (bal && bal.forMonth === bfMonth && typeof bal.balance === 'number') ? bal.balance : 0;
+    const bfAmount = bfForMonth(balSnap.val(), bfMonth);
 
     const milkQty = sum(milk, (e) => e.qty);
     const milkAmount = sum(milk, (e) => e.amount);

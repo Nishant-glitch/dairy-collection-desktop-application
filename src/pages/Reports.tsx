@@ -5,6 +5,7 @@ import { up } from '../utils/userDb';
 import { useLanguage } from '../contexts/LanguageContext';
 import { BarChart3, Users, Wallet, Printer, X, Calendar, Search, ArrowLeft } from 'lucide-react';
 import { COMFED_LOGO, SUDHA_LOGO } from '../utils/reportLogos';
+import { bfForMonth, hasAnyBalance } from '../utils/farmerBalances';
 
 type ReportType = 'collection' | 'farmer' | 'payment' | 'farmer-periodical' | null;
 
@@ -266,10 +267,10 @@ const Reports: React.FC = () => {
         const bfd = new Date(by, bm - 2, 1);
         bfMonth = `${bfd.getFullYear()}-${String(bfd.getMonth() + 1).padStart(2, '0')}`;
       }
-      const bfFor = (code: string) => {
-        const bal = balances[code];
-        return (bal && bal.forMonth === bfMonth && typeof bal.balance === 'number') ? bal.balance : 0;
-      };
+      // Use the shared helper — reads new per-month path first, falls back to
+      // legacy scalar. Prevents the "August's Finalize wipes August's B/F"
+      // bug that plagued the old single-slot format.
+      const bfFor = (code: string) => bfForMonth(balances[code], bfMonth);
 
       const stats: any = {};
       
@@ -328,8 +329,7 @@ const Reports: React.FC = () => {
       // this month, so their debt/credit still shows on the register.
       Object.keys(balances).forEach(code => {
         if (farmerCode && code !== farmerCode) return;
-        const bal = balances[code];
-        if (bfMonth && bal && bal.forMonth === bfMonth && bal.balance && !stats[code]) {
+        if (bfMonth && bfForMonth(balances[code], bfMonth) !== 0 && !stats[code] && hasAnyBalance(balances[code])) {
           stats[code] = {
             code,
             name: (farmers[code]?.farmerName || farmers[code]?.name) || 'Unknown',
