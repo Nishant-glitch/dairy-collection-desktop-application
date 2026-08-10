@@ -10,6 +10,7 @@ import { Smartphone, QrCode, Check, Calculator, X, Users, Snowflake, Printer, Lo
 import { QRCodeSVG } from 'qrcode.react';
 import { COMFED_LOGO, SUDHA_LOGO } from '../utils/reportLogos';
 import { restoreCaret } from '../utils/focus';
+import { bfForMonth, nextMonthOf as nextMonthOfHelper, monthLabel } from '../utils/farmerBalances';
 
 interface PaymentEntry {
   farmerId: string;
@@ -25,6 +26,7 @@ interface PaymentEntry {
 }
 
 // "YYYY-MM" of the calendar month immediately before the given month.
+// (Kept local for now; also exported from utils/farmerBalances.)
 const prevMonthOf = (m: string): string => {
   const [y, mo] = m.split('-').map(Number);
   const d = new Date(y, mo - 2, 1);
@@ -218,13 +220,13 @@ const PaymentRegister: React.FC = () => {
     }
 
     // 2. Balance Forward carriers — a farmer with a non-zero prior-month
-    // balance must appear even with no activity this month.
+    // balance must appear even with no activity this month. Uses the new
+    // per-month path (falls back to legacy scalar if the record is old).
     const bfMonth = prevMonthOf(month);
     const balSnap = await get(ref(database, up('farmerBalances')));
     const balances: any = balSnap.exists() ? balSnap.val() : {};
     Object.keys(balances).forEach((farmerId) => {
-      const bal = balances[farmerId];
-      if (bal && bal.forMonth === bfMonth && bal.balance) getOrCreate(farmerId);
+      if (bfForMonth(balances[farmerId], bfMonth) !== 0) getOrCreate(farmerId);
     });
 
     // 3. Gross entries / deductions from the nested per-farmer buckets
@@ -250,10 +252,10 @@ const PaymentRegister: React.FC = () => {
 
     Object.keys(farmerPayments).forEach((farmerId) => {
       const payment = farmerPayments[farmerId];
-      const bal = balances[farmerId];
-      // Carry the prior month's balance forward (only if it's exactly the
-      // previous month — a gap breaks the chain and B/F resets to 0).
-      payment.bfAmount = (bal && bal.forMonth === bfMonth && typeof bal.balance === 'number') ? bal.balance : 0;
+      // Carry the prior month's balance forward via the helper — reads new
+      // per-month path first, then legacy scalar. Any month for which we
+      // never stored a finalize returns 0 (same as before).
+      payment.bfAmount = bfForMonth(balances[farmerId], bfMonth);
       payment.netPayable = payment.grossAmount - payment.deductions + payment.bfAmount;
       payment.customAmount = payment.netPayable;
     });
@@ -278,25 +280,57 @@ const PaymentRegister: React.FC = () => {
   };
 
   // Finalize the month: store each farmer's Net Payable as their carry-forward
-  // balance. The EXACT value carries — positive (credit) or negative (debt) —
-  // so it becomes next month's B/F Amount.
+  // balance for THIS month. New per-month path: farmerBalances/{code}/{month}
+  // — never touches other months' records. Re-finalizing is safe (updates
+  // only this month's key).
   const lockMonth = async () => {
     if (payments.length === 0) return;
-    if (!confirm(`Finalize ${month}? Each farmer's Net Payable (positive or negative) will carry forward as next month's Balance Forward (B/F). You can re-finalize after recalculating.`)) {
-      return;
+    const thisMonth = monthLabel(month);
+    const nextMonth = monthLabel(nextMonthOfHelper(month));
+
+    // Check whether this month was already finalized so we can warn the user
+    // before they overwrite. Read from the audit-trail node rather than
+    // farmerBalances (it's a single get vs iterating every farmer).
+    let alreadyFinalized: { finalizedAt: number; finalizedBy?: string; farmerCount?: number } | null = null;
+    try {
+      const histSnap = await get(ref(database, up(`paymentsHistory/${month}`)));
+      if (histSnap.exists()) alreadyFinalized = histSnap.val();
+    } catch { /* non-fatal; fall through to plain confirmation */ }
+
+    let confirmMsg = `Finalize ${thisMonth}?\n\n`;
+    confirmMsg += `Har farmer ka Net Payable ${nextMonth} ka Balance Forward (B/F) ban jayega.\n`;
+    confirmMsg += `${payments.length} farmer${payments.length === 1 ? '' : 's'} affected.`;
+    if (alreadyFinalized?.finalizedAt) {
+      const when = new Date(alreadyFinalized.finalizedAt).toLocaleString('en-IN', {
+        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+      });
+      const by = alreadyFinalized.finalizedBy ? ` by ${alreadyFinalized.finalizedBy}` : '';
+      confirmMsg += `\n\n⚠️ Ye month pehle bhi finalize hua tha (${when}${by}).\nDobara finalize karne se ${nextMonth} ka B/F UPDATE ho jayega. Continue?`;
     }
+    if (!confirm(confirmMsg)) return;
+
     setLocking(true);
     try {
+      const finalizedAt = Date.now();
+      const finalizedBy = auth.currentUser?.email || auth.currentUser?.uid || 'unknown';
+      // 1. Per-month balance rows — the fix. Writing to
+      //    farmerBalances/{code}/{month} never touches farmerBalances/{code}/{otherMonth}.
       await Promise.all(
         payments.map((p) =>
-          set(ref(database, up(`farmerBalances/${p.farmerId}`)), {
+          set(ref(database, up(`farmerBalances/${p.farmerId}/${month}`)), {
             balance: p.netPayable,
-            forMonth: month,
-            updatedAt: Date.now(),
+            finalizedAt,
+            finalizedBy,
           })
         )
       );
-      alert('✅ Month finalized. Balances will carry forward to next month.');
+      // 2. Audit trail (also drives the "already finalized" warning above).
+      await set(ref(database, up(`paymentsHistory/${month}`)), {
+        finalizedAt,
+        finalizedBy,
+        farmerCount: payments.length,
+      });
+      alert(`✅ ${thisMonth} finalized.\n${nextMonth} ka B/F set ho gaya.`);
     } catch (err) {
       console.error('Finalize month failed:', err);
       alert('❌ Failed to finalize month. Please try again.');
@@ -605,10 +639,12 @@ const PaymentRegister: React.FC = () => {
               disabled={locking}
               className="btn-secondary"
               style={{ padding: '10px 20px', height: '40px', minHeight: '40px' }}
-              title="Store each farmer's Net Payable as next month's Balance Forward"
+              title={`Save ${monthLabel(month)} Net Payable as ${monthLabel(nextMonthOfHelper(month))} B/F`}
             >
               <Lock size={16} />
-              {locking ? 'Finalizing…' : 'Finalize Month'}
+              {locking
+                ? 'Finalizing…'
+                : `Finalize ${monthLabel(month)} → Sets ${monthLabel(nextMonthOfHelper(month))} B/F`}
             </button>
           )}
           {/* Reset B/F — for cleaning up an accidental Finalize or a stale

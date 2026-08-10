@@ -4,6 +4,7 @@ import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
 import { formatIndianCurrency } from '../utils/rateCalculator';
 import { Search, X, User, Phone, MapPin, Landmark, KeyRound, Droplet, Calendar, Wallet, ExternalLink } from 'lucide-react';
+import { bfForMonth, latestFinalizedMonth } from '../utils/farmerBalances';
 
 // Global quick farmer lookup — reachable from any page via the navbar search
 // icon or Ctrl+K. Shows a farmer's details + today's collection + this month's
@@ -71,11 +72,16 @@ const FarmerLookup: React.FC<{ onNavigate?: (page: string) => void }> = ({ onNav
           if (date === today) { todayQty += qty; todayAmount += amt; }
         });
       });
-      const bal = balSnap.exists() ? balSnap.val() : null;
+      // Show the LATEST finalized month's balance (from either the new
+      // per-month path or the legacy scalar). Popover just wants "how much
+      // does this farmer carry right now", not per-month history.
+      const balNode = balSnap.exists() ? balSnap.val() : null;
+      const latestMonth = latestFinalizedMonth(balNode);
+      const latestBalance = latestMonth ? bfForMonth(balNode, latestMonth) : null;
       setStats({
         todayQty, todayAmount, monthQty, monthAmount,
-        bfBalance: bal && typeof bal.balance === 'number' ? bal.balance : null,
-        bfMonth: bal?.forMonth || '',
+        bfBalance: latestBalance,
+        bfMonth: latestMonth || '',
       });
     } finally {
       setLoadingStats(false);

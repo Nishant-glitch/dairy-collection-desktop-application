@@ -21,6 +21,7 @@ import Settings from './pages/Settings';
 import Subscribe from './pages/Subscribe';
 import AdminSubscriptions from './pages/AdminSubscriptions';
 import AdminWhatsApp from './pages/AdminWhatsApp';
+import AdminRecoverBalances from './pages/AdminRecoverBalances';
 import Passbook from './pages/Passbook';
 import { hasAccessWithOfflineFallback, type AccessDecision } from './utils/subscription';
 import { initSyncService } from './services/syncService';
@@ -167,6 +168,8 @@ function App() {
         return <AdminSubscriptions />;
       case 'admin-whatsapp':
         return <AdminWhatsApp />;
+      case 'admin-recover-balances':
+        return <AdminRecoverBalances />;
       default:
         return <Dashboard />;
     }
