@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Milk, ScanLine, Loader2, LogIn, Globe, X } from 'lucide-react';
+import { Milk, ScanLine, Loader2, LogIn, Globe, X, Zap, ZapOff, CheckCircle2 } from 'lucide-react';
 import { resolveSocietyUid, fetchPassbook } from './api';
 import { saveSession, type FarmerSession } from './session';
-import { startQrScan, isQrScanSupported } from './qrScan';
+import { startQrScan, isQrScanSupported, type QrScanHandle } from './qrScan';
 
 // One-time login for the farmer lite app. Reuses the existing
 // getFarmerPassbook Cloud Function to verify + fetch first-month data in a
@@ -29,8 +29,12 @@ const t = {
     scanCancel: 'Cancel',
     scanInstr: 'Society ka QR camera ke saamne rakhein',
     invalidSociety: 'Society code galat hai. Society se sahi code lein.',
+    invalidQr: 'Ye DCS Pro ka QR nahi hai. Society se sahi QR lein ya society code manually daalein.',
     missingFields: 'Sab fields bharein.',
     helpText: 'Society Code + Farmer Code + PIN aapke society se milega. Ek baar login ke baad app apne aap khulegi.',
+    qrRecognized: 'QR se pehchane',
+    torchOn: 'Light on',
+    torchOff: 'Light off',
   },
   en: {
     title: 'Farmer Passbook',
@@ -47,8 +51,12 @@ const t = {
     scanCancel: 'Cancel',
     scanInstr: 'Point camera at your society QR',
     invalidSociety: 'Invalid society code. Please get the correct code from your society.',
+    invalidQr: 'This is not a DCS Pro QR. Get the correct QR from your society, or enter the code manually.',
     missingFields: 'Please fill all fields.',
     helpText: 'Society Code + Farmer Code + PIN come from your society. After one login the app opens automatically next time.',
+    qrRecognized: 'Recognised from QR',
+    torchOn: 'Light on',
+    torchOff: 'Light off',
   },
 } as const;
 
@@ -66,8 +74,16 @@ const Login: React.FC<LoginProps> = ({ onLoggedIn, language, onToggleLanguage })
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [scanning, setScanning] = useState(false);
+  // Set to true when the Society Code field was filled from an old-format
+  // /passbook/{uid} QR — the value is a long Firebase uid rather than a
+  // human-friendly 3-digit code, so we show a green chip explaining it.
+  const [scannedFromUid, setScannedFromUid] = useState(false);
+  // Torch state — only meaningful when the scan modal is open and the device
+  // supports it (Android Chrome, rear camera with flash).
+  const [torchOn, setTorchOn] = useState(false);
+  const [torchSupported, setTorchSupported] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const stopScanRef = useRef<(() => void) | null>(null);
+  const scanHandleRef = useRef<QrScanHandle | null>(null);
 
   // Auto-fill from URL parameter — enables the "share a link with society
   // pre-filled" flow. Runs once on mount.
@@ -80,36 +96,71 @@ const Login: React.FC<LoginProps> = ({ onLoggedIn, language, onToggleLanguage })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Clean up camera stream when scan modal closes (either from result, cancel,
-  // or unmount). Camera light staying on after modal closes is a bug.
-  useEffect(() => () => { stopScanRef.current?.(); }, []);
+  // Clean up camera stream when the component unmounts. Camera light staying
+  // on after modal closes is a real bug we saw during development.
+  useEffect(() => () => { scanHandleRef.current?.stop(); }, []);
+
+  // Whenever the user hand-edits the Society Code, drop the "from QR" chip.
+  useEffect(() => { if (scannedFromUid) setScannedFromUid(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [societyCode]);
 
   const openScan = async () => {
     setScanning(true);
     setError('');
+    setTorchOn(false);
+    setTorchSupported(false);
     // Give the DOM a tick to render the video element before attaching the stream.
     setTimeout(async () => {
       if (!videoRef.current) return;
-      stopScanRef.current = await startQrScan(
+      const handle = await startQrScan(
         videoRef.current,
         (r) => {
+          // Haptic feedback on successful scan — Android supports vibrate;
+          // iOS ignores. Guarded because some browsers throw on strict
+          // permission policies.
+          try { navigator.vibrate?.(60); } catch { /* ignore */ }
           setScanning(false);
-          if (r.societyCode) setSocietyCode(r.societyCode);
-          // societyUid-only payload (old-format /passbook/{uid} QR): we can't
-          // reverse-lookup to a code cheaply, so just tell the user.
-          else if (r.societyUid && !r.societyCode) {
-            setError('Society QR pehchan liya. Ab apna farmer code aur PIN daalein.');
+          setTorchOn(false);
+          if (r.societyCode) {
+            // New-format QR — clean short code goes straight into the field.
+            setSocietyCode(r.societyCode);
+            setScannedFromUid(false);
+            // Nudge focus to the next field so the farmer keeps typing.
+            setTimeout(() => document.getElementById('fc')?.focus(), 100);
+            return;
           }
+          if (r.societyUid) {
+            // Old-format /passbook/{uid} QR — populate with the uid so
+            // resolveSocietyUid's fallback branch can use it. Chip explains
+            // the long string so the farmer isn't confused.
+            setSocietyCode(r.societyUid);
+            setScannedFromUid(true);
+            setTimeout(() => document.getElementById('fc')?.focus(), 100);
+            return;
+          }
+          // Unrecognised QR — was silently a no-op before this fix.
+          setError(L.invalidQr);
         },
-        (msg) => { setScanning(false); setError(msg); },
+        (msg) => { setScanning(false); setTorchOn(false); setError(msg); },
       );
+      scanHandleRef.current = handle;
+      setTorchSupported(handle.torchSupported);
     }, 50);
   };
 
   const closeScan = () => {
-    stopScanRef.current?.();
-    stopScanRef.current = null;
+    scanHandleRef.current?.stop();
+    scanHandleRef.current = null;
     setScanning(false);
+    setTorchOn(false);
+  };
+
+  const toggleTorch = async () => {
+    if (!scanHandleRef.current) return;
+    const next = !torchOn;
+    const ok = await scanHandleRef.current.setTorch(next);
+    if (ok) setTorchOn(next);
   };
 
   const handleLogin = async () => {
@@ -194,6 +245,9 @@ const Login: React.FC<LoginProps> = ({ onLoggedIn, language, onToggleLanguage })
                 autoComplete="off"
                 inputMode="text"
                 autoCapitalize="characters"
+                // Old-format uid QR fills a 28-char string; smaller font so
+                // it doesn't overflow visually and become alarming.
+                style={scannedFromUid ? { fontSize: 13, letterSpacing: 0, fontFamily: 'monospace' } : undefined}
               />
               {isQrScanSupported() && (
                 <button
@@ -208,6 +262,12 @@ const Login: React.FC<LoginProps> = ({ onLoggedIn, language, onToggleLanguage })
                 </button>
               )}
             </div>
+            {scannedFromUid && (
+              <div className="farmer-input-chip" style={{ marginTop: 6 }}>
+                <CheckCircle2 size={12} style={{ verticalAlign: -2, marginRight: 4 }} />
+                {L.qrRecognized}
+              </div>
+            )}
           </div>
 
           <div style={{ marginBottom: 16 }}>
@@ -263,13 +323,28 @@ const Login: React.FC<LoginProps> = ({ onLoggedIn, language, onToggleLanguage })
           <p style={{ color: '#fff', fontSize: 15, fontWeight: 600, marginTop: 16, textAlign: 'center' }}>
             {L.scanInstr}
           </p>
-          <button
-            className="farmer-btn farmer-btn-secondary"
-            style={{ maxWidth: 220, marginTop: 16 }}
-            onClick={closeScan}
-          >
-            <X size={20} /> {L.scanCancel}
-          </button>
+          <div style={{ display: 'flex', gap: 10, marginTop: 16, width: '100%', maxWidth: 320, justifyContent: 'center' }}>
+            {torchSupported && (
+              <button
+                type="button"
+                className="farmer-btn farmer-btn-secondary"
+                style={{ flex: 1, background: torchOn ? '#fef3c7' : '#fff' }}
+                onClick={toggleTorch}
+                aria-pressed={torchOn}
+                title={torchOn ? L.torchOff : L.torchOn}
+              >
+                {torchOn ? <ZapOff size={20} /> : <Zap size={20} color="#d97706" />}
+                {torchOn ? L.torchOff : L.torchOn}
+              </button>
+            )}
+            <button
+              className="farmer-btn farmer-btn-secondary"
+              style={{ flex: 1 }}
+              onClick={closeScan}
+            >
+              <X size={20} /> {L.scanCancel}
+            </button>
+          </div>
         </div>
       )}
     </>
