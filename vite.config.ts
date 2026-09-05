@@ -27,6 +27,9 @@ export default defineConfig({
         "apple-touch-icon.png",
         "pwa-192x192.png",
         "pwa-512x512.png",
+        // Farmer lite app's manifest — swapped in at runtime when /farmer
+        // mounts so the standalone install identifies as "DCS Pro Farmer".
+        "farmer.webmanifest",
       ],
       manifest: {
         name: "DCS Pro - Dairy Collection System",

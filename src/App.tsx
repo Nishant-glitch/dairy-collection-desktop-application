@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase/config';
 import { LanguageProvider } from './contexts/LanguageContext';
@@ -23,6 +23,10 @@ import AdminSubscriptions from './pages/AdminSubscriptions';
 import AdminWhatsApp from './pages/AdminWhatsApp';
 import AdminRecoverBalances from './pages/AdminRecoverBalances';
 import Passbook from './pages/Passbook';
+
+// Farmer lite app (/farmer) — lazy-loaded so society users never pay for its
+// bundle and vice-versa. Ships its own manifest + theme when mounted.
+const FarmerApp = lazy(() => import('./farmer/App'));
 import { hasAccessWithOfflineFallback, type AccessDecision } from './utils/subscription';
 import { initSyncService } from './services/syncService';
 import { Milk, WifiOff } from 'lucide-react';
@@ -90,6 +94,18 @@ function App() {
       <LanguageProvider>
         <Passbook societyUid={decodeURIComponent(passbookMatch[1])} />
       </LanguageProvider>
+    );
+  }
+
+  // Public farmer lite app at /farmer (and any subpath). Also short-circuits
+  // the auth gate — the app has its OWN localStorage-backed farmer session
+  // and doesn't use Firebase Auth at all. Lazy-loaded so society users never
+  // download this bundle.
+  if (window.location.pathname === '/farmer' || window.location.pathname.startsWith('/farmer/')) {
+    return (
+      <Suspense fallback={loadingScreen}>
+        <FarmerApp />
+      </Suspense>
     );
   }
 
