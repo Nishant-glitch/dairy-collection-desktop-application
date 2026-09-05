@@ -59,21 +59,34 @@ const writeCache = (uid: string, code: string, month: string, data: PassbookData
   } catch { /* quota full — non-fatal */ }
 };
 
-// Resolve society-code (e.g. "001") -> society uid via the public index that
-// was added with the WhatsApp foundation. Returns null when the code doesn't
-// map to any society.
-export const resolveSocietyUid = async (societyCode: string): Promise<string | null> => {
-  const code = String(societyCode || '').trim();
-  if (!code) return null;
+// Resolve the user-typed / QR-filled Society identifier to a Firebase uid.
+//
+// Accepts either format so old passbook QRs (which encode the raw uid, not
+// the short code) keep working alongside the new /farmer?society=CODE QRs:
+//   1. Short code (e.g. "001") -> look up societyCodeIndex/{code}
+//   2. Firebase-uid-shaped string (>= 20 alphanumeric) -> use as-is
+//
+// The Cloud Function still verifies the farmer PIN server-side, so passing
+// an unknown uid just fails the passbook lookup with the normal "Code galat"
+// error — no security exposure from being permissive here.
+export const resolveSocietyUid = async (input: string): Promise<string | null> => {
+  const s = String(input || '').trim();
+  if (!s) return null;
+  // 1. Try short code first.
   try {
-    const snap = await get(ref(database, `societyCodeIndex/${code}`));
-    if (!snap.exists()) return null;
-    const uid = snap.val();
-    return typeof uid === 'string' ? uid : null;
+    const snap = await get(ref(database, `societyCodeIndex/${s}`));
+    if (snap.exists()) {
+      const uid = snap.val();
+      if (typeof uid === 'string' && uid) return uid;
+    }
   } catch (e) {
-    console.error('resolveSocietyUid failed:', e);
-    return null;
+    console.error('resolveSocietyUid: societyCodeIndex read failed:', e);
   }
+  // 2. Fallback: input already looks like a uid (from an old-format
+  //    /passbook/{uid} QR scan). Firebase Auth uids are 28 chars alnum but
+  //    we accept anything >= 20 chars to future-proof against custom auth.
+  if (/^[A-Za-z0-9]{20,}$/.test(s)) return s;
+  return null;
 };
 
 // Try the server; fall back to cache on any network failure so the app still

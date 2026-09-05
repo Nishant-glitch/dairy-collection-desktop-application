@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ref, get, set, update, push, onValue } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up, isAdmin, getUid } from '../utils/userDb';
-import { MessageSquare, Save, RefreshCw, Shield, Send, Download, FileSpreadsheet, RotateCcw, AlertTriangle, Database, QrCode, Printer, Copy, Wallet } from 'lucide-react';
+import { MessageSquare, Save, RefreshCw, Shield, Send, Download, FileSpreadsheet, RotateCcw, AlertTriangle, Database, QrCode, Printer, Copy, Wallet, Smartphone } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import app from '../firebase/config';
@@ -31,6 +31,8 @@ const Settings: React.FC = () => {
   const [societies, setSocieties] = useState<{ uid: string; label: string }[]>([]);
   const [selectedUid, setSelectedUid] = useState('');
   const [societyName, setSocietyName] = useState('');
+  const [societyCode, setSocietyCode] = useState('');
+  const farmerAppQrBoxRef = useRef<HTMLDivElement>(null);
   const qrBoxRef = useRef<HTMLDivElement>(null);
   const [thermalPaperSize, setThermalPaperSize] = useState<'58mm' | '80mm'>('58mm');
   const [autoBackup, setAutoBackup] = useState({ enabled: false, email: '' });
@@ -152,7 +154,10 @@ const Settings: React.FC = () => {
       }
       const dcsSnap = await get(ref(database, up('dcsInfo')));
       const dcs = dcsSnap.exists() ? dcsSnap.val() : {};
-      if (dcsSnap.exists()) setSocietyName(dcs.name || dcs.societyName || '');
+      if (dcsSnap.exists()) {
+        setSocietyName(dcs.name || dcs.societyName || '');
+        setSocietyCode(String(dcs.code || '').trim());
+      }
       const backupSnap = await get(ref(database, up('settings/backup')));
       const b = backupSnap.exists() ? backupSnap.val() : {};
       setAutoBackup({ enabled: !!b.enabled, email: b.email || dcs.email || '' });
@@ -535,6 +540,90 @@ const Settings: React.FC = () => {
     );
   };
 
+  // ---- Farmer App QR (new format) --------------------------------------
+  //
+  // Encodes the SHORT society code (not the Firebase uid), which the farmer
+  // lite app's /farmer login screen recognises via ?society=CODE auto-fill.
+  // Once distributed, farmers scan this QR ONCE and the app remembers the
+  // society forever — future opens jump straight to history.
+  const farmerAppUrl = societyCode
+    ? `${window.location.origin}/farmer?society=${encodeURIComponent(societyCode)}`
+    : '';
+
+  const copyFarmerAppUrl = async () => {
+    if (!farmerAppUrl) return;
+    try { await navigator.clipboard.writeText(farmerAppUrl); alert('✅ Farmer App link copy ho gaya.'); }
+    catch { alert('Copy nahi ho paaya: ' + farmerAppUrl); }
+  };
+
+  const printFarmerAppQR = () => {
+    const svg = farmerAppQrBoxRef.current?.querySelector('svg')?.outerHTML || '';
+    if (!svg) return;
+    printHtml(
+      `<html><head><title>DCS Farmer App QR</title></head>
+       <body style="text-align:center;font-family:system-ui,sans-serif;padding:40px">
+         <h2 style="margin-bottom:4px">${societyName || 'DCS Pro'}</h2>
+         <div style="font-size:15px;color:#166534;font-weight:700;margin-bottom:6px">DCS Farmer App — One-time Login</div>
+         <div style="font-size:13px;color:#6b7280;margin-bottom:24px">Society Code: <strong>${societyCode}</strong></div>
+         <div style="display:inline-block;padding:16px;border:2px solid #16a34a;border-radius:16px">${svg}</div>
+         <p style="font-size:13px;word-break:break-all;margin-top:20px;color:#374151">${farmerAppUrl}</p>
+         <ol style="text-align:left;max-width:520px;margin:24px auto 0;color:#374151;font-size:14px;line-height:1.8">
+           <li>Phone camera se ye QR scan karein</li>
+           <li>DCS Farmer app khulega — apna <strong>Farmer Code</strong> + <strong>4-digit PIN</strong> daalein</li>
+           <li>Ek baar login — phir har baar app apne aap khulegi</li>
+         </ol>
+       </body></html>`
+    );
+  };
+
+  // Convert the inline QR <svg> to a PNG blob and trigger a browser download.
+  // 3x scale so the printed / shared image stays crisp on paper and screens.
+  const downloadFarmerAppQR = () => {
+    const svg = farmerAppQrBoxRef.current?.querySelector('svg');
+    if (!svg) return;
+    const data = new XMLSerializer().serializeToString(svg);
+    const svgUrl = URL.createObjectURL(new Blob([data], { type: 'image/svg+xml;charset=utf-8' }));
+    const img = new Image();
+    img.onload = () => {
+      const scale = 3;
+      const w = (img.width || 200) * scale;
+      const h = (img.height || 200) * scale;
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { URL.revokeObjectURL(svgUrl); return; }
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      canvas.toBlob((blob) => {
+        if (!blob) { URL.revokeObjectURL(svgUrl); return; }
+        const pngUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = pngUrl;
+        a.download = `DCS_Farmer_QR_${societyCode || 'society'}.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(pngUrl);
+        URL.revokeObjectURL(svgUrl);
+      }, 'image/png');
+    };
+    img.onerror = () => URL.revokeObjectURL(svgUrl);
+    img.src = svgUrl;
+  };
+
+  // WhatsApp share via the universal `wa.me/?text=` link. Works on both
+  // WhatsApp mobile app and web — the OS resolves the URL.
+  const shareFarmerAppViaWhatsApp = () => {
+    if (!farmerAppUrl) return;
+    const msg =
+      `DCS Farmer App — apna doodh history dekho\n\n` +
+      `Link: ${farmerAppUrl}\n\n` +
+      `Society Code: ${societyCode}\n` +
+      `Kholein → apna Farmer Code + PIN daalein → history dekho.`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank', 'noopener');
+  };
+
   // ---- Auto Daily Backup (email via Resend Cloud Function) ----------------
 
   const saveBackupSettings = async (next: { enabled: boolean; email: string }) => {
@@ -652,6 +741,58 @@ const Settings: React.FC = () => {
             </p>
           </div>
         </div>
+      </div>
+
+      {/* DCS Farmer App QR — new format for the lite app at /farmer. Uses the
+          SHORT society code so the login screen auto-fills cleanly. Old
+          Passbook QR above still works (farmer app accepts either format). */}
+      <div className="glass-card" style={{ padding: 24, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+          <Smartphone style={{ color: 'var(--brand)', width: 22, height: 22 }} />
+          <h2 style={{ color: 'var(--ink)', fontSize: 18, fontWeight: 700 }}>DCS Farmer App QR</h2>
+        </div>
+        <p style={{ color: 'var(--ink-2)', fontSize: 13, marginBottom: 20 }}>
+          Naya format QR — farmer <strong>ek baar login</strong> kare, phir har baar app apne aap khulegi (baar baar scan nahi karna padega).
+          Purane Passbook QR bhi kaam karte hain — jinke paas printed hai wo bhi use kar sakte hain.
+        </p>
+
+        {societyCode ? (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, alignItems: 'flex-start' }}>
+            <div ref={farmerAppQrBoxRef} style={{ padding: 14, background: '#fff', border: '2px solid var(--brand)', borderRadius: 14, flexShrink: 0 }}>
+              <QRCodeSVG value={farmerAppUrl} size={200} level="M" includeMargin />
+            </div>
+
+            <div style={{ flex: '1 1 260px', minWidth: 240 }}>
+              <label className="label-text" style={{ fontSize: 11 }}>FARMER APP LINK</label>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                <input readOnly value={farmerAppUrl} className="input-field" style={{ fontSize: 13 }} onFocus={(e) => e.currentTarget.select()} />
+                <button onClick={copyFarmerAppUrl} className="btn-secondary" style={{ padding: '0 14px', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }} title="Copy link">
+                  <Copy size={16} />
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                <button onClick={printFarmerAppQR} className="btn-primary" style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Printer size={16} /> Print
+                </button>
+                <button onClick={downloadFarmerAppQR} className="btn-secondary" style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Download size={16} /> Download PNG
+                </button>
+                <button onClick={shareFarmerAppViaWhatsApp} className="btn-secondary" style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 8, background: '#25d366', color: '#fff', border: 'none' }}>
+                  <MessageSquare size={16} /> WhatsApp share
+                </button>
+              </div>
+
+              <p style={{ color: 'var(--ink-2)', fontSize: 12, marginTop: 14, lineHeight: 1.7 }}>
+                Society Code <strong>{societyCode}</strong> is QR mein encoded hai. Farmer scan karega → apna Farmer Code + PIN daalega → app har baar auto-open hogi.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div style={{ padding: 16, background: 'rgba(217,119,6,0.08)', border: '1px solid rgba(217,119,6,0.35)', color: '#b45309', borderRadius: 10, fontSize: 13, fontWeight: 600 }}>
+            ⚠️ Farmer App QR banane ke liye pehle <strong>DCS Master</strong> mein Society Code save karein.
+          </div>
+        )}
       </div>
 
       {/* Auto Daily Backup (email) */}
