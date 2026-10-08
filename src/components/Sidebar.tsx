@@ -16,6 +16,7 @@ import {
   BookOpen,
   MessageSquare,
   RotateCcw,
+  HandCoins,
 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { isAdmin } from '../utils/userDb';
@@ -56,6 +57,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate, isOpen, onCl
     { id: 'bmc-master', icon: Snowflake, label: t('bmcMaster') },
     { id: 'bmc-entry', icon: Snowflake, label: t('bmcEntry') },
     { id: 'deductions', icon: Wallet, label: t('deductions') },
+    { id: 'farmer-repayments', icon: HandCoins, label: 'Repayments' },
     { id: 'payment-register', icon: Receipt, label: t('paymentRegister') },
     { id: 'cash-book', icon: BookOpen, label: 'Cash Book' },
     { id: 'reports', icon: BarChart3, label: t('reports') },

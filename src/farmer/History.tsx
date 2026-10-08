@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Droplet, ShoppingBag, MinusCircle, Calculator, LogOut, Globe, RefreshCw, WifiOff, Loader2 } from 'lucide-react';
+import { Droplet, ShoppingBag, MinusCircle, Calculator, LogOut, Globe, RefreshCw, WifiOff, Loader2, HandCoins } from 'lucide-react';
 import { fetchPassbook, type PassbookData, type PassbookResult } from './api';
 import { clearSession, updateSession, type FarmerSession } from './session';
 
@@ -8,11 +8,11 @@ import { clearSession, updateSession, type FarmerSession } from './session';
 // month selector doesn't need a second round-trip. On every month switch we
 // re-hit the Cloud Function (which re-verifies the PIN — Option A).
 
-type Tab = 'milk' | 'gross' | 'deductions' | 'summary';
+type Tab = 'milk' | 'gross' | 'deductions' | 'repayments' | 'summary';
 
 const t = {
   hi: {
-    milk: 'Milk', gross: 'Gross', deductions: 'Kaat', summary: 'Total',
+    milk: 'Milk', gross: 'Gross', deductions: 'Kaat', repayments: 'Wapasi', summary: 'Total',
     month: 'Mahina', logout: 'Logout', refresh: 'Refresh',
     offline: 'Offline — last updated',
     ago: 'pehle', justNow: 'abhi',
@@ -20,10 +20,12 @@ const t = {
     noMilk: 'Is mahine mein doodh nahi diya.',
     noGross: 'Is mahine mein koi gross entry nahi hai.',
     noDeductions: 'Is mahine mein koi katauti (advance) nahi hai.',
+    noRepayments: 'Is mahine mein koi paisa wapasi nahi hui.',
     loading: 'Loading…',
     milkTotal: 'Doodh',
     grossTotal: 'Gross (saman)',
     deductTotal: 'Advance (kaat)',
+    repayTotal: 'Paisa Wapasi (+)',
     bf: 'Pichhla balance (B/F)',
     net: 'Aapko milega',
     date: 'Date', shift: 'Shift', qty: 'Kg', fat: 'FAT', snf: 'SNF', rate: 'Rate', amount: 'Amount',
@@ -32,7 +34,7 @@ const t = {
     confirmLogout: 'Logout karein? Dobara login karna padega.',
   },
   en: {
-    milk: 'Milk', gross: 'Gross', deductions: 'Deduct', summary: 'Total',
+    milk: 'Milk', gross: 'Gross', deductions: 'Deduct', repayments: 'Repaid', summary: 'Total',
     month: 'Month', logout: 'Logout', refresh: 'Refresh',
     offline: 'Offline — last updated',
     ago: 'ago', justNow: 'just now',
@@ -40,10 +42,12 @@ const t = {
     noMilk: 'No milk records for this month.',
     noGross: 'No gross entries for this month.',
     noDeductions: 'No deductions (advance) for this month.',
+    noRepayments: 'No repayments this month.',
     loading: 'Loading…',
     milkTotal: 'Milk',
     grossTotal: 'Gross (goods)',
     deductTotal: 'Advance (deducted)',
+    repayTotal: 'Repayments (+)',
     bf: 'Balance Forward',
     net: 'Net payable to you',
     date: 'Date', shift: 'Shift', qty: 'Kg', fat: 'FAT', snf: 'SNF', rate: 'Rate', amount: 'Amount',
@@ -183,16 +187,18 @@ const History: React.FC<Props> = ({ session, onLogout, language, onToggleLanguag
         {/* Tabs */}
         {data && (
           <>
-            <div className="farmer-tabs" role="tablist">
-              <TabBtn active={tab === 'milk'}       onClick={() => setTab('milk')}       icon={<Droplet size={18} />}     label={L.milk} />
-              <TabBtn active={tab === 'gross'}      onClick={() => setTab('gross')}      icon={<ShoppingBag size={18} />} label={L.gross} />
-              <TabBtn active={tab === 'deductions'} onClick={() => setTab('deductions')} icon={<MinusCircle size={18} />} label={L.deductions} />
-              <TabBtn active={tab === 'summary'}    onClick={() => setTab('summary')}    icon={<Calculator size={18} />}  label={L.summary} />
+            <div className="farmer-tabs" role="tablist" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+              <TabBtn active={tab === 'milk'}       onClick={() => setTab('milk')}       icon={<Droplet size={16} />}      label={L.milk} />
+              <TabBtn active={tab === 'gross'}      onClick={() => setTab('gross')}      icon={<ShoppingBag size={16} />}  label={L.gross} />
+              <TabBtn active={tab === 'deductions'} onClick={() => setTab('deductions')} icon={<MinusCircle size={16} />}  label={L.deductions} />
+              <TabBtn active={tab === 'repayments'} onClick={() => setTab('repayments')} icon={<HandCoins size={16} />}    label={L.repayments} />
+              <TabBtn active={tab === 'summary'}    onClick={() => setTab('summary')}    icon={<Calculator size={16} />}   label={L.summary} />
             </div>
 
             {tab === 'milk'       && <MilkList rows={data.milk} L={L} />}
             {tab === 'gross'      && <GrossList rows={data.gross} L={L} emptyMsg={L.noGross} />}
             {tab === 'deductions' && <GrossList rows={data.deductions} L={L} emptyMsg={L.noDeductions} />}
+            {tab === 'repayments' && <RepayList rows={data.repayments} L={L} emptyMsg={L.noRepayments} />}
             {tab === 'summary'    && <SummaryPane s={data.summary} L={L} />}
           </>
         )}
@@ -261,6 +267,28 @@ const GrossList: React.FC<{ rows: any[]; L: typeof t.hi; emptyMsg: string }> = (
   );
 };
 
+const RepayList: React.FC<{ rows: any[]; L: typeof t.hi; emptyMsg: string }> = ({ rows, emptyMsg }) => {
+  if (!rows.length) return <div className="farmer-empty">{emptyMsg}</div>;
+  const modeLabels: Record<string, string> = { cash: 'Cash', bank: 'Bank', upi: 'UPI', other: 'Other' };
+  return (
+    <div>
+      {rows.map((r, i) => (
+        <div key={i} className="farmer-entry">
+          <div className="farmer-entry-head">
+            <span>{r.date}</span>
+            <span>{modeLabels[r.mode] || r.mode || '—'}</span>
+          </div>
+          <div className="farmer-entry-main">
+            <span className="farmer-entry-main-lbl">{r.note || 'Repayment'}</span>
+            <span className="farmer-entry-main-val" style={{ color: 'var(--f-brand-2)' }}>+{inr(r.amount)}</span>
+          </div>
+          {r.reference && <div className="farmer-entry-sub"><span>Ref: <strong>{r.reference}</strong></span></div>}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const SummaryPane: React.FC<{ s: any; L: typeof t.hi }> = ({ s, L }) => (
   <div className="farmer-card">
     <div className="farmer-row">
@@ -279,6 +307,12 @@ const SummaryPane: React.FC<{ s: any; L: typeof t.hi }> = ({ s, L }) => (
       <span className="farmer-row-label">{L.bf}</span>
       <span className="farmer-row-value" style={{ color: s.bfAmount < 0 ? 'var(--f-red)' : s.bfAmount > 0 ? 'var(--f-brand-2)' : 'var(--f-ink-2)' }}>
         {s.bfAmount === 0 ? '—' : `${s.bfAmount > 0 ? '+' : ''}${inr(s.bfAmount)}`}
+      </span>
+    </div>
+    <div className="farmer-row">
+      <span className="farmer-row-label">{L.repayTotal}</span>
+      <span className="farmer-row-value" style={{ color: (s.repaymentAmount || 0) > 0 ? 'var(--f-brand-2)' : 'var(--f-ink-2)' }}>
+        {!s.repaymentAmount ? '—' : `+${inr(s.repaymentAmount)}`}
       </span>
     </div>
     <div className="farmer-total">
