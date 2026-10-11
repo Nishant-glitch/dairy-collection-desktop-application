@@ -3,7 +3,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import app from '../firebase/config';
 import { isValidPin } from '../utils/passbook';
 import { formatIndianCurrency } from '../utils/rateCalculator';
-import { Milk, Lock, Loader2, LogOut, Droplet, ShoppingBag, MinusCircle, Calculator } from 'lucide-react';
+import { Milk, Lock, Loader2, LogOut, Droplet, ShoppingBag, MinusCircle, Calculator, HandCoins } from 'lucide-react';
 
 // Public, no-login farmer passbook at /passbook/{societyUid}. SECURE: all
 // verification + data fetch happens in the getFarmerPassbook callable (Admin
@@ -13,13 +13,18 @@ const getFarmerPassbook = httpsCallable(functions, 'getFarmerPassbook');
 
 interface MilkRow { date: string; shift: string; qty: number; fat: number; snf: number | null; rate: number; amount: number; }
 interface GrossRow { date: string; item: string; category: string; pcs: number; rate: number; amount: number; }
-interface Summary { milkQty: number; milkAmount: number; grossAmount: number; deductionAmount: number; bfAmount: number; netPayable: number; }
+interface RepaymentRow { date: string; amount: number; mode: string; reference?: string; note?: string; }
+interface Summary {
+  milkQty: number; milkAmount: number;
+  grossAmount: number; deductionAmount: number;
+  bfAmount: number; repaymentAmount: number; netPayable: number;
+}
 interface PassbookData {
   farmerName: string; societyName: string; month: string; availableMonths: string[];
-  milk: MilkRow[]; gross: GrossRow[]; deductions: GrossRow[]; summary: Summary;
+  milk: MilkRow[]; gross: GrossRow[]; deductions: GrossRow[]; repayments: RepaymentRow[]; summary: Summary;
 }
 
-type Tab = 'milk' | 'gross' | 'deductions' | 'summary';
+type Tab = 'milk' | 'gross' | 'deductions' | 'repayments' | 'summary';
 
 const monthLabel = (m: string) => {
   if (!/^\d{4}-\d{2}$/.test(m)) return m;
@@ -52,7 +57,8 @@ const Passbook: React.FC<{ societyUid: string }> = ({ societyUid }) => {
         milk: Array.isArray(json.milk) ? json.milk : [],
         gross: Array.isArray(json.gross) ? json.gross : [],
         deductions: Array.isArray(json.deductions) ? json.deductions : [],
-        summary: json.summary || { milkQty: 0, milkAmount: 0, grossAmount: 0, deductionAmount: 0, bfAmount: 0, netPayable: 0 },
+        repayments: Array.isArray(json.repayments) ? json.repayments : [],
+        summary: json.summary || { milkQty: 0, milkAmount: 0, grossAmount: 0, deductionAmount: 0, bfAmount: 0, repaymentAmount: 0, netPayable: 0 },
       });
       return true;
     } catch (err: any) {
@@ -155,6 +161,7 @@ const Passbook: React.FC<{ societyUid: string }> = ({ societyUid }) => {
             <TabBtn active={tab === 'milk'} onClick={() => setTab('milk')} icon={<Droplet size={15} />} label="Milk" />
             <TabBtn active={tab === 'gross'} onClick={() => setTab('gross')} icon={<ShoppingBag size={15} />} label="Gross" />
             <TabBtn active={tab === 'deductions'} onClick={() => setTab('deductions')} icon={<MinusCircle size={15} />} label="Deductions" />
+            <TabBtn active={tab === 'repayments'} onClick={() => setTab('repayments')} icon={<HandCoins size={15} />} label="Repayments" />
             <TabBtn active={tab === 'summary'} onClick={() => setTab('summary')} icon={<Calculator size={15} />} label="Summary" />
           </div>
 
@@ -235,6 +242,29 @@ const Passbook: React.FC<{ societyUid: string }> = ({ societyUid }) => {
               </Card>
             )}
 
+            {tab === 'repayments' && (
+              <Card>
+                <TableScroll>
+                  <table style={tableStyle}>
+                    <thead><tr style={theadRow}>
+                      <th style={th}>Date</th><th style={th}>Mode</th><th style={th}>Note</th><th style={thR}>Amount</th>
+                    </tr></thead>
+                    <tbody>
+                      {data.repayments.length === 0 ? <EmptyRow cols={4} /> : data.repayments.map((r, i) => (
+                        <tr key={i} style={bodyRow}>
+                          <td style={td}>{r.date}</td>
+                          <td style={td}>{({ cash: 'Cash', bank: 'Bank', upi: 'UPI', other: 'Other' } as Record<string, string>)[r.mode] || r.mode}</td>
+                          <td style={td}>{r.note || (r.reference ? `Ref: ${r.reference}` : '—')}</td>
+                          <td style={{ ...tdR, fontWeight: 700, color: '#15803d' }}>+ {formatIndianCurrency(r.amount)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </TableScroll>
+                <TotalBar left="Total Repayments" right={`+ ${formatIndianCurrency(data.summary.repaymentAmount || 0)}`} rightColor="#15803d" />
+              </Card>
+            )}
+
             {tab === 'summary' && (
               <Card>
                 <div style={{ padding: '8px 4px' }}>
@@ -245,6 +275,11 @@ const Passbook: React.FC<{ societyUid: string }> = ({ societyUid }) => {
                     label="Previous Balance (B/F)"
                     value={data.summary.bfAmount === 0 ? '₹0' : `${data.summary.bfAmount > 0 ? '+ ' : '− '}${formatIndianCurrency(Math.abs(data.summary.bfAmount))}`}
                     color={data.summary.bfAmount < 0 ? '#dc2626' : '#15803d'}
+                  />
+                  <SummaryRow
+                    label="Repayments (paisa wapasi)"
+                    value={!data.summary.repaymentAmount ? '₹0' : `+ ${formatIndianCurrency(data.summary.repaymentAmount)}`}
+                    color="#15803d"
                   />
                   <div style={{ borderTop: '2px solid #e5e7eb', margin: '12px 0' }} />
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px' }}>

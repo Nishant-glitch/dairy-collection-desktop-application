@@ -74,25 +74,27 @@ const AdminRecoverBalances: React.FC = () => {
   // writes — used for both dry-run preview AND as the source of the eventual
   // write. Same input -> same plan, so what you see is what you get.
   const buildPlan = async (uid: string): Promise<RecoverySummary> => {
-    const [mcSnap, geSnap, balSnap, farmersSnap, dcsSnap] = await Promise.all([
+    const [mcSnap, geSnap, balSnap, farmersSnap, dcsSnap, repSnap] = await Promise.all([
       get(ref(database, `users/${uid}/milkCollection`)),
       get(ref(database, `users/${uid}/grossEntries`)),
       get(ref(database, `users/${uid}/farmerBalances`)),
       get(ref(database, `users/${uid}/farmers`)),
       get(ref(database, `users/${uid}/dcsInfo`)),
+      get(ref(database, `users/${uid}/farmerRepayments`)),
     ]);
     const mc = mcSnap.exists() ? mcSnap.val() : {};
     const ge = geSnap.exists() ? geSnap.val() : {};
     const balances = balSnap.exists() ? balSnap.val() : {};
     const farmers = farmersSnap.exists() ? farmersSnap.val() : {};
     const dcs = dcsSnap.exists() ? dcsSnap.val() : {};
+    const reps = repSnap.exists() ? repSnap.val() : {};
     const societyLabel = `${dcs.name || 'Unknown'}${dcs.code ? ` (${dcs.code})` : ''}`;
 
-    // Collect per-farmer per-month totals from milk + gross-entries.
-    const perFarmerMonth: Record<string, Record<string, { gross: number; deductions: number }>> = {};
-    const touch = (code: string, month: string): { gross: number; deductions: number } => {
+    // Collect per-farmer per-month totals from milk + gross-entries + repayments.
+    const perFarmerMonth: Record<string, Record<string, { gross: number; deductions: number; repayments: number }>> = {};
+    const touch = (code: string, month: string): { gross: number; deductions: number; repayments: number } => {
       if (!perFarmerMonth[code]) perFarmerMonth[code] = {};
-      if (!perFarmerMonth[code][month]) perFarmerMonth[code][month] = { gross: 0, deductions: 0 };
+      if (!perFarmerMonth[code][month]) perFarmerMonth[code][month] = { gross: 0, deductions: 0, repayments: 0 };
       return perFarmerMonth[code][month];
     };
 
@@ -125,21 +127,31 @@ const AdminRecoverBalances: React.FC = () => {
       });
     });
 
+    // farmerRepayments — flat {id}={date, farmerId, amount}. Added so the
+    // replay matches the live PaymentRegister formula:
+    //   net = gross - deductions + repayments + carry
+    Object.values(reps).forEach((r: any) => {
+      if (!r?.date || !r?.farmerId) return;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(r.date)) return;
+      const month = r.date.substring(0, 7);
+      const amount = parseFloat(r.amount || 0);
+      if (!isFinite(amount) || amount <= 0) return;
+      touch(r.farmerId, month).repayments += amount;
+    });
+
     // Roll forward: for each farmer, walk months in ascending order,
-    // net = gross − deductions + carry.
+    // net = gross − deductions + repayments + carry.
     const rows: PlanRow[] = [];
     const farmerCodes = Object.keys(perFarmerMonth).sort();
     for (const code of farmerCodes) {
       const months = Object.keys(perFarmerMonth[code]).sort();
       let carry = 0;
       for (const m of months) {
-        const { gross, deductions } = perFarmerMonth[code][m];
-        const net = gross - deductions + carry;
+        const { gross, deductions, repayments } = perFarmerMonth[code][m];
+        const net = gross - deductions + repayments + carry;
         // What's currently at the new per-month path for this row?
         const existing = balances[code]?.[m];
         const before = existing && typeof existing.balance === 'number' ? existing.balance : null;
-        // "changed" if either the value differs from what's already stored, or
-        // there's nothing stored yet. Rounded to 2dp for float noise.
         const changed = before == null || Math.abs(before - net) > 0.005;
         rows.push({
           farmerCode: code,

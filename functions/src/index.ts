@@ -111,11 +111,12 @@ export const getFarmerPassbook = onCall({ region: 'us-central1' }, async (reques
     await attemptRef.remove(); // correct PIN — reset counter
 
     // 5. Load everything for this farmer (Admin SDK bypasses rules).
-    const [dcsSnap, mcSnap, geSnap, balSnap] = await Promise.all([
+    const [dcsSnap, mcSnap, geSnap, balSnap, repSnap] = await Promise.all([
       db.ref(`users/${societyUid}/dcsInfo`).get(),
       db.ref(`users/${societyUid}/milkCollection`).get(),
       db.ref(`users/${societyUid}/grossEntries/${farmerCode}`).get(),
       db.ref(`users/${societyUid}/farmerBalances/${farmerCode}`).get(),
+      db.ref(`users/${societyUid}/farmerRepayments`).get(),
     ]);
 
     const dcs = dcsSnap.val() || {};
@@ -151,10 +152,24 @@ export const getFarmerPassbook = onCall({ region: 'us-central1' }, async (reques
       });
     });
 
-    // Available months = union of milk + gross months (newest first).
+    // Available months = union of milk + gross + repayment months (newest first).
     const monthsSet = new Set<string>();
     allMilk.forEach((m) => m.date && monthsSet.add(m.date.substring(0, 7)));
     allGross.forEach((g) => g.date && monthsSet.add(g.date.substring(0, 7)));
+    const allRep = repSnap.val() || {};
+    const myRep: any[] = [];
+    Object.values(allRep).forEach((r: any) => {
+      if (r?.farmerId === farmerCode && typeof r?.date === 'string') {
+        myRep.push({
+          date: r.date,
+          amount: Number(r.amount) || 0,
+          mode: r.mode || 'other',
+          reference: r.reference || '',
+          note: r.note || '',
+        });
+        monthsSet.add(r.date.substring(0, 7));
+      }
+    });
     const availableMonths = Array.from(monthsSet).sort().reverse();
 
     const currentMonth = new Date().toISOString().substring(0, 7);
@@ -167,6 +182,9 @@ export const getFarmerPassbook = onCall({ region: 'us-central1' }, async (reques
       .sort((a, b) => a.date.localeCompare(b.date) || a.shift.localeCompare(b.shift));
     const monthGross = allGross
       .filter((g) => g.date.startsWith(selectedMonth))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    const repayments = myRep
+      .filter((r) => r.date.startsWith(selectedMonth))
       .sort((a, b) => a.date.localeCompare(b.date));
 
     // Split into goods ("gross" / saman) vs cash deductions (Advance, ...).
@@ -182,9 +200,10 @@ export const getFarmerPassbook = onCall({ region: 'us-central1' }, async (reques
     const milkAmount = sum(milk, (e) => e.amount);
     const grossAmount = sum(gross, (e) => e.amount);
     const deductionAmount = sum(deductions, (e) => e.amount);
-    // Both goods + cash reduce the payment (all grossEntries), matching Payment
-    // Register (netPayable = milkAmount − allGrossEntries + bfAmount).
-    const netPayable = milkAmount - grossAmount - deductionAmount + bfAmount;
+    const repaymentAmount = sum(repayments, (e: any) => e.amount);
+    // Same formula as Payment Register:
+    //   netPayable = milkAmount − allGrossEntries + bfAmount + repayments
+    const netPayable = milkAmount - grossAmount - deductionAmount + bfAmount + repaymentAmount;
 
     logger.info('getFarmerPassbook ok', {
       societyUid, farmerCode, selectedMonth,
@@ -202,7 +221,8 @@ export const getFarmerPassbook = onCall({ region: 'us-central1' }, async (reques
       milk,        // date, shift, qty, fat, snf, rate, amount
       gross,       // goods/saman: date, item, category, pcs, rate, amount
       deductions,  // cash deductions (Advance): date, item, category, pcs, rate, amount
-      summary: { milkQty, milkAmount, grossAmount, deductionAmount, bfAmount, netPayable },
+      repayments,  // date, amount, mode, reference, note
+      summary: { milkQty, milkAmount, grossAmount, deductionAmount, bfAmount, repaymentAmount, netPayable },
     };
   } catch (err: any) {
     logger.error('getFarmerPassbook failed', err);

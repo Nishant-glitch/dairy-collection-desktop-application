@@ -15,7 +15,13 @@ const getFarmerPassbookFn = httpsCallable(functions, 'getFarmerPassbook');
 
 export interface MilkRow { date: string; shift: string; qty: number; fat: number; snf: number | null; rate: number; amount: number; }
 export interface GrossRow { date: string; item: string; category: string; pcs: number; rate: number; amount: number; }
-export interface Summary { milkQty: number; milkAmount: number; grossAmount: number; deductionAmount: number; bfAmount: number; netPayable: number; }
+export interface RepaymentRow { date: string; amount: number; mode: string; reference?: string; note?: string; }
+export interface Summary {
+  milkQty: number; milkAmount: number;
+  grossAmount: number; deductionAmount: number;
+  bfAmount: number; repaymentAmount: number;
+  netPayable: number;
+}
 
 export interface PassbookData {
   farmerName: string;
@@ -25,6 +31,7 @@ export interface PassbookData {
   milk: MilkRow[];
   gross: GrossRow[];
   deductions: GrossRow[];
+  repayments: RepaymentRow[];
   summary: Summary;
 }
 
@@ -123,7 +130,8 @@ export const fetchPassbook = async (
       milk: json.milk || [],
       gross: json.gross || [],
       deductions: json.deductions || [],
-      summary: json.summary || { milkQty: 0, milkAmount: 0, grossAmount: 0, deductionAmount: 0, bfAmount: 0, netPayable: 0 },
+      repayments: json.repayments || [],
+      summary: json.summary || { milkQty: 0, milkAmount: 0, grossAmount: 0, deductionAmount: 0, bfAmount: 0, repaymentAmount: 0, netPayable: 0 },
     };
     writeCache(societyUid, farmerCode, data.month, data);
     return { ok: true, result: { data, fromCache: false, cachedAt: null } };

@@ -14,6 +14,7 @@ import RateCalculator from './pages/RateCalculator';
 import BMCMaster from './pages/BMCMaster';
 import BMCEntry from './pages/BMCEntry';
 import Deductions from './pages/Deductions';
+import FarmerRepayments from './pages/FarmerRepayments';
 import PaymentRegister from './pages/PaymentRegister';
 import CashBook from './pages/CashBook';
 import Reports from './pages/Reports';
@@ -172,6 +173,8 @@ function App() {
         return <BMCEntry />;
       case 'deductions':
         return <Deductions />;
+      case 'farmer-repayments':
+        return <FarmerRepayments />;
       case 'payment-register':
         return <PaymentRegister />;
       case 'cash-book':

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ref, onValue, get } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
-import { Droplet, TrendingUp, Users, Clock, Table, AlertTriangle, CheckCircle2, Trophy, Star } from 'lucide-react';
+import { Droplet, TrendingUp, Users, Clock, Table, AlertTriangle, CheckCircle2, Trophy, Star, HandCoins } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useLanguage } from '../contexts/LanguageContext';
 import { formatIndianCurrency } from '../utils/rateCalculator';
@@ -17,6 +17,7 @@ const Dashboard: React.FC = () => {
     monthAmount: 0,
     totalFarmers: 0,
     pendingPayments: 0,
+    monthRepayments: 0, // this month's farmer repayments total
   });
   const [recentEntries, setRecentEntries] = useState<any[]>([]);
   const [chartData, setChartData] = useState<any[]>([]);
@@ -125,6 +126,26 @@ const Dashboard: React.FC = () => {
       setRecentEntries(entries);
       setChartData(last10Days.reverse());
     });
+
+    // Load this month's farmer repayments (positive adjustments).
+    // Flat node, so client-filter by date-prefix. Cheap enough — the
+    // repayments node is small relative to milkCollection.
+    (async () => {
+      try {
+        const repSnap = await get(ref(database, up('farmerRepayments')));
+        const monthPrefix = new Date().toISOString().substring(0, 7);
+        let monthRepayments = 0;
+        if (repSnap.exists()) {
+          const data = repSnap.val();
+          Object.values(data).forEach((r: any) => {
+            if (r?.date?.startsWith(monthPrefix)) monthRepayments += parseFloat(r.amount || 0);
+          });
+        }
+        setStats((prev) => ({ ...prev, monthRepayments }));
+      } catch (e) {
+        console.error('Dashboard: repayments read failed:', e);
+      }
+    })();
 
     // Load total farmers
     const farmersRef = ref(database, up('farmers'));
@@ -259,6 +280,17 @@ const Dashboard: React.FC = () => {
               <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 11, marginTop: 2 }}>Farmers</p>
             </div>
             <Clock className="w-8 h-8" style={{ color: 'rgba(255,255,255,0.85)' }} />
+          </div>
+        </div>
+
+        <div className="stat-card-green" style={{ height: 'auto', padding: '22px 24px', background: 'linear-gradient(135deg, #16a34a, #15803d)', color: '#fff', borderRadius: 'var(--r-lg)' }}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="label-text" style={{ color: 'rgba(255,255,255,0.85)', fontSize: '11px' }}>Repayments (This Month)</p>
+              <p style={{ fontSize: 24, fontWeight: 800, color: '#fff', lineHeight: 1.1 }}>{formatIndianCurrency(stats.monthRepayments)}</p>
+              <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, marginTop: 4 }}>Dues recovered</p>
+            </div>
+            <HandCoins className="w-8 h-8" style={{ color: 'rgba(255,255,255,0.85)' }} />
           </div>
         </div>
       </div>

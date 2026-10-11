@@ -20,6 +20,7 @@ interface PaymentEntry {
   grossAmount: number;
   deductions: number;
   bfAmount: number;
+  repayments: number; // positive — farmer paid back dues this month
   netPayable: number;
   customAmount: number;
   isPaid: boolean;
@@ -194,6 +195,7 @@ const PaymentRegister: React.FC = () => {
           grossAmount: 0,
           deductions: 0,
           bfAmount: 0,
+          repayments: 0,
           netPayable: 0,
           customAmount: 0,
           isPaid: false,
@@ -250,13 +252,30 @@ const PaymentRegister: React.FC = () => {
       });
     }
 
+    // 4. Farmer Repayments (paisa wapasi) — positive adjustment this month.
+    // Flat node: farmerRepayments/{repaymentId} = { date, farmerId, amount, ... }.
+    // Formula is milkGross − deductions + bfAmount + repayments.
+    const repaymentsSnapshot = await get(ref(database, up('farmerRepayments')));
+    if (repaymentsSnapshot.exists()) {
+      const repaymentsData = repaymentsSnapshot.val();
+      Object.values(repaymentsData).forEach((r: any) => {
+        if (!r?.farmerId || !r?.date || !inMonth(r.date)) return;
+        const amt = parseFloat(r.amount || 0);
+        if (amt > 0) getOrCreate(r.farmerId).repayments += amt;
+      });
+    }
+
     Object.keys(farmerPayments).forEach((farmerId) => {
       const payment = farmerPayments[farmerId];
       // Carry the prior month's balance forward via the helper — reads new
       // per-month path first, then legacy scalar. Any month for which we
       // never stored a finalize returns 0 (same as before).
       payment.bfAmount = bfForMonth(balances[farmerId], bfMonth);
-      payment.netPayable = payment.grossAmount - payment.deductions + payment.bfAmount;
+      // netPayable = milkGross − deductions + bfAmount + repayments.
+      // Repayments ADD because they shrink the farmer's old debt — the
+      // society now owes a larger balance this cycle. B/F stays as the
+      // raw stored carry so the clerk sees all four numbers independently.
+      payment.netPayable = payment.grossAmount - payment.deductions + payment.bfAmount + payment.repayments;
       payment.customAmount = payment.netPayable;
     });
 
@@ -714,6 +733,7 @@ const PaymentRegister: React.FC = () => {
                   <th className="px-4 py-[9px]" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Name</th>
                   <th className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Gross Amount</th>
                   <th className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>B/F Amt</th>
+                  <th className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Repayment</th>
                   <th className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Deductions</th>
                   <th className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Net Payable</th>
                   <th className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '13px', fontWeight: 700 }}>Pay Amount</th>
@@ -746,6 +766,9 @@ const PaymentRegister: React.FC = () => {
                           </button>
                         )}
                       </span>
+                    </td>
+                    <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: payment.repayments > 0 ? '#166534' : 'var(--ink-2)', fontWeight: payment.repayments > 0 ? 700 : 400 }}>
+                      {payment.repayments === 0 ? '—' : `+${formatIndianCurrency(payment.repayments)}`}
                     </td>
                     <td className="px-4 py-[9px] text-right" style={{ padding: '12px 16px', fontSize: '14px', color: '#ef4444' }}>
                       {formatIndianCurrency(payment.deductions)}
