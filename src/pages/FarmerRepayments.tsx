@@ -2,16 +2,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ref, get, onValue } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up } from '../utils/userDb';
-import { useLanguage } from '../contexts/LanguageContext';
 import { formatIndianCurrency } from '../utils/rateCalculator';
 import { printHtml } from '../utils/printHtml';
 import { restoreCaret } from '../utils/focus';
+import { setUnsavedChanges } from '../native/backNav';
 import {
   addRepayment, deleteRepayment, listRepayments,
   REPAYMENT_MODES, modeLabel, type Repayment, type RepaymentMode,
 } from '../services/repaymentService';
 import {
-  HandCoins, Printer, Trash2, Save, Loader2, Search, Calendar, RefreshCw, AlertTriangle,
+  HandCoins, Printer, Trash2, Save, Loader2, Search, RefreshCw, AlertTriangle,
 } from 'lucide-react';
 
 // Record a farmer repayment (farmer paid back old dues) and show recent
@@ -44,7 +44,6 @@ const numToIndianWords = (n: number): string => {
 };
 
 const FarmerRepayments: React.FC = () => {
-  const { t } = useLanguage();
   const [farmers, setFarmers] = useState<Record<string, any>>({});
   const [dcsInfo, setDcsInfo] = useState<any>({});
 
@@ -128,6 +127,10 @@ const FarmerRepayments: React.FC = () => {
   };
 
   useEffect(() => { loadList(); /* eslint-disable-next-line */ }, []);
+
+  // Android hardware back asks before discarding a half-typed repayment (src/App.tsx).
+  useEffect(() => { setUnsavedChanges(!!amount); }, [amount]);
+  useEffect(() => () => setUnsavedChanges(false), []);
 
   const resetForm = () => {
     setFarmerCode('');

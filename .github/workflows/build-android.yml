@@ -1,0 +1,125 @@
+name: Build Android App (APK)
+
+# Push a tag like v1.0.0-android to build and attach the APK to a GitHub
+# Release, or run manually from the Actions tab (APK appears as an artifact).
+#
+# The APK is a native shell that loads the live site (capacitor.config.ts),
+# so it does NOT bundle the web app — no web build needed here. Rebuild the
+# APK only when native things change: plugins, icon/splash, permissions,
+# capacitor.config.ts, or anything under android/.
+on:
+  workflow_dispatch:
+  push:
+    tags: ['v*-android']
+
+permissions:
+  contents: write # attach the APK to a Release on tag builds
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    env:
+      # Release signing secrets (see README "Android app — signing key").
+      # Without them the workflow still produces an installable DEBUG build.
+      HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (Capacitor 8 CLI needs Node 22+)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Java 21 (Capacitor 8 / Android Gradle Plugin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      # Copies capacitor-www + capacitor.config.json into android/ and wires
+      # the plugin Gradle projects to this runner's node_modules layout.
+      - name: Sync Capacitor
+        run: npx cap sync android
+
+      - name: Compute version
+        id: ver
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v*-android ]]; then
+            name="${GITHUB_REF_NAME#v}"; name="${name%-android}"
+          else
+            name="0.0.0-dev.${GITHUB_RUN_NUMBER}"
+          fi
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          # Monotonic so each new APK installs as an update over the previous one.
+          echo "code=${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Build signed release APK
+        if: env.HAS_KEYSTORE == 'true'
+        working-directory: android
+        env:
+          DCS_VERSION_NAME: ${{ steps.ver.outputs.name }}
+          DCS_VERSION_CODE: ${{ steps.ver.outputs.code }}
+          DCS_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          DCS_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          DCS_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        shell: bash
+        run: |
+          export DCS_KEYSTORE_FILE="$RUNNER_TEMP/dcs-release.jks"
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$DCS_KEYSTORE_FILE"
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+          mkdir -p ../apk-out
+          cp app/build/outputs/apk/release/app-release.apk "../apk-out/DCS-Pro-${{ steps.ver.outputs.name }}.apk"
+          rm -f "$DCS_KEYSTORE_FILE"
+
+      # Android refuses to install unsigned APKs, so without the release key we
+      # ship a debug-signed build. It installs fine, BUT each CI run uses a new
+      # debug key — updating needs an uninstall, which wipes unsynced offline
+      # entries. Add the keystore secrets before giving the app to societies.
+      - name: Build debug APK (no release keystore configured)
+        if: env.HAS_KEYSTORE != 'true'
+        working-directory: android
+        env:
+          DCS_VERSION_NAME: ${{ steps.ver.outputs.name }}
+          DCS_VERSION_CODE: ${{ steps.ver.outputs.code }}
+        shell: bash
+        run: |
+          echo "::warning::ANDROID_KEYSTORE_BASE64 secret not set — building a DEBUG-signed APK. Updates will require uninstalling (offline data lost). See README."
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+          mkdir -p ../apk-out
+          cp app/build/outputs/apk/debug/app-debug.apk "../apk-out/DCS-Pro-${{ steps.ver.outputs.name }}-debug.apk"
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DCS-Pro-Android-${{ steps.ver.outputs.name }}
+          path: apk-out/*.apk
+          if-no-files-found: error
+
+      - name: Attach APK to Release (tag builds only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: apk-out/*.apk
+          body: |
+            ## DCS Pro — Android App ${{ steps.ver.outputs.name }}
+
+            **Install (Hindi):**
+            1. Neeche `.apk` file download karein
+            2. File kholein (Downloads folder se)
+            3. "Unknown apps / Unknown sources" ka message aaye to: Settings → us app (Chrome / Files) ko **"Install unknown apps" ALLOW** karein
+            4. **Install** dabayein → app kholein → login karein
+
+            **Install (English):** download the `.apk`, open it, allow "Install unknown apps" for your browser/Files app when Android asks, then tap Install.
+
+            App updates itself automatically for most changes (it loads the live DCS Pro site). Install a newer APK only when a release note says so.

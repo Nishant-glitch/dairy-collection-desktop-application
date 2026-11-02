@@ -170,6 +170,91 @@ The built files will be in `dist/` directory.
 
 ---
 
+## 📱 Android App (APK) — Society App
+
+The full society app (milk collection, payments, reports, settings — everything
+on the website) as an Android app. Android 7.0+ (minSdk 24). The farmer app
+(`/farmer`) is separate and unaffected.
+
+### Install karein (Hindi)
+
+1. GitHub **Releases** page kholein:
+   https://github.com/Nishant-glitch/dairy-collection-desktop-application/releases
+2. Sabse naye `…-android` release mein `DCS-Pro-x.y.z.apk` download karein
+3. File kholein (Downloads folder se, ya download notification dabakar)
+4. Agar **"Install unknown apps"** / "Unknown sources" ka message aaye:
+   → **Settings** khulega → jis app se APK khola (Chrome / Files) uske liye **"Allow from this source" ON** karein → wapas aayein
+5. **Install** dabayein → **Open**
+6. Login karein — ho gaya! Ab phone se hi collection kar sakte hain
+
+> Pehli baar app kholte waqt **internet zaroori hai**. Uske baad app bina internet ke bhi khulegi — entries phone mein save hongi aur internet aane par apne aap sync hongi.
+
+### Install (English)
+
+Download the latest `DCS-Pro-x.y.z.apk` from the Releases page, open it, allow
+"Install unknown apps" for your browser / Files app when Android asks, then tap
+**Install**. The first launch needs internet; after that the app opens offline.
+
+### Updates — kab naya APK chahiye?
+
+The app loads the live website, so **almost every update reaches phones
+automatically** — no reinstall. Install a newer APK **only** when a release
+says so, which happens when native parts change:
+
+- a Capacitor plugin is added/updated (e.g. Bluetooth printer support)
+- the app icon or splash screen changes
+- Android permissions change
+
+Install the new APK **over** the old one (don't uninstall first) — your login
+and any unsynced offline entries are kept.
+
+### Printing & files in the app
+
+- **Print** opens Android's print screen: *Save as PDF*, Wi-Fi printers, or a
+  **Bluetooth thermal printer via the free "RawBT" print-service app** (install
+  RawBT, pair the printer in it, then pick RawBT in the print screen).
+- **Backup / Excel / QR downloads** open the share sheet — save to Files/Drive
+  or send on WhatsApp / email.
+
+### Building the APK (maintainers)
+
+Built by GitHub Actions (`.github/workflows/build-android.yml`):
+
+- **Release:** push a tag like `v1.0.0-android` → APK attached to the Release
+- **Test build:** Actions tab → *Build Android App (APK)* → *Run workflow* → APK under Artifacts
+
+The APK does **not** bundle the web app (it loads `https://dcpro.online`;
+`capacitor-www/` only holds the first-launch offline page), so the workflow
+skips the web build. Local: `npx cap sync android`, then open `android/` in
+Android Studio (JDK 21).
+
+#### Android app — signing key (one-time, IMPORTANT)
+
+Android won't install unsigned APKs, and every update must be signed with the
+**same** key. Create it once on your own computer and keep a safe backup —
+**if this key is lost, users must uninstall to update, which deletes unsynced
+offline entries.** Never commit it.
+
+```bash
+keytool -genkeypair -v -keystore dcs-release.jks -alias dcspro \
+  -keyalg RSA -keysize 2048 -validity 10000
+base64 -w0 dcs-release.jks > dcs-release.jks.b64   # macOS: base64 -i dcs-release.jks
+```
+
+Add these **repository secrets** (GitHub → Settings → Secrets and variables → Actions):
+
+| Secret | Value |
+|---|---|
+| `ANDROID_KEYSTORE_BASE64` | contents of `dcs-release.jks.b64` |
+| `ANDROID_KEYSTORE_PASSWORD` | keystore password |
+| `ANDROID_KEY_ALIAS` | `dcspro` |
+| `ANDROID_KEY_PASSWORD` | key password |
+
+Without these secrets the workflow still builds a **debug-signed** APK (fine for
+testing, but each build has a different key, so updating means uninstalling).
+
+---
+
 ## 🔥 Firebase Setup (CRITICAL)
 
 Before using the application, you MUST:

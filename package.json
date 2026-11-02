@@ -9,6 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/android": "8.6.0",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/core": "8.6.0",
+    "@capacitor/filesystem": "8.1.5",
+    "@capacitor/share": "8.0.3",
+    "@capacitor/splash-screen": "8.0.2",
     "axios": "^1.15.0",
     "clsx": "2.1.1",
     "date-fns": "^4.1.0",
@@ -26,6 +32,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.6.0",
     "@tailwindcss/vite": "4.1.17",
     "@types/node": "22.19.17",
     "@types/react": "19.2.7",

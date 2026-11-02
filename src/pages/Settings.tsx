@@ -8,6 +8,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import app from '../firebase/config';
 import { passbookUrl } from '../utils/passbook';
 import { printHtml } from '../utils/printHtml';
+import { saveBlob } from '../native';
 import * as XLSX from 'xlsx';
 import axios from 'axios';
 
@@ -297,14 +298,9 @@ const Settings: React.FC = () => {
     };
   };
 
-  const triggerDownload = (blob: Blob, filename: string) => {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  // Browser: download. Android app: save to app cache + open the share sheet
+  // (WebView ignores <a download>). See src/native/index.ts.
+  const triggerDownload = (blob: Blob, filename: string) => saveBlob(blob, filename);
 
   // Part 1 — Full JSON backup download (admin picks the society via selectedUid).
   const downloadBackup = async () => {
@@ -441,7 +437,12 @@ const Settings: React.FC = () => {
       );
 
       const code = raw?.dcsInfo?.code || 'society';
-      XLSX.writeFile(wb, `DCS_Export_${code}_${dateTag(fromDate, toDate)}.xlsx`);
+      // XLSX.writeFile relies on <a download>, which the Android WebView ignores.
+      const xlsxBytes = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+      await saveBlob(
+        new Blob([xlsxBytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }),
+        `DCS_Export_${code}_${dateTag(fromDate, toDate)}.xlsx`,
+      );
       alert('✅ Excel export ho gaya.');
     } catch (err: any) {
       alert('❌ Excel export failed: ' + err.message);
@@ -596,16 +597,9 @@ const Settings: React.FC = () => {
       ctx.fillRect(0, 0, w, h);
       ctx.drawImage(img, 0, 0, w, h);
       canvas.toBlob((blob) => {
-        if (!blob) { URL.revokeObjectURL(svgUrl); return; }
-        const pngUrl = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = pngUrl;
-        a.download = `DCS_Farmer_QR_${societyCode || 'society'}.png`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(pngUrl);
         URL.revokeObjectURL(svgUrl);
+        if (!blob) return;
+        saveBlob(blob, `DCS_Farmer_QR_${societyCode || 'society'}.png`);
       }, 'image/png');
     };
     img.onerror = () => URL.revokeObjectURL(svgUrl);
