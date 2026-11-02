@@ -211,10 +211,38 @@ and any unsynced offline entries are kept.
 ### Printing & files in the app
 
 - **Print** opens Android's print screen: *Save as PDF*, Wi-Fi printers, or a
-  **Bluetooth thermal printer via the free "RawBT" print-service app** (install
-  RawBT, pair the printer in it, then pick RawBT in the print screen).
+  Bluetooth thermal printer through **RawBT** (setup below).
 - **Backup / Excel / QR downloads** open the share sheet — save to Files/Drive
   or send on WhatsApp / email.
+
+### 🖨️ Bluetooth thermal printer setup (RawBT) — ek baar ka kaam
+
+DCS Pro prints through Android's print system. **RawBT** is a free app that
+turns a Bluetooth ESC/POS thermal printer (58 mm / 80 mm) into an Android
+printer. Setup once per phone:
+
+1. **Printer pair karein:** printer ON karein → phone **Settings → Bluetooth**
+   → printer ka naam chunein → pair (PIN puche to aksar `0000` ya `1234`, printer
+   ke manual mein dekhein).
+2. **RawBT install karein:** Play Store mein **"RawBT"** search karein (ESC/POS
+   thermal printer driver) → Install.
+3. **RawBT mein printer chunein:** RawBT kholein → Settings → connection
+   **Bluetooth** → apna paired printer select karein → paper width
+   **58 mm** (ya 80 mm) set karein → RawBT ka **test print** karke check karein.
+4. **Print service ON karein:** phone **Settings → Connected devices →
+   Printing** (kuch phones par *Settings → More connections → Printing*) →
+   **RawBT** → **ON**. *(Menu ka naam phone company ke hisaab se thoda alag ho
+   sakta hai — Settings mein "Printing" search karein.)*
+5. **DCS Pro se print:** Print / Save dabayein → Android print screen khulega →
+   upar printer dropdown mein **RawBT** chunein → 🖨️ print button.
+
+**Pehli baar ke baad:** Android last-used printer yaad rakhta hai, to agli baar
+seedha print screen par RawBT hi selected milega — bas print button dabana hai.
+
+> Note: The Android print screen always appears (one extra tap). Direct one-tap
+> printing without that screen needs the dedicated Bluetooth printer plugin
+> planned for v1.1. If the slip layout looks wrong, check RawBT's paper width
+> matches the **Thermal Printer** paper size in DCS Pro Settings.
 
 ### Building the APK (maintainers)
 
@@ -240,6 +268,18 @@ keytool -genkeypair -v -keystore dcs-release.jks -alias dcspro \
   -keyalg RSA -keysize 2048 -validity 10000
 base64 -w0 dcs-release.jks > dcs-release.jks.b64   # macOS: base64 -i dcs-release.jks
 ```
+
+**Windows (PowerShell)** — `keytool` comes with Java (JDK 17+, e.g. Eclipse
+Temurin) or Android Studio (`C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe`):
+
+```powershell
+keytool -genkeypair -v -keystore dcs-release.jks -alias dcspro -keyalg RSA -keysize 2048 -validity 10000
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("$PWD\dcs-release.jks")) | Set-Content -NoNewline dcs-release.jks.b64
+```
+
+(Don't use `certutil -encode` — it adds header lines that break decoding.)
+Modern `keytool` creates a PKCS12 keystore, where the key password is the
+same as the keystore password — use it for both password secrets.
 
 Add these **repository secrets** (GitHub → Settings → Secrets and variables → Actions):
 
