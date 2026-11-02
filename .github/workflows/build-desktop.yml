@@ -6,7 +6,9 @@ name: Build Desktop Apps (Windows + Mac)
 on:
   workflow_dispatch:
   push:
-    tags: ['v*']
+    # Android releases use v*-android tags and have their own workflow
+    # (build-android.yml) — don't rebuild desktop installers for those.
+    tags: ['v*', '!v*-android']
 
 permissions:
   contents: write # needed to attach installers to a Release on tag builds

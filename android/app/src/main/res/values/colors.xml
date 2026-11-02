@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- DCS Pro brand greens (override the Capacitor library's Material indigo). -->
+    <color name="colorPrimary">#18A558</color>
+    <color name="colorPrimaryDark">#128046</color>
+    <color name="colorAccent">#18A558</color>
+    <!-- Status / navigation bar strip behind the WebView. -->
+    <color name="systemBarGreen">#128046</color>
+</resources>

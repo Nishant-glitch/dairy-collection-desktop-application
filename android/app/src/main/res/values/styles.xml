@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+    </style>
+
+    <!-- Always LIGHT (not DayNight) so phones in dark mode keep the same look as
+         the light web app. Green system bars:
+         - Android 7-14: statusBarColor / navigationBarColor apply directly.
+         - Android 15+: edge-to-edge is enforced and the bars are transparent;
+           SystemBars insetsHandling 'native' (capacitor.config.ts) pads the
+           WebView, so the green windowBackground shows through in the bar areas. -->
+    <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:background">@null</item>
+        <item name="android:windowBackground">@color/systemBarGreen</item>
+        <item name="android:statusBarColor">@color/systemBarGreen</item>
+        <item name="android:navigationBarColor">@color/systemBarGreen</item>
+    </style>
+
+
+    <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
+        <item name="android:background">@drawable/splash</item>
+    </style>
+</resources>

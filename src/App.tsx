@@ -1,4 +1,6 @@
-import { useState, useEffect, Suspense, lazy } from 'react';
+import { useState, useEffect, useRef, Suspense, lazy } from 'react';
+import { initNative, onBackButton, exitApp } from './native';
+import { runTopBackHandler, hasUnsavedChanges, setUnsavedChanges } from './native/backNav';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase/config';
 import { LanguageProvider } from './contexts/LanguageContext';
@@ -56,7 +58,31 @@ function App() {
   // even after the app was closed and reopened while offline. Idempotent.
   useEffect(() => {
     initSyncService();
+    initNative(); // Android app only: native print, splash hide. No-op on web.
   }, []);
+
+  // Android hardware back button. The app is state-routed (no URL history),
+  // so back is handled here, in priority order:
+  //   1. close an open overlay (popups register via useBackHandler)
+  //   2. close the mobile sidebar drawer
+  //   3. leave the current page -> Dashboard (asks first if an entry is half-typed)
+  //   4. on Dashboard -> confirm, then exit the app
+  // Refs keep the single listener reading current state.
+  const pageRef = useRef(currentPage);
+  pageRef.current = currentPage;
+  const sidebarOpenRef = useRef(sidebarOpen);
+  sidebarOpenRef.current = sidebarOpen;
+  useEffect(() => onBackButton(() => {
+    if (runTopBackHandler()) return;
+    if (sidebarOpenRef.current) { setSidebarOpen(false); return; }
+    if (pageRef.current !== 'dashboard') {
+      if (hasUnsavedChanges() && !confirm('Entry adhoori hai. Chhod kar wapas jaayein?\nUnsaved entry will be lost.')) return;
+      setUnsavedChanges(false);
+      setCurrentPage('dashboard');
+      return;
+    }
+    if (confirm('DCS Pro band karein?\nExit app?')) exitApp();
+  }), []);
 
   useEffect(() => {
     if (!isAuthenticated) return;

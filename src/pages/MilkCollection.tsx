@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useBackHandler, setUnsavedChanges } from '../native/backNav';
 import { ref, onValue, set, get, remove, query, orderByKey, startAt, endAt } from 'firebase/database';
 import { database } from '../firebase/config';
 import { up, getUid } from '../utils/userDb';
@@ -645,6 +646,15 @@ const MilkCollection: React.FC<MilkCollectionProps> = ({ onNavigate }) => {
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
   }, [showHistory]);
+
+  // Android hardware back closes the popup instead of leaving the page.
+  useBackHandler(showHistory, closeHistory);
+
+  // Android back asks before discarding a half-typed entry (src/App.tsx).
+  useEffect(() => {
+    setUnsavedChanges(!!(qty || fat || snfClr));
+  }, [qty, fat, snfClr]);
+  useEffect(() => () => setUnsavedChanges(false), []);
 
   // Synced (Firebase) entries + durable offline-queued entries. A pending
   // entry is hidden once its synced twin appears (post-sync) so there's no

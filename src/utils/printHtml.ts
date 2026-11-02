@@ -1,3 +1,5 @@
+import { isNative, nativePrintHtml } from '../native';
+
 // Print arbitrary HTML without window.open() — popup blockers silently block
 // window.open on a click sometimes, breaking "Print" buttons. Instead we append
 // a hidden offscreen iframe, write the content into it, print it, then remove
@@ -11,7 +13,16 @@
 //      after the OS print dialog closes — belt-and-braces for browsers where
 //      onafterprint is flaky)
 //   3. a 15s hard-fallback so the caller isn't stranded if both above miss.
+//
+// In the Android app the iframe route can't work (WebView has no print), so
+// the same HTML goes to the native print dialog instead.
 export function printHtml(html: string, onDone?: () => void): void {
+  if (isNative()) {
+    const title = /<title>([^<]*)<\/title>/i.exec(html)?.[1] || 'DCS Pro';
+    nativePrintHtml(html, title).finally(() => { if (onDone) window.setTimeout(onDone, 50); });
+    return;
+  }
+
   const iframe = document.createElement('iframe');
   iframe.setAttribute('aria-hidden', 'true');
   iframe.style.position = 'fixed';

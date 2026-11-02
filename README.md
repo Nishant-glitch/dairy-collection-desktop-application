@@ -170,6 +170,131 @@ The built files will be in `dist/` directory.
 
 ---
 
+## 📱 Android App (APK) — Society App
+
+The full society app (milk collection, payments, reports, settings — everything
+on the website) as an Android app. Android 7.0+ (minSdk 24). The farmer app
+(`/farmer`) is separate and unaffected.
+
+### Install karein (Hindi)
+
+1. GitHub **Releases** page kholein:
+   https://github.com/Nishant-glitch/dairy-collection-desktop-application/releases
+2. Sabse naye `…-android` release mein `DCS-Pro-x.y.z.apk` download karein
+3. File kholein (Downloads folder se, ya download notification dabakar)
+4. Agar **"Install unknown apps"** / "Unknown sources" ka message aaye:
+   → **Settings** khulega → jis app se APK khola (Chrome / Files) uske liye **"Allow from this source" ON** karein → wapas aayein
+5. **Install** dabayein → **Open**
+6. Login karein — ho gaya! Ab phone se hi collection kar sakte hain
+
+> Pehli baar app kholte waqt **internet zaroori hai**. Uske baad app bina internet ke bhi khulegi — entries phone mein save hongi aur internet aane par apne aap sync hongi.
+
+### Install (English)
+
+Download the latest `DCS-Pro-x.y.z.apk` from the Releases page, open it, allow
+"Install unknown apps" for your browser / Files app when Android asks, then tap
+**Install**. The first launch needs internet; after that the app opens offline.
+
+### Updates — kab naya APK chahiye?
+
+The app loads the live website, so **almost every update reaches phones
+automatically** — no reinstall. Install a newer APK **only** when a release
+says so, which happens when native parts change:
+
+- a Capacitor plugin is added/updated (e.g. Bluetooth printer support)
+- the app icon or splash screen changes
+- Android permissions change
+
+Install the new APK **over** the old one (don't uninstall first) — your login
+and any unsynced offline entries are kept.
+
+### Printing & files in the app
+
+- **Print** opens Android's print screen: *Save as PDF*, Wi-Fi printers, or a
+  Bluetooth thermal printer through **RawBT** (setup below).
+- **Backup / Excel / QR downloads** open the share sheet — save to Files/Drive
+  or send on WhatsApp / email.
+
+### 🖨️ Bluetooth thermal printer setup (RawBT) — ek baar ka kaam
+
+DCS Pro prints through Android's print system. **RawBT** is a free app that
+turns a Bluetooth ESC/POS thermal printer (58 mm / 80 mm) into an Android
+printer. Setup once per phone:
+
+1. **Printer pair karein:** printer ON karein → phone **Settings → Bluetooth**
+   → printer ka naam chunein → pair (PIN puche to aksar `0000` ya `1234`, printer
+   ke manual mein dekhein).
+2. **RawBT install karein:** Play Store mein **"RawBT"** search karein (ESC/POS
+   thermal printer driver) → Install.
+3. **RawBT mein printer chunein:** RawBT kholein → Settings → connection
+   **Bluetooth** → apna paired printer select karein → paper width
+   **58 mm** (ya 80 mm) set karein → RawBT ka **test print** karke check karein.
+4. **Print service ON karein:** phone **Settings → Connected devices →
+   Printing** (kuch phones par *Settings → More connections → Printing*) →
+   **RawBT** → **ON**. *(Menu ka naam phone company ke hisaab se thoda alag ho
+   sakta hai — Settings mein "Printing" search karein.)*
+5. **DCS Pro se print:** Print / Save dabayein → Android print screen khulega →
+   upar printer dropdown mein **RawBT** chunein → 🖨️ print button.
+
+**Pehli baar ke baad:** Android last-used printer yaad rakhta hai, to agli baar
+seedha print screen par RawBT hi selected milega — bas print button dabana hai.
+
+> Note: The Android print screen always appears (one extra tap). Direct one-tap
+> printing without that screen needs the dedicated Bluetooth printer plugin
+> planned for v1.1. If the slip layout looks wrong, check RawBT's paper width
+> matches the **Thermal Printer** paper size in DCS Pro Settings.
+
+### Building the APK (maintainers)
+
+Built by GitHub Actions (`.github/workflows/build-android.yml`):
+
+- **Release:** push a tag like `v1.0.0-android` → APK attached to the Release
+- **Test build:** Actions tab → *Build Android App (APK)* → *Run workflow* → APK under Artifacts
+
+The APK does **not** bundle the web app (it loads `https://dcpro.online`;
+`capacitor-www/` only holds the first-launch offline page), so the workflow
+skips the web build. Local: `npx cap sync android`, then open `android/` in
+Android Studio (JDK 21).
+
+#### Android app — signing key (one-time, IMPORTANT)
+
+Android won't install unsigned APKs, and every update must be signed with the
+**same** key. Create it once on your own computer and keep a safe backup —
+**if this key is lost, users must uninstall to update, which deletes unsynced
+offline entries.** Never commit it.
+
+```bash
+keytool -genkeypair -v -keystore dcs-release.jks -alias dcspro \
+  -keyalg RSA -keysize 2048 -validity 10000
+base64 -w0 dcs-release.jks > dcs-release.jks.b64   # macOS: base64 -i dcs-release.jks
+```
+
+**Windows (PowerShell)** — `keytool` comes with Java (JDK 17+, e.g. Eclipse
+Temurin) or Android Studio (`C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe`):
+
+```powershell
+keytool -genkeypair -v -keystore dcs-release.jks -alias dcspro -keyalg RSA -keysize 2048 -validity 10000
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("$PWD\dcs-release.jks")) | Set-Content -NoNewline dcs-release.jks.b64
+```
+
+(Don't use `certutil -encode` — it adds header lines that break decoding.)
+Modern `keytool` creates a PKCS12 keystore, where the key password is the
+same as the keystore password — use it for both password secrets.
+
+Add these **repository secrets** (GitHub → Settings → Secrets and variables → Actions):
+
+| Secret | Value |
+|---|---|
+| `ANDROID_KEYSTORE_BASE64` | contents of `dcs-release.jks.b64` |
+| `ANDROID_KEYSTORE_PASSWORD` | keystore password |
+| `ANDROID_KEY_ALIAS` | `dcspro` |
+| `ANDROID_KEY_PASSWORD` | key password |
+
+Without these secrets the workflow still builds a **debug-signed** APK (fine for
+testing, but each build has a different key, so updating means uninstalling).
+
+---
+
 ## 🔥 Firebase Setup (CRITICAL)
 
 Before using the application, you MUST:
