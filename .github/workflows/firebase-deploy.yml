@@ -12,11 +12,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Node 20 matches functions/package.json "engines": { "node": "20" }.
+      # Must match functions/package.json "engines": { "node": "22" } — that
+      # field picks the Cloud Functions runtime (Node 20 was decommissioned
+      # 2026-10-30). Bump both again before Node 22 is decommissioned.
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install functions dependencies
         working-directory: functions
