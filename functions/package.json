@@ -3,7 +3,7 @@
   "description": "DCS Pro Cloud Functions — secure farmer passbook",
   "private": true,
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "main": "lib/index.js",
   "scripts": {
