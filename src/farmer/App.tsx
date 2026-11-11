@@ -13,6 +13,9 @@ const LANG_KEY = 'dcs_farmer_lang';
 
 const FarmerApp: React.FC = () => {
   const [session, setSession] = useState<FarmerSession | null>(() => loadSession());
+  // Set when History forces a logout (PIN changed / farmer removed / locked):
+  // the login screen explains why and pre-fills the codes.
+  const [logoutNotice, setLogoutNotice] = useState<{ text: string; societyCode: string; farmerCode: string } | null>(null);
   const [language, setLanguage] = useState<'hi' | 'en'>(() => {
     try {
       const saved = localStorage.getItem(LANG_KEY);
@@ -32,6 +35,37 @@ const FarmerApp: React.FC = () => {
   // rel="manifest"> href. vite-plugin-pwa injects the society manifest by
   // default; overriding here means "Add to Home Screen" from /farmer shows
   // "DCS Pro Farmer" as the app name, with its own icons/theme.
+  // New deploy -> new service worker. registerType "autoUpdate" makes it
+  // take control right away (skipWaiting + clientsClaim), but the page keeps
+  // running the old JS until it reloads, and an installed PWA is usually
+  // resumed rather than reopened, so it can stay on an old bundle for days.
+  // Check for an update whenever the app comes to the foreground, and reload
+  // once the new worker takes over. Safe here: this app is read-only, so a
+  // reload never loses typed input. (Not done in the society app, where it
+  // could wipe an unsaved milk entry.)
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    const sw = navigator.serviceWorker;
+    const hadController = !!sw.controller; // first install also fires controllerchange — don't reload for that
+    let reloading = false;
+    const onControllerChange = () => {
+      if (!hadController || reloading) return;
+      reloading = true;
+      window.location.reload();
+    };
+    const checkForUpdate = () => {
+      if (document.visibilityState !== 'visible') return;
+      sw.getRegistration().then((r) => r?.update()).catch(() => { /* offline — try next time */ });
+    };
+    sw.addEventListener('controllerchange', onControllerChange);
+    document.addEventListener('visibilitychange', checkForUpdate);
+    checkForUpdate();
+    return () => {
+      sw.removeEventListener('controllerchange', onControllerChange);
+      document.removeEventListener('visibilitychange', checkForUpdate);
+    };
+  }, []);
+
   useEffect(() => {
     let link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
     const prev = link?.href || null;
@@ -61,8 +95,25 @@ const FarmerApp: React.FC = () => {
   return (
     <div className="farmer-root">
       {session
-        ? <History session={session} onLogout={() => setSession(null)} language={language} onToggleLanguage={toggleLanguage} />
-        : <Login onLoggedIn={setSession} language={language} onToggleLanguage={toggleLanguage} />}
+        ? <History
+            session={session}
+            onLogout={(notice) => {
+              setLogoutNotice(notice
+                ? { text: notice, societyCode: session.societyCode, farmerCode: session.farmerCode }
+                : null);
+              setSession(null);
+            }}
+            language={language}
+            onToggleLanguage={toggleLanguage}
+          />
+        : <Login
+            onLoggedIn={(s) => { setLogoutNotice(null); setSession(s); }}
+            language={language}
+            onToggleLanguage={toggleLanguage}
+            notice={logoutNotice?.text}
+            prefillSocietyCode={logoutNotice?.societyCode}
+            prefillFarmerCode={logoutNotice?.farmerCode}
+          />}
     </div>
   );
 };
