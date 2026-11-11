@@ -62,6 +62,10 @@ const bfForMonth = (node: any, month: string): number => {
 // Firebase SDK resolve the URL + handle CORS automatically; it can be invoked
 // without authentication (request.auth is simply undefined).
 //
+// Failures return { success: false, reason, message } where reason is one of
+// missing | locked | code | nopin | pin — the farmer app keys its re-login
+// flow off `reason` (code/nopin/pin), so keep these stable.
+//
 // Returns the farmer's full account for a selected month: milk collection,
 // gross/deduction entries, and a summary that matches Payment Register exactly
 // (netPayable = milkAmount − deductions + bfAmount). All reads are server-side
@@ -72,7 +76,7 @@ export const getFarmerPassbook = onCall({ region: 'us-central1' }, async (reques
       societyUid?: string; farmerCode?: string; pin?: string; month?: string;
     };
     if (!societyUid || !farmerCode || !pin) {
-      return { success: false, message: 'Zaroori jaankari missing hai.' };
+      return { success: false, reason: 'missing', message: 'Zaroori jaankari missing hai.' };
     }
 
     const db = admin.database();
@@ -83,19 +87,19 @@ export const getFarmerPassbook = onCall({ region: 'us-central1' }, async (reques
     const attempt = (await attemptRef.get()).val() || { count: 0, lockedUntil: 0 };
     if (attempt.lockedUntil && now < attempt.lockedUntil) {
       const mins = Math.ceil((attempt.lockedUntil - now) / 60000);
-      return { success: false, locked: true, message: `Bahut zyada galat koshish. ${mins} minute baad try karein.` };
+      return { success: false, reason: 'locked', locked: true, message: `Bahut zyada galat koshish. ${mins} minute baad try karein.` };
     }
 
     // 2. Read the farmer record (node key IS the code — no query needed).
     const farmerSnap = await db.ref(`users/${societyUid}/farmers/${farmerCode}`).get();
     if (!farmerSnap.exists()) {
-      return { success: false, message: 'Code galat hai.' };
+      return { success: false, reason: 'code', message: 'Code galat hai.' };
     }
     const farmer = farmerSnap.val() || {};
 
     // 3. Null-safety: no PIN set -> clean message, never a crash.
     if (!farmer.pinHash) {
-      return { success: false, message: 'Is farmer ka PIN set nahi hai. Society se sampark karein.' };
+      return { success: false, reason: 'nopin', message: 'Is farmer ka PIN set nahi hai. Society se sampark karein.' };
     }
 
     // 4. Verify PIN server-side.
@@ -103,10 +107,10 @@ export const getFarmerPassbook = onCall({ region: 'us-central1' }, async (reques
       const count = (attempt.count || 0) + 1;
       if (count >= MAX_ATTEMPTS) {
         await attemptRef.set({ count: 0, lockedUntil: now + LOCK_MS });
-        return { success: false, message: `PIN galat. ${MAX_ATTEMPTS} baar galat — 15 minute ke liye lock.` };
+        return { success: false, reason: 'pin', message: `PIN galat. ${MAX_ATTEMPTS} baar galat — 15 minute ke liye lock.` };
       }
       await attemptRef.set({ count, lockedUntil: 0 });
-      return { success: false, message: `PIN galat hai. (${MAX_ATTEMPTS - count} koshish baaki)` };
+      return { success: false, reason: 'pin', message: `PIN galat hai. (${MAX_ATTEMPTS - count} koshish baaki)` };
     }
     await attemptRef.remove(); // correct PIN — reset counter
 

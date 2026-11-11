@@ -1,12 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { Droplet, ShoppingBag, MinusCircle, Calculator, LogOut, Globe, RefreshCw, WifiOff, Loader2, HandCoins } from 'lucide-react';
-import { fetchPassbook, type PassbookData, type PassbookResult } from './api';
-import { clearSession, updateSession, type FarmerSession } from './session';
+import React, { useEffect, useRef, useState } from 'react';
+import { Droplet, ShoppingBag, MinusCircle, Calculator, LogOut, Globe, RefreshCw, WifiOff, Loader2, HandCoins, AlertTriangle } from 'lucide-react';
+import { fetchPassbook, clearFarmerCache, type PassbookData, type PassbookResult } from './api';
+import { clearSession, type FarmerSession } from './session';
 
 // Post-login screen. Loads the CURRENT month first (fastest — cheapest cache
 // hit) and stashes the list of available months returned by the server so the
 // month selector doesn't need a second round-trip. On every month switch we
 // re-hit the Cloud Function (which re-verifies the PIN — Option A).
+//
+// Data is re-fetched whenever the app comes back to the foreground (an
+// installed PWA is usually resumed, not reopened, so mount alone isn't enough)
+// and when the connection returns.
 
 type Tab = 'milk' | 'gross' | 'deductions' | 'repayments' | 'summary';
 
@@ -15,6 +19,8 @@ const t = {
     milk: 'Milk', gross: 'Gross', deductions: 'Kaat', repayments: 'Wapasi', summary: 'Total',
     month: 'Mahina', logout: 'Logout', refresh: 'Refresh',
     offline: 'Offline — last updated',
+    serverErr: 'Server se data nahi mila — thodi der baad try karein.',
+    shownData: 'Purana data dikh raha hai, last updated',
     ago: 'pehle', justNow: 'abhi',
     daysAgo: 'din', hoursAgo: 'ghante', minsAgo: 'min',
     noMilk: 'Is mahine mein doodh nahi diya.',
@@ -37,6 +43,8 @@ const t = {
     milk: 'Milk', gross: 'Gross', deductions: 'Deduct', repayments: 'Repaid', summary: 'Total',
     month: 'Month', logout: 'Logout', refresh: 'Refresh',
     offline: 'Offline — last updated',
+    serverErr: 'Could not get data from the server — please try again shortly.',
+    shownData: 'Showing saved data, last updated',
     ago: 'ago', justNow: 'just now',
     daysAgo: 'd', hoursAgo: 'h', minsAgo: 'm',
     noMilk: 'No milk records for this month.',
@@ -57,13 +65,16 @@ const t = {
   },
 } as const;
 
+// Both languages share the keys; values differ, so type by key, not literal.
+type Strings = Record<keyof typeof t.hi, string>;
+
 const monthLabel = (m: string, lang: 'hi' | 'en') => {
   if (!/^\d{4}-\d{2}$/.test(m)) return m;
   return new Date(m + '-01').toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN',
     { month: 'long', year: 'numeric' });
 };
 
-const timeAgo = (ts: number, L: typeof t.hi): string => {
+const timeAgo = (ts: number, L: Strings): string => {
   const ms = Date.now() - ts;
   if (ms < 60_000) return L.justNow;
   const m = Math.floor(ms / 60_000);
@@ -78,7 +89,8 @@ const inr = (n: number) => `₹${(n || 0).toLocaleString('en-IN', { minimumFract
 
 interface Props {
   session: FarmerSession;
-  onLogout: () => void;
+  /** notice: shown on the login screen (e.g. "PIN badal gaya hai"). */
+  onLogout: (notice?: string) => void;
   language: 'hi' | 'en';
   onToggleLanguage: () => void;
 }
@@ -90,28 +102,68 @@ const History: React.FC<Props> = ({ session, onLogout, language, onToggleLanguag
   const [tab, setTab] = useState<Tab>('milk');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<PassbookResult | null>(null);
+  // Kept apart from `result` so the month picker survives a failed load.
+  const [months, setMonths] = useState<string[]>([currentMonth]);
   const [error, setError] = useState('');
+  const lastAttemptRef = useRef(0);
+  const busyRef = useRef(false);
+  const monthRef = useRef(month);
+  monthRef.current = month;
 
+  // Always network-first (the callable is a POST — never served by the
+  // service worker); the cache is only a fallback when that call fails.
   const load = async (m: string) => {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    lastAttemptRef.current = Date.now();
     setBusy(true);
     setError('');
     const res = await fetchPassbook(session.societyUid, session.farmerCode, session.pin, m);
     if (res.ok) {
       setResult(res.result);
+      if (res.result.data.availableMonths?.length) setMonths(res.result.data.availableMonths);
     } else {
+      setResult(null); // never show another month's rows under this month
       setError(res.error.message);
-      // A `locked` response means the server thinks this device is
-      // spamming wrong PINs — force logout so the farmer can go get a
-      // fresh PIN from the society and start clean.
-      if (res.error.locked) {
-        setTimeout(() => { clearSession(); onLogout(); }, 2000);
+      if (res.error.reLogin) {
+        // Society reset the PIN / removed the farmer: the saved PIN will
+        // never work again, and retrying it would only burn lockout
+        // attempts. Wipe this farmer's data from the phone and log in again.
+        const notice = res.error.message;
+        setTimeout(() => {
+          clearFarmerCache(session.societyUid, session.farmerCode);
+          clearSession();
+          onLogout(notice);
+        }, 2500);
+      } else if (res.error.locked) {
+        // Server thinks this device is spamming wrong PINs — force logout
+        // so the farmer can get a fresh PIN from the society.
+        setTimeout(() => { clearSession(); onLogout(res.error.message); }, 2000);
       }
     }
+    busyRef.current = false;
     setBusy(false);
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(month); }, [month]);
+
+  // Resumed from the background / connection back -> fetch fresh data.
+  useEffect(() => {
+    const refreshIfStale = () => {
+      if (document.visibilityState !== 'visible') return;
+      if (Date.now() - lastAttemptRef.current < 60_000) return;
+      load(monthRef.current);
+    };
+    const onOnline = () => load(monthRef.current);
+    document.addEventListener('visibilitychange', refreshIfStale);
+    window.addEventListener('online', onOnline);
+    return () => {
+      document.removeEventListener('visibilitychange', refreshIfStale);
+      window.removeEventListener('online', onOnline);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleLogout = () => {
     if (!confirm(L.confirmLogout)) return;
@@ -153,7 +205,7 @@ const History: React.FC<Props> = ({ session, onLogout, language, onToggleLanguag
               disabled={busy}
               style={{ paddingRight: 40 }}
             >
-              {(data?.availableMonths || [currentMonth]).map((m) => (
+              {(months.includes(month) ? months : [month, ...months]).map((m) => (
                 <option key={m} value={m}>{monthLabel(m, language)}</option>
               ))}
             </select>
@@ -172,16 +224,27 @@ const History: React.FC<Props> = ({ session, onLogout, language, onToggleLanguag
           </div>
         </div>
 
-        {/* Offline / from-cache banner */}
-        {result?.fromCache && result.cachedAt && (
+        {/* From-cache banner: "Offline" only when the phone really has no
+            connection; any other failure is a server problem. */}
+        {result?.fromCache && result.cachedAt && (result.staleReason === 'offline' ? (
           <div className="farmer-info" style={{ marginBottom: 10 }}>
             <WifiOff size={16} /> {L.offline} {timeAgo(result.cachedAt, L)}
           </div>
-        )}
+        ) : (
+          <div className="farmer-error" style={{ marginBottom: 10, flexDirection: 'column', alignItems: 'stretch', gap: 4 }}>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+              <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+              <span>{L.serverErr}</span>
+            </div>
+            <div style={{ fontSize: 12, fontWeight: 600 }}>
+              {L.shownData} {timeAgo(result.cachedAt, L)}{result.errorCode ? ` · ${result.errorCode}` : ''}
+            </div>
+          </div>
+        ))}
 
-        {/* Error banner (shown when even cache-fallback couldn't return anything) */}
-        {error && !data && (
-          <div className="farmer-error">{error}</div>
+        {/* Error banner (no data could be shown, or the PIN was rejected) */}
+        {error && (
+          <div className="farmer-error" style={{ marginBottom: 10 }}>{error}</div>
         )}
 
         {/* Tabs */}
@@ -222,7 +285,7 @@ const TabBtn: React.FC<{ active: boolean; onClick: () => void; icon: React.React
     </button>
   );
 
-const MilkList: React.FC<{ rows: any[]; L: typeof t.hi }> = ({ rows, L }) => {
+const MilkList: React.FC<{ rows: any[]; L: Strings }> = ({ rows, L }) => {
   if (!rows.length) return <div className="farmer-empty">{L.noMilk}</div>;
   return (
     <div>
@@ -247,7 +310,7 @@ const MilkList: React.FC<{ rows: any[]; L: typeof t.hi }> = ({ rows, L }) => {
   );
 };
 
-const GrossList: React.FC<{ rows: any[]; L: typeof t.hi; emptyMsg: string }> = ({ rows, L, emptyMsg }) => {
+const GrossList: React.FC<{ rows: any[]; L: Strings; emptyMsg: string }> = ({ rows, emptyMsg }) => {
   if (!rows.length) return <div className="farmer-empty">{emptyMsg}</div>;
   return (
     <div>
@@ -267,7 +330,7 @@ const GrossList: React.FC<{ rows: any[]; L: typeof t.hi; emptyMsg: string }> = (
   );
 };
 
-const RepayList: React.FC<{ rows: any[]; L: typeof t.hi; emptyMsg: string }> = ({ rows, emptyMsg }) => {
+const RepayList: React.FC<{ rows: any[]; L: Strings; emptyMsg: string }> = ({ rows, emptyMsg }) => {
   if (!rows.length) return <div className="farmer-empty">{emptyMsg}</div>;
   const modeLabels: Record<string, string> = { cash: 'Cash', bank: 'Bank', upi: 'UPI', other: 'Other' };
   return (
@@ -289,7 +352,7 @@ const RepayList: React.FC<{ rows: any[]; L: typeof t.hi; emptyMsg: string }> = (
   );
 };
 
-const SummaryPane: React.FC<{ s: any; L: typeof t.hi }> = ({ s, L }) => (
+const SummaryPane: React.FC<{ s: any; L: Strings }> = ({ s, L }) => (
   <div className="farmer-card">
     <div className="farmer-row">
       <span className="farmer-row-label">{L.milkTotal}</span>

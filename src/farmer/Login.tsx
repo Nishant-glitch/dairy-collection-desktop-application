@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Milk, ScanLine, Loader2, LogIn, Globe, X, Zap, ZapOff, CheckCircle2 } from 'lucide-react';
-import { resolveSocietyUid, fetchPassbook } from './api';
+import { resolveSocietyUid, fetchPassbook, MSG_OFFLINE, MSG_SERVER } from './api';
 import { saveSession, type FarmerSession } from './session';
 import { startQrScan, isQrScanSupported, type QrScanHandle } from './qrScan';
 
@@ -64,12 +64,16 @@ interface LoginProps {
   onLoggedIn: (session: FarmerSession) => void;
   language: 'hi' | 'en';
   onToggleLanguage: () => void;
+  /** Why the farmer was sent back here (e.g. "PIN badal gaya hai…"). */
+  notice?: string;
+  prefillSocietyCode?: string;
+  prefillFarmerCode?: string;
 }
 
-const Login: React.FC<LoginProps> = ({ onLoggedIn, language, onToggleLanguage }) => {
+const Login: React.FC<LoginProps> = ({ onLoggedIn, language, onToggleLanguage, notice, prefillSocietyCode, prefillFarmerCode }) => {
   const L = t[language];
-  const [societyCode, setSocietyCode] = useState('');
-  const [farmerCode, setFarmerCode] = useState('');
+  const [societyCode, setSocietyCode] = useState(prefillSocietyCode || '');
+  const [farmerCode, setFarmerCode] = useState(prefillFarmerCode || '');
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -187,6 +191,16 @@ const Login: React.FC<LoginProps> = ({ onLoggedIn, language, onToggleLanguage })
         setBusy(false);
         return;
       }
+      // fetchPassbook falls back to cached data when the call fails — fine
+      // for an existing session, but a login MUST be verified by the server,
+      // or a wrong PIN would "log in" from an old cache.
+      if (res.result.fromCache) {
+        setError(res.result.staleReason === 'offline'
+          ? `${MSG_OFFLINE} Login ke liye internet chahiye.`
+          : `${MSG_SERVER}${res.result.errorCode ? ` (${res.result.errorCode})` : ''}`);
+        setBusy(false);
+        return;
+      }
       const session: FarmerSession = {
         societyUid: uid,
         societyCode: sc,
@@ -231,6 +245,10 @@ const Login: React.FC<LoginProps> = ({ onLoggedIn, language, onToggleLanguage })
           <h1 style={{ fontSize: 22, fontWeight: 900, marginBottom: 6 }}>{L.title}</h1>
           <p style={{ color: 'var(--f-ink-2)', fontSize: 14 }}>{L.subtitle}</p>
         </div>
+
+        {notice && (
+          <div className="farmer-error" role="alert" style={{ marginBottom: 14 }}>{notice}</div>
+        )}
 
         <div className="farmer-card">
           <div style={{ marginBottom: 16 }}>
