@@ -38,6 +38,10 @@ const DEDUCTION_CATEGORIES = ['Advance'];
 const isDeductionCategory = (cat: string) =>
   DEDUCTION_CATEGORIES.some((c) => c.toLowerCase() === String(cat || '').trim().toLowerCase());
 
+// How many months back the month picker offers (plus any older month that
+// has gross/repayment entries for this farmer).
+const PICKER_MONTHS = 12;
+
 // Same as PaymentRegister.prevMonthOf — the month immediately before m.
 const prevMonthOf = (m: string): string => {
   const [y, mo] = m.split('-').map(Number);
@@ -114,19 +118,27 @@ export const getFarmerPassbook = onCall({ region: 'us-central1' }, async (reques
     }
     await attemptRef.remove(); // correct PIN — reset counter
 
-    // 5. Load everything for this farmer (Admin SDK bypasses rules).
+    // 5. Load only what this farmer + month needs (Admin SDK bypasses rules).
+    //    milkCollection is keyed {yyyy-MM-dd}/{shift}/{farmerCode}, so a key
+    //    range fetches just the selected month — never the whole history,
+    //    which grows every day and would eventually exhaust memory/timeout.
+    //    Repayments use the farmerId index (database.rules.json).
+    const currentMonth = new Date().toISOString().substring(0, 7);
+    const selectedMonth = month && /^\d{4}-\d{2}$/.test(month) ? month : currentMonth;
     const [dcsSnap, mcSnap, geSnap, balSnap, repSnap] = await Promise.all([
       db.ref(`users/${societyUid}/dcsInfo`).get(),
-      db.ref(`users/${societyUid}/milkCollection`).get(),
+      db.ref(`users/${societyUid}/milkCollection`)
+        .orderByKey().startAt(`${selectedMonth}-01`).endAt(`${selectedMonth}-31`).get(),
       db.ref(`users/${societyUid}/grossEntries/${farmerCode}`).get(),
       db.ref(`users/${societyUid}/farmerBalances/${farmerCode}`).get(),
-      db.ref(`users/${societyUid}/farmerRepayments`).get(),
+      db.ref(`users/${societyUid}/farmerRepayments`)
+        .orderByChild('farmerId').equalTo(farmerCode).get(),
     ]);
 
     const dcs = dcsSnap.val() || {};
     const societyName = dcs.name || dcs.societyName || '';
 
-    // Milk collection — walk milkCollection/{date}/{shift}/{code}, keep this farmer.
+    // Milk collection (selected month only) — walk {date}/{shift}/{code}, keep this farmer.
     const allMilk: any[] = [];
     const mc = mcSnap.val() || {};
     Object.keys(mc).forEach((date) => {
@@ -156,9 +168,12 @@ export const getFarmerPassbook = onCall({ region: 'us-central1' }, async (reques
       });
     });
 
-    // Available months = union of milk + gross + repayment months (newest first).
-    const monthsSet = new Set<string>();
-    allMilk.forEach((m) => m.date && monthsSet.add(m.date.substring(0, 7)));
+    // Month picker: the last PICKER_MONTHS months, plus any month with this
+    // farmer's gross/repayment entries, plus the selected one (newest first).
+    // Milk months can't be listed without reading the whole history, so a
+    // month with no milk simply shows "Is mahine mein doodh nahi diya".
+    const monthsSet = new Set<string>([selectedMonth]);
+    for (let i = 0, m = currentMonth; i < PICKER_MONTHS; i++, m = prevMonthOf(m)) monthsSet.add(m);
     allGross.forEach((g) => g.date && monthsSet.add(g.date.substring(0, 7)));
     const allRep = repSnap.val() || {};
     const myRep: any[] = [];
@@ -174,12 +189,9 @@ export const getFarmerPassbook = onCall({ region: 'us-central1' }, async (reques
         monthsSet.add(r.date.substring(0, 7));
       }
     });
-    const availableMonths = Array.from(monthsSet).sort().reverse();
-
-    const currentMonth = new Date().toISOString().substring(0, 7);
-    const selectedMonth =
-      month && /^\d{4}-\d{2}$/.test(month) ? month
-        : (availableMonths.includes(currentMonth) ? currentMonth : (availableMonths[0] || currentMonth));
+    const availableMonths = Array.from(monthsSet)
+      .filter((m) => /^\d{4}-\d{2}$/.test(m) && m <= currentMonth)
+      .sort().reverse();
 
     const milk = allMilk
       .filter((m) => m.date.startsWith(selectedMonth))
@@ -211,7 +223,7 @@ export const getFarmerPassbook = onCall({ region: 'us-central1' }, async (reques
 
     logger.info('getFarmerPassbook ok', {
       societyUid, farmerCode, selectedMonth,
-      allMilk: allMilk.length, allGross: allGross.length,
+      milkRead: allMilk.length, allGross: allGross.length, repaymentsRead: myRep.length,
       milkInMonth: milk.length, grossInMonth: gross.length, deductionsInMonth: deductions.length,
       availableMonths,
     });
